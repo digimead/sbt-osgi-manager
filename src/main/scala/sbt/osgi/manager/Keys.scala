@@ -1,5 +1,5 @@
 /**
- * sbt-osgi-manager - OSGi development bridge based on Bndtools and Tycho.
+ * sbt-osgi-manager - OSGi development bridge based on Bnd and Tycho.
  *
  * Copyright (c) 2013 Alexey Aksenov ezh@ezh.msk.ru
  *
@@ -25,7 +25,7 @@ import sbt._
 object Keys {
   def OSGiConf = config("osgi-manager") extend (Compile)
 
-  lazy val osgiDirectory = SettingKey[java.io.File]("directory", "HOME")
+  lazy val osgiDirectory = SettingKey[java.io.File]("directory", "Root directory with temporary OSGi data")
 
   // Tasks
 

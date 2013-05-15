@@ -4,7 +4,7 @@ import sbt.osgi.manager._
 
 activateDependencyManager
 
-activateOSGiManager
+activateOSGiManagerWithDebug()
 
 name := "Simple"
 

@@ -1,5 +1,5 @@
 /**
- * sbt-osgi-manager - OSGi development bridge based on Bndtools and Tycho.
+ * sbt-osgi-manager - OSGi development bridge based on Bnd and Tycho.
  *
  * Copyright (c) 2013 Alexey Aksenov ezh@ezh.msk.ru
  *

@@ -1,5 +1,5 @@
 /**
- * sbt-osgi-manager - OSGi development bridge based on Bndtools and Tycho.
+ * sbt-osgi-manager - OSGi development bridge based on Bnd and Tycho.
  *
  * Copyright (c) 2013 Alexey Aksenov ezh@ezh.msk.ru
  *
@@ -49,15 +49,21 @@ object Plugin {
   val dependencyOBR = ("e:sbt.osgi.manager.type", "OBR")
 
   /** Entry point for plugin in user's project */
-  lazy val defaultSettings = Bndtools.settings ++ Maven.settings ++
-    // and all tasks & commands
+  lazy val defaultSettings =
+    // base settings
     inConfig(Keys.OSGiConf)(Seq(
-      osgiMavenPrepareHome <<= Plugin.prepareMavenHomeTask,
-      osgiResetCache := osgiResetCacheTask)) ++
-    // global settings
-    Seq(
-      commands += Command.command("osgi-resolve", osgiResolveCommandHelp)(osgiResolveCommand),
-      osgiShow <<= Plugin.osgiShowTask)
+      osgiDirectory <<= (target) { _ / "osgi" })) ++
+      // plugin settings
+      Bndtools.settings ++
+      Maven.settings ++
+      // and all tasks & commands
+      inConfig(Keys.OSGiConf)(Seq(
+        osgiMavenPrepareHome <<= Plugin.prepareMavenHomeTask,
+        osgiResetCache := osgiResetCacheTask)) ++
+      // and global settings
+      Seq(
+        commands += Command.command("osgi-resolve", osgiResolveCommandHelp)(osgiResolveCommand),
+        osgiShow <<= Plugin.osgiShowTask)
 
   /** Returns last known State. It is a complex helper for Simple Build Tool simple architecture. lol */
   def getLastKnownState(): Option[State] = lastKnownState
@@ -85,7 +91,7 @@ object Plugin {
       throw new UnsupportedOperationException("Unknown resolver type %s for %s".format(resolver.getClass(), resolver))
   }
 
-  def testTask = (osgiCnfPath, state, streams) map { (osgiCnfPath, state, streams) =>
+  /*def testTask = (osgiCnfPath, state, streams) map { (osgiCnfPath, state, streams) =>
     implicit val arg = TaskArgument(state, None)
     val resolve = new biz.aQute.resolve.ResolveProcess()
     val log = new Logger(streams)
@@ -108,7 +114,7 @@ object Plugin {
       case e: Throwable =>
         streams.log.error("Exception during resolution. " + e)
     }
-  }
+  }*/
   /** Command that populates libraryDependencies with required bundles */
   def osgiResolveCommand(state: State): State = {
     implicit val arg = TaskArgument(state, None)

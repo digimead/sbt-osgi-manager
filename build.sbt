@@ -13,8 +13,6 @@ libraryDependencies ++= {
   val mavenWagonVersion = "2.4"
   Seq(
     "biz.aQute" % "bndlib" % "2.0.0.20130123-133441",
-    "biz.aQute" % "bndrepository" % "2.1.0.122819_210REL" from "http://bndtools-updates.s3.amazonaws.com/plugins/biz.aQute.repository_2.1.0.122819_210REL.jar",
-    "biz.aQute" % "bndresolve" % "0.0.3.201304261229_210REL" from "http://bndtools-updates.s3.amazonaws.com/plugins/biz.aQute.resolve_0.0.3.201304261229_210REL.jar",
     "org.apache.felix" % "org.apache.felix.resolver" % "1.0.0",
     "org.apache.maven" % "maven-aether-provider" % mavenVersion,
     "org.apache.maven" % "maven-artifact" % mavenVersion,
