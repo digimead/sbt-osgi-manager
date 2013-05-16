@@ -1,45 +1,6 @@
-/**
- * sbt-osgi-manager - OSGi development bridge based on Bnd and Tycho.
- *
- * Copyright (c) 2013 Alexey Aksenov ezh@ezh.msk.ru
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+package sbt.osgi.manager.bnd
 
-package sbt.osgi.manager.bndtools
-
-import scala.ref.WeakReference
-
-import aQute.bnd.build.Workspace
-import sbt._
-import sbt.Keys._
-import sbt.osgi.manager.Keys._
-
-class Bndtools(cnf: File) {
-  /** A cnf project containing workspace-wide configuration */
-  lazy val workspace: Workspace = { // getWorkspace
-    val workspace = Workspace.getWorkspace(cnf.getParentFile())
-    // add plugins
-    //workspace.addBasicPlugin(new WorkspaceListener(workspace))
-    //workspace.addBasicPlugin(Activator.instance.repoListenerTracker)
-    //workspace.addBasicPlugin(getWorkspaceR5Repository())
-
-    // Initialize projects in synchronized block
-    workspace.getBuildOrder()
-    workspace
-  }
-
-  /*private static final ILogger logger = Logger.getLogger();
+/*private static final ILogger logger = Logger.getLogger();
 
     static WorkspaceR5Repository r5Repository = null;
     static RepositoryPlugin workspaceRepo = null;
@@ -316,58 +277,3 @@ class Bndtools(cnf: File) {
         containedPackageMap.put(key, contained);
     }
 */
-}
-
-object Bndtools {
-  @volatile private var cnfProjects = Seq[WeakReference[Project]]()
-  lazy val settings = inConfig(OSGiConf)(Seq[sbt.Project.Setting[_]](
-    osgiCnfPath <<= (osgiDirectory) { file =>
-      val cnf = file / "cnf"
-      cnf.mkdirs()
-      assert(cnf.isDirectory(), cnf + " is not directory")
-      assert(cnf.canWrite(), cnf + " is not writable")
-      cnf
-    },
-    osgiBndtoolsDirectory <<= (osgiDirectory) { _ / "bnd" },
-    osgiBndBuildPath := List[String](),
-    osgiBndBundleActivator := "",
-    osgiBndBundleCategory := List[String](), // http://www.osgi.org/Specifications/Reference#categories
-    osgiBndBundleContactAddress := "",
-    osgiBndBundleCopyright := "",
-    osgiBndBundleDescription <<= description in This,
-    osgiBndBundleUpdateLocation := "",
-    osgiBndBundleSymbolicName <<= organization in This,
-    osgiBndBundleName <<= name in This,
-    osgiBndBundleLicense := "",
-    osgiBndBundleDocURL :== "",
-    osgiBndBundleVendor <<= organizationName in This,
-    osgiBndBundleVersion <<= version in This,
-    osgiBndClassPath := List[String](),
-    osgiBndExportPackage := List[String](),
-    osgiBndImportPackage := List[String](),
-    osgiBndPlugin := List[String](),
-    osgiBndPluginPath := List[String](),
-    osgiBndPrivatePackage := List[String](),
-    osgiBndRunBundles := List[String](),
-    osgiBndRunEE := "OSGi/Minimum-1.0",
-    osgiBndRunFramework := "",
-    osgiBndRunFW := "org.apache.felix.framework",
-    osgiBndRunProperties := "",
-    osgiBndRunRepos := List[String](),
-    osgiBndRunRequires := "",
-    osgiBndRunVM := "",
-    osgiBndSub := List[String](),
-    osgiBndServiceComponent := "",
-    osgiBndSources := false,
-    osgiBndTestCases := List[String]()))
-
-  /** Get an exists or create a new instance for the cnf project */
-  def get(cnf: File): Bndtools =
-    cnfProjects find (_.get.exists(_.cnfLocation == cnf)) flatMap (_.get.map(_.bndtool)) getOrElse {
-      val bndtoolInstance = Project(cnf, new Bndtools(cnf))
-      cnfProjects = cnfProjects :+ new WeakReference(bndtoolInstance)
-      bndtoolInstance.bndtool
-    }
-
-  case class Project(cnfLocation: File, bndtool: Bndtools)
-}

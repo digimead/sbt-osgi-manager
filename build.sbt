@@ -22,8 +22,10 @@ libraryDependencies ++= {
     "org.apache.maven" % "maven-embedder" % mavenVersion, // provide org.apache.maven.cli.MavenCli
     "org.apache.maven.wagon" % "wagon-http" % mavenWagonVersion, // HTTP connector for remore repositories
     "org.apache.maven.wagon" % "wagon-file" % mavenWagonVersion, // File connector for local repositories
-    "org.sonatype.aether" % "aether-connector-wagon" % "1.13.1",
     "org.eclipse.tycho" % "tycho-core" % "0.17.0",
-    "org.eclipse.tycho" % "tycho-p2-facade" % "0.17.0" // Tycho p2 Resolver Component
+    "org.eclipse.tycho" % "tycho-p2-facade" % "0.17.0", // Tycho p2 Resolver Component
+    "org.osgi" % "org.osgi.core" % "5.0.0",
+    "org.osgi" % "org.osgi.enterprise" % "5.0.0",
+    "org.sonatype.aether" % "aether-connector-wagon" % "1.13.1"
   )
 }

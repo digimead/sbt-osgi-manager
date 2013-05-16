@@ -26,10 +26,15 @@ import sbt.Keys._
 import sbt.osgi.manager.Dependency._
 import sbt.osgi.manager.Keys._
 import sbt.osgi.manager.Support.logPrefix
-import sbt.osgi.manager.bndtools.Bndtools
-import sbt.osgi.manager.bndtools.Logger
+import sbt.osgi.manager.bnd.Bnd
+import sbt.osgi.manager.bnd.Logger
 import sbt.osgi.manager.maven.Maven
 import sbt.std.TaskStreams
+import aQute.bnd.osgi.{ Constants => BndConstant }
+import java.util.jar.JarFile
+import aQute.bnd.osgi.Analyzer
+import aQute.bnd.osgi.Jar
+import biz.aQute.resolve.internal.BndrunResolveContext
 
 object Plugin {
   // Please, use SBT logLevel and .options file if needed
@@ -54,7 +59,7 @@ object Plugin {
     inConfig(Keys.OSGiConf)(Seq(
       osgiDirectory <<= (target) { _ / "osgi" })) ++
       // plugin settings
-      Bndtools.settings ++
+      Bnd.settings ++
       Maven.settings ++
       // and all tasks & commands
       inConfig(Keys.OSGiConf)(Seq(
@@ -91,15 +96,17 @@ object Plugin {
       throw new UnsupportedOperationException("Unknown resolver type %s for %s".format(resolver.getClass(), resolver))
   }
 
-  /*def testTask = (osgiCnfPath, state, streams) map { (osgiCnfPath, state, streams) =>
+  def testTask = (osgiCnfPath, state, streams) map { (osgiCnfPath, state, streams) =>
     implicit val arg = TaskArgument(state, None)
-    val resolve = new biz.aQute.resolve.ResolveProcess()
+    //val resolve = new biz.aQute.resolve.ResolveProcess()
+    val bnd = Bnd.get(osgiCnfPath)
     val log = new Logger(streams)
-    val model = Model.getBndEditModel()
-    assert(model.getRunFw() != null, "The OSGi Framework and Execution Environment must be specified for resolution.")
-    assert(model.getEE() != null, "The OSGi Framework and Execution Environment must be specified for resolution.")
+    val model = bnd.createModel()
+    (model.getRunFw() != null, "The OSGi Framework and Execution Environment must be specified for resolution.")
+    (model.getEE() != null, "The OSGi Framework and Execution Environment must be specified for resolution.")
     val result = try {
-      val felixResolver = new ResolverImpl(log)
+      val resolveContext = new BndrunResolveContext(model, null, log)
+      /*      val felixResolver = new ResolverImpl(log)
       val resolved = resolve.resolve(model, Bndtools.get(osgiCnfPath).workspace, felixResolver, log)
       if (resolved) {
         streams.log.info("resolved")
@@ -109,12 +116,12 @@ object Plugin {
           streams.log.error(exception.getLocalizedMessage())
         else
           streams.log.error("Resolution failed, reason unknown")
-      }
+      }*/
     } catch {
       case e: Throwable =>
         streams.log.error("Exception during resolution. " + e)
     }
-  }*/
+  }
   /** Command that populates libraryDependencies with required bundles */
   def osgiResolveCommand(state: State): State = {
     implicit val arg = TaskArgument(state, None)
@@ -163,11 +170,17 @@ object Plugin {
     val osgiResolveCommandDetailed = "Add OSGi dependencies to libraryDependencies setting per user project."
     Help(osgiResolveCommand, osgiResolveCommandBrief, osgiResolveCommandDetailed)
   }
-  def osgiShowTask: sbt.Project.Initialize[Task[Unit]] =
+  def osgiShowTask: Project.Initialize[Task[Unit]] =
     (osgiCnfPath in OSGiConf, state, streams) map { (osgiCnfPath, state, streams) =>
       implicit val arg = TaskArgument(state, Some(streams))
-      val bndtool = Bndtools.get(osgiCnfPath)
-      Model.show()
+      val bndtool = Bnd.get(osgiCnfPath)
+      Bnd.show()
+    }
+  def packageOptionsTask: Project.Initialize[Task[Seq[PackageOption]]] =
+    (osgiCnfPath in OSGiConf, dependencyClasspath in Compile, state, streams, packageOptions in (Compile, packageBin), products in Compile) map {
+      (osgiCnfPath, dependencyClasspath, state, streams, packageOptions, products) =>
+        implicit val arg = TaskArgument(state, Some(streams))
+        bnd.Bnd.calculateManifest(osgiCnfPath, dependencyClasspath, packageOptions, products)
     }
   /** Prepare maven home directory. Returns the home location. */
   def prepareMavenHomeTask: Project.Initialize[Task[File]] =
@@ -175,6 +188,43 @@ object Plugin {
       implicit val arg = TaskArgument(state, Some(streams))
       maven.Maven.prepareHome()
     }
+  /*def postPackageOptionsTask: Project.Initialize[Task[File]] =
+    (packageBin in Compile, state, streams) map { (packageBin, state, streams) =>
+      implicit val arg = TaskArgument(state, Some(streams))
+      var manifestAttributes = Seq[Package.ManifestAttributes]()
+      streams.log.info(logPrefix(arg.name) + "Postprocess bundle attributes")
+      try {
+        val jarFile = new JarFile(packageBin)
+        val manifestOld = jarFile.getManifest()
+        val analyzer = new Analyzer();
+        val bin = new Jar(new File("bin"))
+        analyzer.setJar(bin) // give bnd the contents
+
+        // You can provide additional class path entries to allow
+        // bnd to pickup export version from the packageinfo file,
+        // Version annotation, or their manifests.
+        //analyzer.addClasspath(new File("jar/spring.jar"))
+
+        analyzer.setProperty("Bundle-SymbolicName", "org.osgi.core")
+        analyzer.setProperty("Export-Package",
+          "org.osgi.framework,org.osgi.service.event")
+        analyzer.setProperty("Bundle-Version", "1.0")
+
+        // There are no good defaults so make sure you set the
+        // Import-Package
+        analyzer.setProperty("Import-Package", "*")
+
+        // Calculate the manifest
+        val manifestNew = analyzer.calcManifest()
+        streams.log.error(manifestNew.toString())
+      } catch {
+        case e: Throwable =>
+          streams.log.error("Unable to post process %s: %s".format(packageBin, e.getMessage))
+      }
+      //
+      //manifestAttributes
+      packageBin
+    }*/
 
   /** Consolidated argument with all required information */
   case class TaskArgument(

@@ -34,16 +34,15 @@ object Keys {
   lazy val osgiResetCache = TaskKey[Unit]("reset-cache", "Reset plugin cache(s)")
 
   /////////////////////////////////////
-  // Bndtool
-  //
-
-  // Bunch of Bndtool settings that is available for BndEditModel
+  // Bnd
   // For more information about osgi-bnd- arguments please look at aQute.bnd.help.Syntax
 
   lazy val osgiBndBuildPath = SettingKey[List[String]]("bnd-buildpath",
     "Bnd BUILDPATH parameter. Provides the class path for building the jar. The entries are references to the repository.")
   lazy val osgiBndBundleActivator = SettingKey[String]("bnd-bundle-activator",
-    "Bnd BUNDLE_ACTIVATOR parameter. Bundle-Activator is a which specifies a class, implementing the org.osgi.framework.BundleActivator interface, which will be called at bundle activation time and deactivation time.")
+    "Bnd BUNDLE_ACTIVATOR parameter. Bundle-Activator is a value which specifies a class, implementing the org.osgi.framework.BundleActivator interface, which will be called at bundle activation time and deactivation time.")
+  lazy val osgiBndBundleActivationPolicy = SettingKey[String]("bnd-bundle-activation-policy",
+    "Bnd BUNDLE_ACTIVATIONPOLICY parameter. The Bundle-ActivationPolicy is a marker to tell the OSGi runtime whether this bundle should be activated (i.e. run its Bundle-Activator).")
   lazy val osgiBndBundleCategory = SettingKey[List[String]]("bnd-bundle-category",
     "Bnd BUNDLE_CATEGORY parameter. The purpose of the Bundle-Category is to allow bundles to be listed in different categories.")
   lazy val osgiBndBundleContactAddress = SettingKey[String]("bnd-bundle-contactaddress",
@@ -54,12 +53,20 @@ object Keys {
     "Bnd BUNDLE_DESCRIPTION parameter. The Bundle-Description header allows you to provide a human-readable textual description of the bundle.")
   lazy val osgiBndBundleDocURL = SettingKey[String]("bnd-bundle-docurl",
     "Bnd BUNDLE_DOCURL parameter. The Bundle-DocURL is a textual header, which can contain a URL (typically a website) that the user can find more information about the bundle.")
+  lazy val osgiBndBundleDynamicImport = SettingKey[String]("bnd-bundle-dynamicimport",
+    "Bnd DYNAMICIMPORT_PACKAGE parameter. DynamicImport-Package is not widely used. Its purpose is to allow a bundle to be wired up to packages that may not be known about in advance.")
+  lazy val osgiBndBundleFragmentHost = SettingKey[String]("bnd-bundle-fragmenthost",
+    "Bnd FRAGMENT_HOST parameter. Declares this bundle to be a Fragment, and specifies which parent bundle to attach to.")
+  lazy val osgiBndBundleIcon = SettingKey[List[String]]("bnd-bundle-icon",
+    "Bnd BUNDLE_ICON parameter. The Bundle-Icon is a list of URLs which contain icons to be used as the bundle's representation.")
   lazy val osgiBndBundleLicense = SettingKey[String]("bnd-bundle-license",
     "Bnd BUNDLE_LICENSE parameter. The Bundle-License is an identifier which can record which license(s) the bundle is made available under.")
   lazy val osgiBndBundleName = SettingKey[String]("bnd-bundle-name",
     "Bnd BUNDLE_NAME parameter. The Bundle-Name is a textual identifier for the bundle.")
   lazy val osgiBndBundleSymbolicName = SettingKey[String]("bnd-bundle-symbolicname",
     "Bnd BUNDLE_SYMBOLICNAME parameter. The Bundle-SymbolicName header is used together with Bundle-Version to uniquely identify a bundle in an OSGi runtime.")
+  lazy val osgiBndBundleSymbolicNameSingleton = SettingKey[Boolean]("bnd-bundle-symbolicname-singleton",
+    "Bnd BUNDLE_SYMBOLICNAME parameter extension. The Directive indicating whether this bundle is a singleton, and there should be only one bundle with this name in the framework at once..")
   lazy val osgiBndBundleUpdateLocation = SettingKey[String]("bnd-bundle-updatelocation",
     "Bnd BUNDLE_UPDATELOCATION parameter. The Bundle-UpdateLocation specifies where any updates to this bundle should be loaded from.")
   lazy val osgiBndBundleVendor = SettingKey[String]("bnd-bundle-vendor",

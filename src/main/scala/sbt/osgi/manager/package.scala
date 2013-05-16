@@ -25,19 +25,22 @@ import org.apache.maven.model.Dependency
 import org.eclipse.equinox.p2.metadata.Version
 
 import sbt._
+import sbt.Keys._
 import sbt.osgi.manager.Dependency
 import sbt.osgi.manager.Keys
 import sbt.osgi.manager.Plugin
 
 package object manager {
-  /** Entry point for plugin in user's project */
-  def activateOSGiManager = Plugin.defaultSettings
-  /** Entry point for plugin in user's project */
+  /** Entry point for the plugin in user's project */
+  def activateOSGiManager = Plugin.defaultSettings ++ Seq( // modify global SBT tasks
+    packageOptions in (Compile, packageBin) in This <<= Plugin.packageOptionsTask)
+  /** Entry point for the plugin in user's project */
   def activateOSGiManagerWithDebug(tcpPortForEquinoxConsole: Int = 12345) = {
     debug(true)
     Plugin.debug = Some(tcpPortForEquinoxConsole)
     Plugin.defaultSettings
-  }
+  } ++ Seq( // modify global SBT tasks
+    packageOptions in (Compile, packageBin) in This <<= Plugin.packageOptionsTask)
 
   // export declarations for end user
   lazy val OSGiKey = Keys
