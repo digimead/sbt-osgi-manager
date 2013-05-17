@@ -1,5 +1,5 @@
 /**
- * Copy of bnd/biz.aQute.resolve. Reason: there are no Maven artifacts for bootstrap.
+ * Copy of the code from github.com/bndtools/bnd, reason: not available at Maven central or other repository
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.

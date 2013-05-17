@@ -29,8 +29,9 @@ object Keys {
 
   // Tasks
 
-  lazy val osgiShow = TaskKey[Unit]("osgi-show-properies", "Show the project bundle properties") // global
-  lazy val osgiMavenPrepareHome = TaskKey[java.io.File]("prepare-maven-home", "Prepare maven home directory")
+  lazy val osgiShow = TaskKey[Unit]("osgi-show", "Show the bundle properties") // global
+  lazy val osgiBndPrepareHome = TaskKey[java.io.File]("prepare-bnd-home", "Prepare Bnd home directory")
+  lazy val osgiMavenPrepareHome = TaskKey[java.io.File]("prepare-maven-home", "Prepare Maven home directory")
   lazy val osgiResetCache = TaskKey[Unit]("reset-cache", "Reset plugin cache(s)")
 
   /////////////////////////////////////
@@ -95,8 +96,9 @@ object Keys {
     "Bnd RUNFW parameter. The OSGi framework identifier like org.eclipse.osgi;version='[3.9.0,3.9.0]' or org.apache.felix.framework;version='[4,5)'.")
   lazy val osgiBndRunProperties = SettingKey[String]("bnd-runproperties",
     "Bnd RUNPROPERTIES parameter. Properties that are set as system properties before the framework is started.")
-  lazy val osgiBndRunRepos = SettingKey[List[String]]("bnd-runrepos",
-    "Bnd RUNREPOS parameter. ???")
+  // DANGER: if RUNREPOS is List() than BndrunResolveContext drop all known repos, if null - accept all known repos. Funny.
+  //lazy val osgiBndRunRepos = SettingKey[List[String]]("bnd-runrepos",
+  //  "Bnd RUNREPOS parameter. It provides a filter for active Bnd repositories.")
   lazy val osgiBndRunRequires = SettingKey[String]("bnd-runrequires",
     "Bnd RUNREQUIRES parameter. ???")
   lazy val osgiBndRunVM = SettingKey[String]("bnd-runvm",
@@ -112,14 +114,14 @@ object Keys {
 
   // Various Bndtool settings
 
-  lazy val osgiCnfPath = SettingKey[java.io.File]("bnd-cnf-path", "Path to the cnf project that contains a workspace-wide configuration")
-  lazy val osgiBndtoolsDirectory = SettingKey[java.io.File]("bnd-directory", "Bndtools directory")
+  lazy val osgiBndDirectory = SettingKey[java.io.File]("bnd-directory", "Bnd directory")
+  //lazy val osgiBndHomeDirectoryosgiBndCnfPath = SettingKey[java.io.File]("bnd-cnf-path", "Path to the cnf project that contains a workspace-wide configuration")
 
   /////////////////////////////////////
   // Maven
   //
 
-  lazy val osgiMavenDirectory = SettingKey[java.io.File]("maven-directory", "MAVEN")
+  lazy val osgiMavenDirectory = SettingKey[java.io.File]("maven-directory", "Maven home directory")
   lazy val osgiMavenGlobalSettingsXML = SettingKey[Option[java.io.File]]("maven-global-xml", "MAVEN")
   lazy val osgiMavenIsOffline = SettingKey[Boolean]("maven-is-offline", "MAVEN")
   lazy val osgiMavenIsUpdateSnapshots = SettingKey[Boolean]("maven-is-updatesnapshots", "MAVEN")

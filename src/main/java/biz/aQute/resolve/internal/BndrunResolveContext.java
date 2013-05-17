@@ -1,5 +1,5 @@
 /**
- * Copy of bnd/biz.aQute.resolve. Reason: there are no Maven artifacts for bootstrap.
+ * Copy of the code from github.com/bndtools/bnd, reason: not available at Maven central or other repository
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,6 +51,7 @@ import org.osgi.service.resolver.ResolveContext;
 import aQute.bnd.build.model.BndEditModel;
 import aQute.bnd.build.model.EE;
 import aQute.bnd.build.model.clauses.ExportedPackage;
+import aQute.bnd.deployer.repository.MapToDictionaryAdapter;
 import aQute.bnd.header.Attrs;
 import aQute.bnd.header.Parameters;
 import aQute.bnd.osgi.Constants;
@@ -450,8 +451,9 @@ public class BndrunResolveContext extends ResolveContext {
 	}
 
 	@Override
-	public int insertHostedCapability(List capabilities, HostedCapability hc) {
-		List<Capability> caps = (List<Capability>) capabilities;
+	// <Capability>
+	public int insertHostedCapability(List capsX, HostedCapability hc) {
+		List<Capability> caps = (List<Capability>) capsX;
 		Integer prioObj = resourcePriorities.get(hc.getResource());
 		int priority = prioObj != null ? prioObj.intValue() : Integer.MAX_VALUE;
 

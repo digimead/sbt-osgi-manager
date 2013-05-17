@@ -1,0 +1,366 @@
+/**
+ * Copy of the code from github.com/bndtools/bnd, reason: not available at Maven central or other repository
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package aQute.bnd.deployer.repository;
+
+import java.io.*;
+import java.net.*;
+import java.security.*;
+
+import aQute.bnd.deployer.http.*;
+import aQute.bnd.service.*;
+import aQute.bnd.service.url.*;
+import aQute.lib.hex.*;
+import aQute.lib.io.*;
+import aQute.service.reporter.*;
+
+/**
+ * <p>
+ * This resource handler downloads remote resources on demand, and caches them
+ * as local files. Resources that are already local (i.e. <code>file:...</code>
+ * URLs) are returned directly.
+ * </p>
+ * <p>
+ * Two alternative caching modes are available. When the mode is
+ * {@link CachingMode#PreferCache}, the cached file will always be returned if
+ * it exists; therefore to refresh from the remote resource it will be necessary
+ * to delete the cache. When the mode is {@link CachingMode#PreferRemote}, the
+ * first call to {@link #request()} will always attempt to download the remote
+ * resource, and only uses the pre-downloaded cache if the remote could not be
+ * downloaded (e.g. because the network is offline).
+ * </p>
+ *
+ * @author njbartlett
+ */
+public class CachingUriResourceHandle implements ResourceHandle {
+
+	private static final String SHA_256 = "SHA-256";
+
+	@Deprecated
+	public static enum CachingMode {
+		/**
+		 * Always use the cached file, if it exists.
+		 */
+		@Deprecated
+		PreferCache,
+
+		/**
+		 * Download the remote resource if possible, falling back to the cached
+		 * file if remote fails. Subsequently the cached resource will be used.
+		 */
+		@Deprecated
+		PreferRemote;
+	}
+
+	static final String FILE_SCHEME = "file";
+	static final String	FILE_PREFIX	= FILE_SCHEME + ":";
+
+	static final String HTTP_SCHEME = "http";
+	static final String	HTTP_PREFIX	= HTTP_SCHEME + ":";
+	static final String	UTF_8		= "UTF-8";
+
+	final File			cacheDir;
+	final URLConnector	connector;
+
+	// The resolved, absolute URL of the resource
+	final URL			url;
+	final String		sha;
+
+	// The local file, if the resource IS a file, otherwise null.
+	final File			localFile;
+
+	// The cached file copy of the resource, if it is remote and has been
+	// downloaded.
+	final File			cachedFile;
+	final File			shaFile;
+
+	final CachingMode	mode;
+
+	Reporter			reporter;
+
+	@Deprecated
+	public CachingUriResourceHandle(URI uri, File cacheDir, CachingMode mode) throws IOException {
+		this(uri, cacheDir, new DefaultURLConnector(), mode);
+	}
+
+	@Deprecated
+	public CachingUriResourceHandle(URI uri, File cacheDir, URLConnector connector, CachingMode mode) throws IOException {
+		this(uri, cacheDir, connector, mode, null);
+	}
+
+	public CachingUriResourceHandle(URI uri, final File cacheDir, URLConnector connector, String sha) throws IOException {
+		this(uri, cacheDir, connector, CachingMode.PreferRemote, sha);
+	}
+
+	@Deprecated
+	public CachingUriResourceHandle(URI uri, final File cacheDir, URLConnector connector, CachingMode mode, String sha) throws IOException {
+		this.cacheDir = cacheDir;
+		this.connector = connector;
+		this.mode = mode;
+		this.sha = sha;
+
+		if (!uri.isAbsolute())
+			throw new IllegalArgumentException("Relative URIs are not permitted.");
+
+		if (FILE_SCHEME.equals(uri.getScheme())) {
+			this.localFile = new File(uri.getPath());
+			this.url = uri.toURL();
+			this.cachedFile = null;
+			this.shaFile = null;
+		} else {
+			this.url = uri.toURL();
+			this.localFile = null;
+			this.cachedFile = mapRemoteURL(url);
+			this.shaFile = mapSHAFile(cachedFile);
+		}
+	}
+
+	public void setReporter(Reporter reporter) {
+		this.reporter = reporter;
+	}
+
+	static File resolveFile(String baseFileName, String fileName) {
+		File resolved;
+
+		File baseFile = new File(baseFileName);
+		if (baseFile.isDirectory())
+			resolved = new File(baseFile, fileName);
+		else if (baseFile.isFile())
+			resolved = new File(baseFile.getParentFile(), fileName);
+		else
+			throw new IllegalArgumentException("Cannot resolve relative to non-existant base file path: "
+					+ baseFileName);
+
+		return resolved;
+	}
+
+	private File mapRemoteURL(URL url) throws UnsupportedEncodingException, IOException {
+
+		String localDirName;
+		String localFileName;
+
+		String fullUrl = url.toExternalForm();
+		int lastSlashIndex = fullUrl.lastIndexOf('/');
+
+		File localDir;
+		if (lastSlashIndex > -1) {
+			localDirName = URLEncoder.encode(fullUrl.substring(0, lastSlashIndex), UTF_8);
+			localDir = new File(cacheDir, localDirName);
+			if (localDir.exists() && !localDir.isDirectory()) {
+				localDir = cacheDir;
+				localFileName = URLEncoder.encode(fullUrl, UTF_8);
+			} else {
+				localFileName = URLEncoder.encode(fullUrl.substring(lastSlashIndex + 1), UTF_8);
+			}
+		} else {
+			localDir = cacheDir;
+			localFileName = URLEncoder.encode(fullUrl, UTF_8);
+		}
+		if (!localDir.exists() && !localDir.mkdirs()) {
+			throw new IOException("Could not create directory " + localDir);
+		}
+
+		return new File(localDir, localFileName);
+	}
+
+	private static File mapSHAFile(File cachedFile) {
+		return new File(cachedFile.getAbsolutePath() + ".sha");
+	}
+
+	public String getName() {
+		return url.toString();
+	}
+
+	public ResourceHandle.Location getLocation() {
+		Location result;
+
+		if (localFile != null)
+			result = Location.local;
+		else if (cachedFile.exists())
+			result = Location.remote_cached;
+		else
+			result = Location.remote;
+
+		return result;
+	}
+
+	public File request() throws IOException {
+		if (localFile != null)
+			return localFile;
+		if (cachedFile == null)
+			throw new IllegalStateException("Invalid URLResourceHandle: both local file and cache file location are uninitialised.");
+
+		// Check whether the cached copy exist and has the right SHA.
+		boolean cacheExists = cachedFile.isFile();
+		boolean cacheValidated;
+		if (cacheExists) {
+			if (sha == null)
+				cacheValidated = false;
+			else {
+				String cachedSHA = getCachedSHA();
+				cacheValidated = sha.equalsIgnoreCase(cachedSHA);
+			}
+		} else {
+			cacheValidated = false;
+		}
+
+		if (cacheValidated)
+			return cachedFile;
+
+		try {
+			InputStream data = connector.connect(url);
+
+			// Save the data to the cache
+			ensureCacheDirExists();
+			String serverSHA = copyWithSHA(data, new FileOutputStream(cachedFile));
+
+			// Check the SHA of the received data
+			if (sha != null && !sha.equalsIgnoreCase(serverSHA)) {
+				shaFile.delete();
+				cachedFile.delete();
+				throw new IOException(String.format("Invalid SHA on remote resource", url));
+			}
+			saveSHAFile(serverSHA);
+
+			return cachedFile;
+		}
+		catch (IOException e) {
+			if (sha == null) {
+				// Remote access failed, use the cache if it exists AND if the original SHA was not known.
+				if (cacheExists) {
+					if (reporter != null)
+						reporter.warning("Download of remote resource %s failed, using local cache %s. Original exception: %s. Trace: %s", url, cachedFile, e, collectStackTrace(e));
+					return cachedFile;
+				} else {
+					if (reporter != null)
+						reporter.error("Download of remote resource %s failed and cache file %s not available. Original exception: %s. Trace: %s", url, cachedFile, e, collectStackTrace(e));
+					throw new IOException(String.format("Download of remote resource %s failed and cache file %s not available, see log for details.", url, cachedFile));
+				}
+			} else {
+				// Can only get here if the cache was missing or didn't match the SHA, and remote access failed.
+				if (reporter != null)
+					reporter.error("Download of remote resource %s failed and cache file %s unavailable/invalid. Original exception: %s. Trace: %s", url, cachedFile, e, collectStackTrace(e));
+				throw new IOException(String.format("Download of remote resource %s failed and cache file %s unavailable/invalid, see log for details.", url, cachedFile));
+			}
+		}
+	}
+
+	private String copyWithSHA(InputStream input, FileOutputStream output) throws IOException {
+		MessageDigest digest;
+
+		try {
+			digest = MessageDigest.getInstance(SHA_256);
+			DigestOutputStream digestOutput = new DigestOutputStream(output, digest);
+			IO.copy(input, digestOutput);
+			return Hex.toHexString(digest.digest());
+		}
+		catch (NoSuchAlgorithmException e) {
+			// Can't happen... hopefully...
+			throw new IOException(e.getMessage());
+		} finally {
+			IO.close(input);
+			IO.close(output);
+		}
+	}
+
+
+	private void ensureCacheDirExists() throws IOException {
+		if (cacheDir.isDirectory())
+			return;
+
+		if (cacheDir.exists()) {
+			String message = String.format("Cannot create cache directory in path %s: the path exists but is not a directory", cacheDir.getCanonicalPath());
+			if (reporter != null)
+				reporter.error(message);
+			throw new IOException(message);
+		}
+
+		if (!cacheDir.mkdirs()) {
+			String message = String.format("Failed to create cache directory in path %s", cacheDir.getCanonicalPath());
+			if (reporter != null)
+				reporter.error(message);
+			throw new IOException(message);
+		}
+	}
+
+	private static String collectStackTrace(Throwable t) {
+		try {
+			ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+			PrintStream pps = new PrintStream(buffer, false, "UTF-8");
+			t.printStackTrace(pps);
+			return buffer.toString("UTF-8");
+		}
+		catch (UnsupportedEncodingException e) {
+			return null;
+		}
+	}
+
+	String getCachedSHA() throws IOException {
+		String content = readSHAFile();
+		if (content == null) {
+			content = calculateSHA(cachedFile);
+			saveSHAFile(content);
+		}
+		return content;
+	}
+
+	static String calculateSHA(File file) throws IOException {
+		MessageDigest digest;
+		byte[] buf = new byte[1024];
+
+		InputStream stream = null;
+		try {
+			digest = MessageDigest.getInstance(SHA_256);
+			stream = new FileInputStream(file);
+			while (true) {
+				int bytesRead = stream.read(buf, 0, 1024);
+				if (bytesRead < 0)
+					break;
+
+				digest.update(buf, 0, bytesRead);
+			}
+		} catch (NoSuchAlgorithmException e) {
+			// Can't happen... hopefully...
+			throw new IOException(e.getMessage());
+		} finally {
+			if (stream != null) stream.close();
+		}
+
+		return Hex.toHexString(digest.digest());
+	}
+
+	String readSHAFile() throws IOException {
+		String result;
+		if (shaFile != null && shaFile.isFile())
+			result = IO.collect(shaFile);
+		else
+			result = null;
+		return result;
+	}
+
+	void saveSHAFile(String contents) {
+		try {
+			IO.copy(IO.stream(contents), shaFile);
+		}
+		catch (IOException e) {
+			shaFile.delete();
+			// Errors saving the SHA should not interfere with the download
+			if (reporter != null)
+				reporter.error("Failed to save SHA file %s (%s)", shaFile, e.getMessage());
+		}
+	}
+
+}

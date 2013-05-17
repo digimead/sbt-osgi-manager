@@ -121,8 +121,8 @@ object Model {
   def getPropertyRunFW(implicit arg: Plugin.TaskArgument) =
     osgiBndRunFW in arg.thisOSGiScope get arg.extracted.structure.data
 
-  def getSettingsBndtoolsDirectory(implicit arg: Plugin.TaskArgument) =
-    osgiBndtoolsDirectory in arg.thisOSGiScope get arg.extracted.structure.data
+  def getSettingsBndDirectory(implicit arg: Plugin.TaskArgument) =
+    osgiBndDirectory in arg.thisOSGiScope get arg.extracted.structure.data
 
   /////////////////////////////////////
   // Various plugin settings

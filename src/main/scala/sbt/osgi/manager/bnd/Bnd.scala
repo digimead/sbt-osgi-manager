@@ -18,10 +18,7 @@
 
 package sbt.osgi.manager.bnd
 
-import java.util.Properties
-import java.util.jar.Manifest
-
-import scala.collection.JavaConversions._
+import scala.collection.JavaConversions.seqAsJavaList
 import scala.ref.WeakReference
 
 import aQute.bnd.build.Workspace
@@ -35,29 +32,16 @@ import aQute.bnd.build.model.conversions.Converter
 import aQute.bnd.build.model.conversions.HeaderClauseListConverter
 import aQute.bnd.build.model.conversions.VersionedClauseConverter
 import aQute.bnd.header.Attrs
-import aQute.bnd.osgi.Analyzer
-import aQute.bnd.osgi.{ Constants => BndConstant }
+import aQute.bnd.service.{ Plugin => BndPlugin }
 import sbt._
 import sbt.Keys._
 import sbt.osgi.manager.Keys._
 import sbt.osgi.manager.Model
+import sbt.osgi.manager.OSGiManagerException
 import sbt.osgi.manager.Plugin
 import sbt.osgi.manager.Support._
 
 class Bnd(cnf: File) {
-  /** A cnf project containing workspace-wide configuration */
-  lazy val workspace: Workspace = { // getWorkspace
-    val workspace = Workspace.getWorkspace(cnf.getParentFile())
-    // add plugins
-    //workspace.addBasicPlugin(new WorkspaceListener(workspace))
-    //workspace.addBasicPlugin(Activator.instance.repoListenerTracker)
-    //workspace.addBasicPlugin(getWorkspaceR5Repository())
-
-    // Initialize projects in synchronized block
-    workspace.getBuildOrder()
-    workspace
-  }
-
   def createModel()(implicit arg: Plugin.TaskArgument): BndEditModel = {
     val model = new BndEditModel()
 
@@ -90,7 +74,10 @@ class Bnd(cnf: File) {
     Model.getPropertyRunFramework foreach (model.setRunFramework)
     Model.getPropertyRunFW foreach (model.setRunFw)
     //bndEditModel.setRunProperties(Map<String,String> props)
-    osgiBndRunRepos in arg.thisOSGiScope get arg.extracted.structure.data foreach (list => model.setRunRepos(list))
+
+    // DANGER: if runRepos is List() than BndrunResolveContext drop all known repos, if null - accept all known repos. Funny.
+    // DON'T DO IT: osgiBndRunRepos in arg.thisOSGiScope get arg.extracted.structure.data foreach (list => model.setRunRepos(list))
+
     //bndEditModel.setRunRequires(List<Requirement> requires)
     osgiBndRunVM in arg.thisOSGiScope get arg.extracted.structure.data foreach (model.setRunVMArgs)
     // BROKEN by origin
@@ -102,81 +89,21 @@ class Bnd(cnf: File) {
     osgiBndTestCases in arg.thisOSGiScope get arg.extracted.structure.data foreach (list => model.setTestSuites(list))
     model
   }
-
-  def calculateManifest(product: File, dependencyClasspath: Seq[File])(implicit arg: Plugin.TaskArgument): Manifest = {
-    val analyzer = new Analyzer()
-    try {
-      analyzer.setJar(product)
-      val properties = new Properties()
-      Model.getPropertyActivator.foreach(value =>
-        if (value.nonEmpty) properties.put(BndConstant.BUNDLE_ACTIVATOR, value))
-      Model.getPropertyActivationPolicy.foreach(value =>
-        if (value.nonEmpty) properties.put(BndConstant.BUNDLE_ACTIVATIONPOLICY, value))
-      Model.getPropertyCategory.foreach(value =>
-        if (value.nonEmpty) properties.put(BndConstant.BUNDLE_CATEGORY, value))
-      Model.getPropertyClassPath.foreach(value =>
-        if (value.nonEmpty) properties.put(BndConstant.BUNDLE_CLASSPATH, value))
-      Model.getPropertyContactAddress.foreach(value =>
-        if (value.nonEmpty) properties.put(BndConstant.BUNDLE_CONTACTADDRESS, value))
-      Model.getPropertyCopyright.foreach(value =>
-        if (value.nonEmpty) properties.put(BndConstant.BUNDLE_COPYRIGHT, value))
-      Model.getPropertyDescription.foreach(value =>
-        if (value.nonEmpty) properties.put(BndConstant.BUNDLE_DESCRIPTION, value))
-      Model.getPropertyDocUrl.foreach(value =>
-        if (value.nonEmpty) properties.put(BndConstant.BUNDLE_DOCURL, value))
-      Model.getPropertyDynamicImport.foreach(value =>
-        if (value.nonEmpty) properties.put(BndConstant.DYNAMICIMPORT_PACKAGE, value))
-      Model.getPropertyFragmentHost.foreach(value =>
-        if (value.nonEmpty) properties.put(BndConstant.FRAGMENT_HOST, value))
-      Model.getPropertyLicense.foreach(value =>
-        if (value.nonEmpty) properties.put(BndConstant.BUNDLE_LICENSE, value))
-      Model.getPropertyName.foreach(value =>
-        if (value.nonEmpty) properties.put(BndConstant.BUNDLE_NAME, value))
-      Model.getPropertySymbolicName.foreach(value => if (value.nonEmpty) {
-        if (Model.getPropertySymbolicNameSingleton getOrElse false)
-          properties.put(BndConstant.BUNDLE_SYMBOLICNAME, value + ";singleton:=true")
-        else
-          properties.put(BndConstant.BUNDLE_SYMBOLICNAME, value)
-      })
-      Model.getPropertyUpdateLocation.foreach(value =>
-        if (value.nonEmpty) properties.put(BndConstant.BUNDLE_UPDATELOCATION, value))
-      Model.getPropertyVendor.foreach(value =>
-        if (value.nonEmpty) properties.put(BndConstant.BUNDLE_VENDOR, value))
-      Model.getPropertyVersion.foreach(value =>
-        if (value.nonEmpty) properties.put(BndConstant.BUNDLE_VERSION, value))
-
-      Model.getPropertyImportPackages match {
-        case Some(importPackages) if importPackages.nonEmpty =>
-          properties.put(BndConstant.IMPORT_PACKAGE, importPackages.mkString(","))
-        case _ =>
-          properties.put(BndConstant.IMPORT_PACKAGE, "*")
-      }
-      Model.getPropertyExportPackages match {
-        case Some(exportPackages) if exportPackages.nonEmpty =>
-          properties.put(BndConstant.EXPORT_PACKAGE, exportPackages.mkString(","))
-        case _ =>
-          properties.put(BndConstant.IMPORT_PACKAGE, "*")
-      }
-      analyzer.setProperties(properties)
-      analyzer.addClasspath(dependencyClasspath)
-      analyzer.calcManifest()
-    } finally {
-      analyzer.close()
-    }
+  /** Create Bnd workspace */
+  def createWorkspace(home: File, plugins: Seq[Workspace => BndPlugin]): Workspace = { // getWorkspace
+    val workspace = new Workspace(home)
+    // add plugins
+    plugins.foreach(f => workspace.addBasicPlugin(f(workspace)))
+    // Initialize projects in synchronized block
+    workspace.getBuildOrder()
+    workspace
   }
 }
 
 object Bnd {
   @volatile private var cnfProjects = Seq[WeakReference[Project]]()
   lazy val settings = inConfig(OSGiConf)(Seq[sbt.Project.Setting[_]](
-    osgiCnfPath <<= (osgiDirectory) { file =>
-      val cnf = file / "cnf"
-      cnf.mkdirs()
-      assert(cnf.isDirectory(), cnf + " is not directory")
-      assert(cnf.canWrite(), cnf + " is not writable")
-      cnf
-    },
-    osgiBndtoolsDirectory <<= (osgiDirectory) { _ / "bnd" },
+    osgiBndDirectory <<= (osgiDirectory) { _ / "bnd" },
     osgiBndBuildPath := List[String](),
     osgiBndBundleActivator := "",
     osgiBndBundleActivationPolicy := "",
@@ -205,7 +132,7 @@ object Bnd {
     osgiBndRunFramework := "",
     osgiBndRunFW := "org.apache.felix.framework",
     osgiBndRunProperties := "",
-    osgiBndRunRepos := List[String](),
+    // osgiBndRunRepos := List[String](), - SKIP
     osgiBndRunRequires := "",
     osgiBndRunVM := "",
     osgiBndSub := List[String](),
@@ -213,37 +140,58 @@ object Bnd {
     osgiBndSources := false,
     osgiBndTestCases := List[String]()))
 
-  /** Calculate manifest's content of the artifact */
-  def calculateManifest(cnf: File, dependencyClasspath: Seq[Attributed[File]], options: Seq[PackageOption], products: Seq[File])(implicit arg: Plugin.TaskArgument): Seq[PackageOption] = {
-    arg.log.info(logPrefix(arg.name) + "Calculate bundle manifest.")
-    val bnd = get(cnf)
-    val classpath = dependencyClasspath.map(_.data)
-    val unprocessedOptions = Seq[PackageOption]()
-    val manifest = new Manifest
-    val main = manifest.getMainAttributes
-    products.foreach { product =>
-      arg.log.debug(logPrefix("Calculate manifest for " + product))
-      Package.mergeManifests(manifest, bnd.calculateManifest(product, classpath))
-    }
-    // sort option by name if possible
-    for (option <- options) option match {
-      case Package.JarManifest(mergeManifest) => Package.mergeManifests(manifest, mergeManifest)
-      case Package.ManifestAttributes(attributes @ _*) => main ++= attributes
-      case _ =>
-    }
-    val attributes = main.entrySet().map(entry => (entry.getKey().toString, entry.getValue().toString)).toSeq.sortBy(_.toString())
-    // Manifest of the artifact is unsorted anyway due the Java design
-    Package.ManifestAttributes(attributes: _*) +: unprocessedOptions
-  }
   /** Get an exists or create a new instance for the cnf project */
-  def get(cnf: File): Bnd =
-    cnfProjects find (_.get.exists(_.cnfLocation == cnf)) flatMap (_.get.map(_.bnd)) getOrElse {
-      val bndtoolInstance = Project(cnf, new Bnd(cnf))
-      cnfProjects = cnfProjects :+ new WeakReference(bndtoolInstance)
-      bndtoolInstance.bnd
+  def get(cnf: File = null)(implicit arg: Plugin.TaskArgument): Bnd = {
+    val home = if (cnf != null) cnf else getHome()
+    cnfProjects find (_.get.exists(_.cnfLocation == home)) flatMap (_.get.map(_.bnd)) getOrElse {
+      val bndInstance = Project(home, new Bnd(home))
+      cnfProjects = cnfProjects :+ new WeakReference(bndInstance)
+      bndInstance.bnd
     }
+  }
+  /** Path to Bnd cnf directory */
+  def getHome()(implicit arg: Plugin.TaskArgument) =
+    Model.getSettingsBndDirectory getOrThrow "osgiBndDirectory is undefined"
+  /** Path to Bnd build directory */
+  def getBndBuild(home: File = null)(implicit arg: Plugin.TaskArgument) =
+    if (home != null) new File(home, Workspace.BNDDIR) else new File(getHome, Workspace.BNDDIR)
+  /** Path to Bnd cnf directory */
+  def getBndCnf(home: File = null)(implicit arg: Plugin.TaskArgument) =
+    if (home != null) new File(home, Workspace.CNFDIR) else new File(getHome, Workspace.CNFDIR)
+  /** Path to Bnd cache directory */
+  def getBndCache(buildDirectory: File = null)(implicit arg: Plugin.TaskArgument) =
+    if (buildDirectory != null) new File(buildDirectory, Workspace.CACHEDIR) else new File(getBndBuild(), Workspace.CACHEDIR)
+  /** Path to Bnd build.bnd file */
+  def getBndBuildFile(buildDirectory: File = null)(implicit arg: Plugin.TaskArgument) =
+    if (buildDirectory != null) new File(buildDirectory, Workspace.BUILDFILE) else new File(getBndBuild(), Workspace.BUILDFILE)
+  /** Prepare Bnd home(workspace) directory */
+  def prepareHome()(implicit arg: Plugin.TaskArgument): File = {
+    arg.log.debug(logPrefix(arg.name) + "Prepare Bnd home directory.")
+    val bndHome = getHome
+    if (!bndHome.exists())
+      if (!bndHome.mkdirs())
+        throw new OSGiManagerException("Unable to create osgiBndDirectory: " + bndHome.getAbsolutePath())
+    val bndBuild = getBndBuild(bndHome)
+    if (!bndBuild.exists())
+      if (!bndBuild.mkdirs())
+        throw new OSGiManagerException("Unable to create osgiBndDirectory / bnd: " + bndBuild.getAbsolutePath())
+    val bndCnf = getBndCnf(bndHome)
+    if (!bndCnf.exists())
+      if (!bndCnf.mkdirs())
+        throw new OSGiManagerException("Unable to create osgiBndDirectory / cnf: " + bndCnf.getAbsolutePath())
+    val bndCache = getBndCache(bndBuild)
+    if (!bndCache.exists())
+      if (!bndCache.mkdirs())
+        throw new OSGiManagerException("Unable to create osgiBndDirectory / bnd / cache: " + bndCache.getAbsolutePath())
+    val bndBuildFile = getBndBuildFile(bndBuild)
+    if (!bndBuildFile.exists())
+      if (!bndBuildFile.createNewFile())
+        throw new OSGiManagerException("Unable to create osgiBndDirectory / bnd / build.bnd: " + bndBuildFile.getAbsolutePath())
+    bndHome
+  }
   /** Show the project bundle properties */
-  def show()(implicit arg: Plugin.TaskArgument) {
+  def show()(implicit arg: Plugin.TaskArgument): Unit = synchronized {
+    arg.log.info("OSGi properties of %s/%s".format(arg.name, arg.thisProjectRef.project))
     show("BUILDPACKAGES", "") // UNUSED by origin
     show("BUILDPATH", "")
     show("BUNDLE_ACTIVATOR", Model.getPropertyActivator getOrElse "", "-", scala.Console.WHITE)
@@ -257,7 +205,7 @@ object Bnd {
     show("BUNDLE_LICENSE", Model.getPropertyLicense getOrElse "", "UNKNOWN", scala.Console.YELLOW)
     show("BUNDLE_NAME", Model.getPropertyName getOrElse "", "UNKNOWN", scala.Console.RED)
     show("BUNDLE_SYMBOLICNAME", Model.getPropertySymbolicName getOrElse "", "UNKNOWN", scala.Console.RED)
-    show("BUNDLE_SYMBOLICNAME singleton", Model.getPropertySymbolicNameSingleton.map(_.toString), "false", scala.Console.WHITE)
+    show("BUNDLE_SYMBOLICNAME singleton", Model.getPropertySymbolicNameSingleton.map(_.toString) getOrElse "false", "false", scala.Console.WHITE)
     show("BUNDLE_UPDATELOCATION", Model.getPropertyUpdateLocation getOrElse "")
     show("BUNDLE_VENDOR", Model.getPropertyVendor getOrElse "")
     show("BUNDLE_VERSION", Model.getPropertyVersion getOrElse "", "UNKNOWN", scala.Console.RED)
@@ -280,6 +228,7 @@ object Bnd {
     show("SUB", Option(model.getSubBndFiles()).map(_.mkString(",")).getOrElse(""))
     show("SOURCES", Option(model.isIncludeSources()).map(Boolean.box).getOrElse(""))
     show("TESTCASES", Option(model.getTestSuites()).map(_.mkString(",")).getOrElse(""))*/
+    Thread.sleep(25)  // synchronized and sleep are prevent from mix output with multiple projects
   }
   /** Display the single property */
   protected def show(parameter: String, value: AnyRef, onEmpty: String)(implicit arg: Plugin.TaskArgument): Unit = show(parameter, value, Some("", onEmpty))(arg)

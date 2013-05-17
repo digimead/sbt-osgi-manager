@@ -50,13 +50,14 @@ import org.eclipse.tycho.core.resolver.shared.MavenRepositoryLocation
 import org.eclipse.tycho.core.resolver.shared.PlatformPropertiesUtils
 import org.eclipse.tycho.osgi.adapters.MavenLoggerAdapter
 import org.eclipse.tycho.p2.resolver.facade.P2ResolutionResult
-
 import sbt._
 import sbt.Keys._
+import sbt.osgi.manager.Dependency
 import sbt.osgi.manager.Dependency._
 import sbt.osgi.manager.OSGiManagerException
 import sbt.osgi.manager.Plugin
-import sbt.osgi.manager.Support.logPrefix
+import sbt.osgi.manager.Support
+import sbt.osgi.manager.Support._
 import sbt.osgi.manager.maven.Maven
 
 // Unfortunately:
@@ -74,44 +75,10 @@ import sbt.osgi.manager.maven.Maven
 //   Your patch will be accepted. You are welcome.
 
 /** Contain resolve action for Maven and P2 repository */
-object Resolve {
-  /** Simple cache that holds per project resolvers + dependencies */
-  private val cache = new mutable.HashMap[CacheKey, Seq[Int]] with mutable.SynchronizedMap[CacheKey, Seq[Int]]
+object Resolve extends Support.Resolve {
   /** Instance of Pack200, specified in JSR 200, is an HTTP compression method by Sun for faster JAR file transfer speeds over the network. */
   val unpacker = Pack200.newUnpacker()
 
-  /** Returns P2 dependencies */
-  def getP2Dependencies(scope: Scope)(implicit arg: Plugin.TaskArgument): Seq[ModuleID] = {
-    arg.log.debug("Collect P2 dependencies for " + scope.project)
-    ((libraryDependencies in scope get arg.extracted.structure.data): Option[Seq[ModuleID]]).
-      getOrElse(Seq[ModuleID]()).filter(_ match {
-        case p2Dependency if p2Dependency.extraAttributes.get(Plugin.dependencyP2._1) == Some(Plugin.dependencyP2._2) =>
-          arg.log.debug(logPrefix(arg.name) + "Add P2 dependency \"%s\"".format(p2Dependency.copy(extraAttributes = Map())))
-          true
-        case otherDependency =>
-          arg.log.debug(logPrefix(arg.name) + "Skip dependency " + otherDependency)
-          false
-      })
-  }
-  /** Returns P2 resolvers as Seq[(id, url)] */
-  def getP2Resolvers(scope: Scope)(implicit arg: Plugin.TaskArgument): Seq[(String, String)] = {
-    arg.log.debug("Collect P2 resolvers for " + scope.project)
-    ((sbt.Keys.resolvers in scope get arg.extracted.structure.data): Option[Seq[Resolver]]).
-      getOrElse(Seq[Resolver]()).filter(_ match {
-        case p2Resolver: URLRepository if p2Resolver.patterns.artifactPatterns == Seq(Plugin.dependencyP2._2) =>
-          val repo = p2Resolver.patterns.ivyPatterns.head // always one element, look at markResolverAsP2
-          arg.log.debug(logPrefix(arg.name) + "Add P2 resolver \"%s\" at %s".format(p2Resolver.name, repo))
-          true
-        case otherResolver =>
-          arg.log.debug(logPrefix(arg.name) + "Skip resolver " + otherResolver)
-          false
-      }).map {
-        case resolver: URLRepository => (resolver.name, resolver.patterns.ivyPatterns.head)
-        case resolver => throw new OSGiManagerException("Unknown resolver " + resolver)
-      }
-  }
-  /** Reset resolution cache */
-  def resetCache() = cache.clear
   /** Resolve the dependency against the standard Maven repository */
   def resolveBasic(maven: Maven)(implicit arg: Plugin.TaskArgument) {
     val groupId = "org.apache.maven"
@@ -183,18 +150,18 @@ object Resolve {
   def resolveP2(projectRef: ProjectRef)(implicit arg: Plugin.TaskArgument): Seq[Project.Setting[_]] = {
     val scope = arg.thisOSGiScope.copy(project = Select(projectRef))
     val name = sbt.Keys.name in arg.thisScope.copy(project = Select(projectRef)) get arg.extracted.structure.data getOrElse projectRef.project
-    arg.log.info(logPrefix(arg.name) + "Resolve P2 dependencies for project [%s]".format(name))
     // get resolvers as Seq[(id, url)]
-    val resolvers = getP2Resolvers(scope)
-    val dependencies = getP2Dependencies(scope)
+    val resolvers = getResolvers(Dependency.P2, scope)
+    val dependencies = getDependencies(Dependency.P2, scope)
     if (resolvers.nonEmpty && dependencies.nonEmpty) {
+      arg.log.info(logPrefix(arg.name) + "Resolve P2 dependencies for project [%s]".format(name))
       val bridge = Maven()
       val modules = resolveP2(dependencies, resolvers, bridge)
-      updateCache(CacheP2Key(projectRef.project), dependencies, resolvers)
+      updateCache(Support.CacheP2Key(projectRef.project), dependencies, resolvers)
       Seq(libraryDependencies in projectRef ++= modules)
     } else {
       arg.log.info(logPrefix(arg.name) + "No P2 dependencies for project [%s] found".format(name))
-      updateCache(CacheP2Key(projectRef.project), Seq(), Seq())
+      updateCache(Support.CacheP2Key(projectRef.project), Seq(), Seq())
       Seq()
     }
   }
@@ -314,7 +281,7 @@ object Resolve {
     val cached = for (id <- build.defined.keys) yield {
       val projectRef = ProjectRef(uri, id)
       val scope = arg.thisOSGiScope.copy(project = Select(projectRef))
-      isCached(CacheP2Key(id), getP2Dependencies(scope), getP2Resolvers(scope))
+      isCached(Support.CacheP2Key(id), getDependencies(Dependency.P2, scope), getResolvers(Dependency.P2, scope))
     }
     if (cached.forall(_ == true)) {
       arg.log.info("Pass P2 resolution: already resolved")
@@ -487,20 +454,4 @@ object Resolve {
       properties.getProperty(PlatformPropertiesUtils.OSGI_WS),
       properties.getProperty(PlatformPropertiesUtils.OSGI_ARCH))
   }
-  /** Check if there are settings which is already cached for the cacheKey */
-  def isCached(cacheKey: CacheKey, dependencies: Seq[ModuleID], resolvers: Seq[(String, String)]): Boolean = cache.get(cacheKey) match {
-    case Some(cached) => cached.sameElements((dependencies.map(_.hashCode) ++ resolvers.map(_.hashCode)).sorted)
-    case None => false
-  }
-  /** Update P2 cache value */
-  def updateCache(cacheKey: CacheKey, dependencies: Seq[ModuleID], resolvers: Seq[(String, String)])(implicit arg: Plugin.TaskArgument) = {
-    arg.log.debug(logPrefix(arg.name) + "Update cache for " + cacheKey)
-    cache(cacheKey) = (dependencies.map(_.hashCode) ++ resolvers.map(_.hashCode)).sorted
-  }
-
-  sealed trait CacheKey {
-    val projectId: String
-  }
-  private case class CacheOBRKey(projectId: String) extends CacheKey
-  private case class CacheP2Key(projectId: String) extends CacheKey
 }

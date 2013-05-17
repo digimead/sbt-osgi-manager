@@ -72,7 +72,7 @@ import sbt.osgi.manager.Plugin
 import sbt.osgi.manager.Support._
 
 class Maven(val plexus: DefaultPlexusContainer, val information: Maven.Information)(implicit arg: Plugin.TaskArgument) {
-  val home = Maven.getMavenHome()
+  val home = Maven.getHome()
   val bin = Maven.getMavenBin(home)
   val boot = Maven.getMavenBoot(home)
   val conf = Maven.getMavenConf(home)
@@ -247,7 +247,7 @@ object Maven {
 
   /** Create new Maven singleton */
   def apply()(implicit arg: Plugin.TaskArgument): Maven = singleton getOrElse {
-    val mavenHome = getMavenHome
+    val mavenHome = getHome
     val world = new ClassWorld()
     val realm = buildClassRealm(mavenHome, Some(world))
     Maven.getMavenVersion(mavenHome, Some(realm)) match {
@@ -262,26 +262,26 @@ object Maven {
     }
   }
   /** Path to Maven home directory */
-  def getMavenHome()(implicit arg: Plugin.TaskArgument) =
+  def getHome()(implicit arg: Plugin.TaskArgument) =
     Model.getSettingsMavenDirectory getOrThrow "osgiMavenDirectory is undefined"
   /** Path to Maven bin directory that usually contains binary utilities */
   def getMavenBin(home: File = null)(implicit arg: Plugin.TaskArgument) =
-    if (home != null) new File(home, "bin") else new File(getMavenHome, "bin")
+    if (home != null) new File(home, "bin") else new File(getHome, "bin")
   /** Path to Maven boot directory that usually contains a classwords jar */
   def getMavenBoot(home: File = null)(implicit arg: Plugin.TaskArgument) =
-    if (home != null) new File(home, "boot") else new File(getMavenHome, "boot")
+    if (home != null) new File(home, "boot") else new File(getHome, "boot")
   /** Path to Maven conf directory that usually contains a global settings.xml */
   def getMavenConf(home: File = null)(implicit arg: Plugin.TaskArgument) =
-    if (home != null) new File(home, "conf") else new File(getMavenHome, "conf")
+    if (home != null) new File(home, "conf") else new File(getHome, "conf")
   /** Path to Maven lib directory that usually contains core jars */
   def getMavenLib(home: File = null)(implicit arg: Plugin.TaskArgument) =
-    if (home != null) new File(home, "lib") else new File(getMavenHome, "lib")
+    if (home != null) new File(home, "lib") else new File(getHome, "lib")
   def getPlexusOverridingComponentsXml()(implicit arg: Plugin.TaskArgument) =
     Model.getSettingsMavenPlexusXML getOrElse getClass.getClassLoader().getResource("plexus.xml")
   /** Prepare Maven home directory */
   def prepareHome()(implicit arg: Plugin.TaskArgument): File = {
     arg.log.debug(logPrefix(arg.name) + "Prepare Maven home directory.")
-    val mavenHome = getMavenHome
+    val mavenHome = getHome
     if (!mavenHome.exists())
       if (!mavenHome.mkdirs())
         throw new OSGiManagerException("Unable to create osgiMavenDirectory: " + mavenHome.getAbsolutePath())

@@ -44,6 +44,9 @@ object Dependency {
     repositories.map { case (id, url) => (id, url.toURI) }
   implicit def version2string(version: Version): String = version.getOriginal
   private val dependencyOrigin = mutable.WeakHashMap[MavenDependency, Origin]()
+  /** Predefined value that represents any organization in SBT ModuleID */
+  val ANY_ORGANIZATION = "*" // SBT is unable to handle "" or null version
+  /** Predefined value that represents any version in SBT ModuleID */
   val ANY_VERSION = new OSGiVersion(0, 0, 0, "qualifier") // SBT is unable to handle "" or null version
 
   /** Convert SBT model id to Maven dependency */
@@ -61,4 +64,18 @@ object Dependency {
   def getOrigin(dependency: MavenDependency) = dependencyOrigin.get(dependency)
 
   case class Origin(val withSources: Boolean, moduleId: ModuleID)
+
+  // Holy shit: http://mcculls.blogspot.ru/2009/06/osgi-vs-jigsaw-jsr-330-vs-299-obr-vs-p2.html
+  sealed trait Type {
+    /** Dependency type name */
+    val name: String
+    /** Dependency key name for SBT ModuleID attribute */
+    val key: String = "e:sbt.osgi.manager.type"
+  }
+  case object OBR extends Type {
+    val name = "OBR"
+  }
+  case object P2 extends Type {
+    val name = "P2"
+  }
 }

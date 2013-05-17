@@ -1,5 +1,5 @@
 /**
- * Copy of bnd/biz.aQute.resolve. Reason: there are no Maven artifacts for bootstrap.
+ * Copy of the code from github.com/bndtools/bnd, reason: not available at Maven central or other repository
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package biz.aQute.resolve.internal;
+package aQute.bnd.deployer.repository;
 
 import java.util.*;
 
-public class MapToDictionaryAdapter extends Dictionary<String, Object> {
+public class MapToDictionaryAdapter extends Dictionary<String,Object> {
 
-	private final Map<String, Object> map;
+	private final Map<String,Object>	map;
 
 	public MapToDictionaryAdapter(Map<String, Object> map) {
 		this.map = map;
@@ -33,7 +33,6 @@ public class MapToDictionaryAdapter extends Dictionary<String, Object> {
 			public boolean hasMoreElements() {
 				return iter.hasNext();
 			}
-
 			public Object nextElement() {
 				return iter.next();
 			}
@@ -57,7 +56,6 @@ public class MapToDictionaryAdapter extends Dictionary<String, Object> {
 			public boolean hasMoreElements() {
 				return iter.hasNext();
 			}
-
 			public String nextElement() {
 				return iter.next();
 			}

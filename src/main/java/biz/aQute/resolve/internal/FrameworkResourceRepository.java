@@ -1,5 +1,5 @@
 /**
- * Copy of bnd/biz.aQute.resolve. Reason: there are no Maven artifacts for bootstrap.
+ * Copy of the code from github.com/bndtools/bnd, reason: not available at Maven central or other repository
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ import org.osgi.service.repository.Repository;
 
 import aQute.bnd.build.model.EE;
 import aQute.bnd.build.model.clauses.ExportedPackage;
+import aQute.bnd.deployer.repository.CapabilityIndex;
 import aQute.bnd.header.Attrs;
 import aQute.bnd.header.Parameters;
 import aQute.bnd.osgi.resource.CapReqBuilder;
@@ -55,9 +56,9 @@ public class FrameworkResourceRepository implements Repository {
         capIndex.addResource(frameworkResource);
 
         // Add EEs
-        capIndex.addCapability(createEECapability(ee));
-        for (EE compat : ee.getCompatible()) {
-            capIndex.addCapability(createEECapability(compat));
+        addEECapability(capIndex, ee);
+        for (EE compatibleEE : ee.getCompatible()) {
+            addEECapability(capIndex, compatibleEE);
         }
 
         // Add system.bundle alias
@@ -105,11 +106,23 @@ public class FrameworkResourceRepository implements Repository {
         capIndex.addCapability(cap);
     }
 
-    private Capability createEECapability(EE ee) {
-        CapReqBuilder builder = new CapReqBuilder(ExecutionEnvironmentNamespace.EXECUTION_ENVIRONMENT_NAMESPACE);
+    private void addEECapability(CapabilityIndex index, EE ee) {
+        CapReqBuilder builder;
+
+        // Correct version according to R5 specification section 3.4.1
+        // BREE J2SE-1.4 ==> osgi.ee=JavaSE, version:Version=1.4
+        // See bug 329, https://github.com/bndtools/bnd/issues/329
+        builder = new CapReqBuilder(ExecutionEnvironmentNamespace.EXECUTION_ENVIRONMENT_NAMESPACE);
+        //builder.addAttribute(ExecutionEnvironmentNamespace.EXECUTION_ENVIRONMENT_NAMESPACE, ee.getCapabilityName());
+        //builder.addAttribute(ExecutionEnvironmentNamespace.CAPABILITY_VERSION_ATTRIBUTE, ee.getCapabilityVersion());
+        builder.setResource(framework);
+        index.addCapability(builder.buildCapability());
+
+        // Compatibility with old version...
+        builder = new CapReqBuilder(ExecutionEnvironmentNamespace.EXECUTION_ENVIRONMENT_NAMESPACE);
         builder.addAttribute(ExecutionEnvironmentNamespace.EXECUTION_ENVIRONMENT_NAMESPACE, ee.getEEName());
         builder.setResource(framework);
-        return builder.buildCapability();
+        index.addCapability(builder.buildCapability());
     }
 
     private void loadJREPackages() {

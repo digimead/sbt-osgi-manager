@@ -25,10 +25,12 @@ import org.apache.felix.resolver.{ Logger => FLogger }
 import org.osgi.framework.ServiceReference
 import org.osgi.service.log.LogService
 
+import sbt.{ Logger => SBTLogger }
+
 /**
  * Log service implementation for biz.aQute.resolve.ResolveProcess
  */
-class Logger(streams: sbt.Keys.TaskStreams) extends org.apache.felix.resolver.Logger(FLogger.LOG_DEBUG) with LogService {
+class Logger(parent: SBTLogger) extends org.apache.felix.resolver.Logger(FLogger.LOG_DEBUG) with LogService {
   /**
    * Logs a message associated with a specific {@code ServiceReference}
    * object.
@@ -78,11 +80,11 @@ class Logger(streams: sbt.Keys.TaskStreams) extends org.apache.felix.resolver.Lo
     if (sr != null) printWriter.println("ServiceReference: " + sr)
     if (throwable != null) throwable.printStackTrace(printWriter)
     level match {
-      case FLogger.LOG_DEBUG => streams.log.debug(writer.toString())
-      case FLogger.LOG_ERROR => streams.log.error(writer.toString())
-      case FLogger.LOG_INFO => streams.log.info(writer.toString())
-      case FLogger.LOG_WARNING => streams.log.warn(writer.toString())
-      case _ => streams.log.error("UNKNOWN LOG LEVEL: " + writer.toString())
+      case FLogger.LOG_DEBUG => parent.debug(writer.toString())
+      case FLogger.LOG_ERROR => parent.error(writer.toString())
+      case FLogger.LOG_INFO => parent.info(writer.toString())
+      case FLogger.LOG_WARNING => parent.warn(writer.toString())
+      case _ => parent.error("UNKNOWN LOG LEVEL: " + writer.toString())
     }
   }
 }
