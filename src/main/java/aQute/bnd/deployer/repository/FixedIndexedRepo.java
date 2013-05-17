@@ -20,6 +20,8 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
+import aQute.bnd.deployer.repository.api.IRepositoryContentProvider;
+
 /**
  * A simple read-only OBR-based repository that uses a list of index locations
  * and a basic local cache.
@@ -44,16 +46,28 @@ import java.util.*;
  */
 public class FixedIndexedRepo extends AbstractIndexedRepo {
 
-	private static final String	EMPTY_LOCATION	= "";
-	private static final String DEFAULT_CACHE_DIR = ".bnd" + File.separator + "cache";
+	private static final String EMPTY_LOCATION = "";
+	private static final String DEFAULT_CACHE_DIR = ".bnd" + File.separator
+			+ "cache";
 
-	public static final String	PROP_LOCATIONS	= "locations";
-	public static final String	PROP_CACHE		= "cache";
+	public static final String PROP_LOCATIONS = "locations";
+	public static final String PROP_CACHE = "cache";
 
-	private String				locations;
-	protected File				cacheDir = new File(System.getProperty("user.home") + File.separator + DEFAULT_CACHE_DIR);
+	private String locations;
+	protected File cacheDir = new File(System.getProperty("user.home")
+			+ File.separator + DEFAULT_CACHE_DIR);
 
-	public synchronized void setProperties(Map<String,String> map) {
+	/** Get all content providers */
+	public synchronized java.util.Collection<IRepositoryContentProvider> getContentProviders() {
+		return allContentProviders.values();
+	}
+
+	/** Get all generating providers */
+	public synchronized java.util.Collection<IRepositoryContentProvider> getGeneratingProviders() {
+		return generatingProviders;
+	}
+
+	public synchronized void setProperties(Map<String, String> map) {
 		super.setProperties(map);
 
 		locations = map.get(PROP_LOCATIONS);
@@ -62,11 +76,13 @@ public class FixedIndexedRepo extends AbstractIndexedRepo {
 			cacheDir = new File(cachePath);
 			if (!cacheDir.isDirectory())
 				try {
-					throw new IllegalArgumentException(String.format(
-							"Cache path '%s' does not exist, or is not a directory.", cacheDir.getCanonicalPath()));
-				}
-				catch (IOException e) {
-					throw new IllegalArgumentException("Could not get cacheDir canonical path", e);
+					throw new IllegalArgumentException(
+							String.format(
+									"Cache path '%s' does not exist, or is not a directory.",
+									cacheDir.getCanonicalPath()));
+				} catch (IOException e) {
+					throw new IllegalArgumentException(
+							"Could not get cacheDir canonical path", e);
 				}
 		}
 	}
@@ -79,9 +95,9 @@ public class FixedIndexedRepo extends AbstractIndexedRepo {
 				result = parseLocations(locations);
 			else
 				result = Collections.emptyList();
-		}
-		catch (MalformedURLException e) {
-			throw new IllegalArgumentException(String.format("Invalid location, unable to parse as URL list: %s",
+		} catch (MalformedURLException e) {
+			throw new IllegalArgumentException(String.format(
+					"Invalid location, unable to parse as URL list: %s",
 					locations), e);
 		}
 		return result;
@@ -93,7 +109,8 @@ public class FixedIndexedRepo extends AbstractIndexedRepo {
 
 	public void setCacheDirectory(File cacheDir) {
 		if (cacheDir == null)
-			throw new IllegalArgumentException("null cache directory not permitted");
+			throw new IllegalArgumentException(
+					"null cache directory not permitted");
 		this.cacheDir = cacheDir;
 	}
 

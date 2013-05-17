@@ -18,7 +18,7 @@
 
 package sbt.osgi.manager.bnd
 
-import scala.collection.JavaConversions.seqAsJavaList
+import scala.collection.JavaConversions._
 import scala.ref.WeakReference
 
 import aQute.bnd.build.Workspace
@@ -41,7 +41,7 @@ import sbt.osgi.manager.OSGiManagerException
 import sbt.osgi.manager.Plugin
 import sbt.osgi.manager.Support._
 
-class Bnd(cnf: File) {
+class Bnd(home: File) {
   def createModel()(implicit arg: Plugin.TaskArgument): BndEditModel = {
     val model = new BndEditModel()
 
@@ -90,8 +90,11 @@ class Bnd(cnf: File) {
     model
   }
   /** Create Bnd workspace */
-  def createWorkspace(home: File, plugins: Seq[Workspace => BndPlugin]): Workspace = { // getWorkspace
+  def createWorkspace(plugins: Seq[Workspace => BndPlugin]): Workspace = { // getWorkspace
     val workspace = new Workspace(home)
+    val project = workspace.getProject(Bnd.defaultProjectName)
+    if (project == null)
+      throw new OSGiManagerException("Unable to create Bnd project")
     // add plugins
     plugins.foreach(f => workspace.addBasicPlugin(f(workspace)))
     // Initialize projects in synchronized block
@@ -102,6 +105,10 @@ class Bnd(cnf: File) {
 
 object Bnd {
   @volatile private var cnfProjects = Seq[WeakReference[Project]]()
+  /** Name of the default Bnd project */
+  val defaultProjectName = "default"
+  /** Name of the default Bnd properties file */
+  val defaultPropertiesFileName = aQute.bnd.build.Project.BNDFILE
   lazy val settings = inConfig(OSGiConf)(Seq[sbt.Project.Setting[_]](
     osgiBndDirectory <<= (osgiDirectory) { _ / "bnd" },
     osgiBndBuildPath := List[String](),
@@ -116,7 +123,7 @@ object Bnd {
     osgiBndBundleUpdateLocation := "",
     osgiBndBundleSymbolicName := "",
     osgiBndBundleSymbolicNameSingleton := false,
-    osgiBndBundleName <<= name in This,
+    osgiBndBundleName <<= sbt.Keys.name in This,
     osgiBndBundleLicense := "",
     osgiBndBundleVendor <<= organizationName in This,
     osgiBndBundleVersion <<= version in This,
@@ -128,17 +135,30 @@ object Bnd {
     osgiBndPluginPath := List[String](),
     osgiBndPrivatePackage := List[String](),
     osgiBndRunBundles := List[String](),
-    osgiBndRunEE := "OSGi/Minimum-1.0",
+    osgiBndRunEE := "JavaSE-1.7",
     osgiBndRunFramework := "",
-    osgiBndRunFW := "org.apache.felix.framework",
+    osgiBndRunFW := "org.eclipse.osgi", // "org.apache.felix.framework"
     osgiBndRunProperties := "",
-    // osgiBndRunRepos := List[String](), - SKIP
+    // osgiBndRunRepos := List[String](), SKIP
     osgiBndRunRequires := "",
     osgiBndRunVM := "",
     osgiBndSub := List[String](),
     osgiBndServiceComponent := "",
     osgiBndSources := false,
     osgiBndTestCases := List[String]()))
+  /*
+ *  For
+example to resolve for Win32/x86 set the following in your bndrun:
+
+    -runsystemcapabilities: osgi.native; osgi.native.osname=Win32;
+osgi.native.processor=x86
+
+Alternatively if you want to resolve for the same platform that you
+are currently running Bndtools on, use the ${native_capability} macro:
+
+    -runsystemcapabilities: ${native_capability}
+ *
+ */
 
   /** Get an exists or create a new instance for the cnf project */
   def get(cnf: File = null)(implicit arg: Plugin.TaskArgument): Bnd = {
@@ -164,10 +184,19 @@ object Bnd {
   /** Path to Bnd build.bnd file */
   def getBndBuildFile(buildDirectory: File = null)(implicit arg: Plugin.TaskArgument) =
     if (buildDirectory != null) new File(buildDirectory, Workspace.BUILDFILE) else new File(getBndBuild(), Workspace.BUILDFILE)
+  /** Path to Bnd directory with default project */
+  def getBndDefaultProjectLocation(home: File = null)(implicit arg: Plugin.TaskArgument) =
+    if (home != null) new File(home, defaultProjectName) else new File(getHome(), defaultProjectName)
+  def getBndDefaultPropertiesFile(projectLocation: File = null)(implicit arg: Plugin.TaskArgument) =
+    if (projectLocation != null)
+      new File(projectLocation, defaultPropertiesFileName)
+    else
+      new File(getBndDefaultProjectLocation(), defaultPropertiesFileName)
   /** Prepare Bnd home(workspace) directory */
   def prepareHome()(implicit arg: Plugin.TaskArgument): File = {
     arg.log.debug(logPrefix(arg.name) + "Prepare Bnd home directory.")
     val bndHome = getHome
+    //IO.delete(bndHome) I don't want to delete everything
     if (!bndHome.exists())
       if (!bndHome.mkdirs())
         throw new OSGiManagerException("Unable to create osgiBndDirectory: " + bndHome.getAbsolutePath())
@@ -184,9 +213,20 @@ object Bnd {
       if (!bndCache.mkdirs())
         throw new OSGiManagerException("Unable to create osgiBndDirectory / bnd / cache: " + bndCache.getAbsolutePath())
     val bndBuildFile = getBndBuildFile(bndBuild)
+    bndBuildFile.delete // only this
     if (!bndBuildFile.exists())
       if (!bndBuildFile.createNewFile())
         throw new OSGiManagerException("Unable to create osgiBndDirectory / bnd / build.bnd: " + bndBuildFile.getAbsolutePath())
+    val bndDefaultProjectLocation = getBndDefaultProjectLocation(bndHome)
+    if (!bndDefaultProjectLocation.exists())
+      if (!bndDefaultProjectLocation.mkdirs())
+        throw new OSGiManagerException("Unable to create osgiBndDirectory / bnd / default: " + bndDefaultProjectLocation.getAbsolutePath())
+    val bndDefaultPropertiesFile = getBndDefaultPropertiesFile(bndDefaultProjectLocation)
+    bndDefaultPropertiesFile.delete // and that
+    if (!bndDefaultPropertiesFile.exists())
+      if (!bndDefaultPropertiesFile.createNewFile())
+        throw new OSGiManagerException("Unable to create osgiBndDirectory / bnd / default / bnd.bnd: " +
+          bndDefaultPropertiesFile.getAbsolutePath())
     bndHome
   }
   /** Show the project bundle properties */
@@ -228,7 +268,7 @@ object Bnd {
     show("SUB", Option(model.getSubBndFiles()).map(_.mkString(",")).getOrElse(""))
     show("SOURCES", Option(model.isIncludeSources()).map(Boolean.box).getOrElse(""))
     show("TESTCASES", Option(model.getTestSuites()).map(_.mkString(",")).getOrElse(""))*/
-    Thread.sleep(25)  // synchronized and sleep are prevent from mix output with multiple projects
+    Thread.sleep(25) // synchronized and sleep are prevent from mix output with multiple projects
   }
   /** Display the single property */
   protected def show(parameter: String, value: AnyRef, onEmpty: String)(implicit arg: Plugin.TaskArgument): Unit = show(parameter, value, Some("", onEmpty))(arg)

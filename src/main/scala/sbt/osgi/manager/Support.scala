@@ -42,29 +42,27 @@ object Support {
     envVars
   }
   /** Returns dependencies */
-  def getDependencies(dependencyType: Dependency.Type, scope: Scope)(implicit arg: Plugin.TaskArgument): Seq[ModuleID] = {
-    arg.log.debug("Collect dependencies for " + scope.project)
+  def getDependencies(dependencyType: Dependency.Type, scope: Scope)(implicit arg: Plugin.TaskArgument, projectRef: ProjectRef): Seq[ModuleID] = {
     ((libraryDependencies in scope get arg.extracted.structure.data): Option[Seq[ModuleID]]).
       getOrElse(Seq[ModuleID]()).filter(_ match {
         case dependency if dependency.extraAttributes.get(dependencyType.key) == Some(dependencyType.name) =>
           arg.log.debug(logPrefix(arg.name) + "Add %s dependency \"%s\"".format(dependencyType.name, dependency.copy(extraAttributes = Map())))
           true
         case otherDependency =>
-          arg.log.debug(logPrefix(arg.name) + "Skip dependency " + otherDependency)
+          //arg.log.debug(logPrefix(name) + "Skip dependency " + otherDependency)
           false
       })
   }
   /** Returns resolvers as Seq[(id, url)] */
-  def getResolvers(dependencyType: Dependency.Type, scope: Scope)(implicit arg: Plugin.TaskArgument): Seq[(String, String)] = {
-    arg.log.debug("Collect resolvers for " + scope.project)
+  def getResolvers(dependencyType: Dependency.Type, scope: Scope)(implicit arg: Plugin.TaskArgument, projectRef: ProjectRef): Seq[(String, String)] = {
     ((sbt.Keys.resolvers in scope get arg.extracted.structure.data): Option[Seq[Resolver]]).
       getOrElse(Seq[Resolver]()).filter(_ match {
         case resolver: URLRepository if resolver.patterns.artifactPatterns == Seq(dependencyType.name) =>
           val repo = resolver.patterns.ivyPatterns.head // always one element, look at markResolverAsP2
-          arg.log.debug(logPrefix(arg.name) + "Add %s resolver \"%s\" at %s".format(dependencyType.name, resolver.name, repo))
+          arg.log.debug(logPrefix(name) + "Add %s resolver \"%s\" at %s".format(dependencyType.name, resolver.name, repo))
           true
         case otherResolver =>
-          arg.log.debug(logPrefix(arg.name) + "Skip resolver " + otherResolver)
+          //arg.log.debug(logPrefix(name) + "Skip resolver " + otherResolver)
           false
       }).map {
         case resolver: URLRepository => (resolver.name, resolver.patterns.ivyPatterns.head)
@@ -101,6 +99,9 @@ object Support {
       thread.setContextClassLoader(oldContext)
     }
   }
+  /** Get projectRef name */
+  protected def name()(implicit arg: Plugin.TaskArgument, projectRef: ProjectRef) =
+    sbt.Keys.name in arg.thisScope.copy(project = Select(projectRef)) get arg.extracted.structure.data getOrElse projectRef.project
 
   class RichOption[T](option: Option[T]) {
     def getOrThrow(onError: String) = option getOrElse { throw new NoSuchElementException(onError) }
@@ -120,6 +121,8 @@ object Support {
       arg.log.debug(logPrefix(arg.name) + "Update cache for " + cacheKey)
       cache(cacheKey) = (dependencies.map(_.hashCode) ++ resolvers.map(_.hashCode)).sorted
     }
+    /** Get projectRef name */
+    protected def name()(implicit arg: Plugin.TaskArgument, projectRef: ProjectRef) = Support.name()
   }
   sealed trait CacheKey {
     val projectId: String

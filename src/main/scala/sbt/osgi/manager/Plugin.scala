@@ -122,14 +122,20 @@ object Plugin {
     })
     bndPrepareTaskResult match {
       case Some(state) =>
-        val dependencySettingsP2 = maven.action.Resolve.resolveP2Command()
-        val dependencySettingsOBR = bnd.action.Resolve.resolveOBRCommand()
-        val dependencySettings = dependencySettingsP2 ++ dependencySettingsOBR
+        // resolve P2
+        val dependencyP2 = maven.action.Resolve.resolveP2Command()
+        val dependencySettingsP2 = for (projectRef <- dependencyP2.keys) yield if (dependencyP2(projectRef).nonEmpty)
+          Seq[Project.Setting[_]](libraryDependencies in projectRef ++= dependencyP2(projectRef))
+        else
+          Seq[Project.Setting[_]]()
+        // resolve OBR
+        val dependencyOBR = bnd.action.Resolve.resolveOBRCommand(dependencyP2)
+        val dependencySettings = dependencySettingsP2.flatten //   ++ dependencySettingsOBR
         if (dependencySettings.nonEmpty) {
           arg.log.info(logPrefix(arg.name) + "Update library dependencies")
           val newStructure = {
             import arg.extracted._
-            val append = Load.transformSettings(Load.projectScope(currentRef), currentRef.build, rootProject, dependencySettings)
+            val append = Load.transformSettings(Load.projectScope(currentRef), currentRef.build, rootProject, dependencySettings.toSeq)
             Load.reapply(session.original ++ append, structure)
           }
           Project.setProject(arg.extracted.session, newStructure, state)

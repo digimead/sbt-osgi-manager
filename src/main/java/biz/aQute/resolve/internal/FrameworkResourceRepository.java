@@ -113,8 +113,8 @@ public class FrameworkResourceRepository implements Repository {
         // BREE J2SE-1.4 ==> osgi.ee=JavaSE, version:Version=1.4
         // See bug 329, https://github.com/bndtools/bnd/issues/329
         builder = new CapReqBuilder(ExecutionEnvironmentNamespace.EXECUTION_ENVIRONMENT_NAMESPACE);
-        //builder.addAttribute(ExecutionEnvironmentNamespace.EXECUTION_ENVIRONMENT_NAMESPACE, ee.getCapabilityName());
-        //builder.addAttribute(ExecutionEnvironmentNamespace.CAPABILITY_VERSION_ATTRIBUTE, ee.getCapabilityVersion());
+        builder.addAttribute(ExecutionEnvironmentNamespace.EXECUTION_ENVIRONMENT_NAMESPACE, ee.getCapabilityName());
+        builder.addAttribute(ExecutionEnvironmentNamespace.CAPABILITY_VERSION_ATTRIBUTE, ee.getCapabilityVersion());
         builder.setResource(framework);
         index.addCapability(builder.buildCapability());
 

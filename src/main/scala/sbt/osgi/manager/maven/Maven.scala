@@ -282,6 +282,7 @@ object Maven {
   def prepareHome()(implicit arg: Plugin.TaskArgument): File = {
     arg.log.debug(logPrefix(arg.name) + "Prepare Maven home directory.")
     val mavenHome = getHome
+    //IO.delete(mavenHome)
     if (!mavenHome.exists())
       if (!mavenHome.mkdirs())
         throw new OSGiManagerException("Unable to create osgiMavenDirectory: " + mavenHome.getAbsolutePath())

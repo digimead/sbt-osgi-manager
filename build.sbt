@@ -12,7 +12,7 @@ libraryDependencies ++= {
   val mavenVersion = "3.0.5"
   val mavenWagonVersion = "2.4"
   Seq(
-    "biz.aQute" % "bndlib" % "2.0.0.20130123-133441",
+    "biz.aQute" % "bndlib" % "2.1.0.20130426-122213" from "https://raw.github.com/bndtools/releases/master/bnd/2.1.0.REL/biz.aQute.bndlib/biz.aQute.bndlib-2.1.0.jar",
     "org.apache.felix" % "org.apache.felix.resolver" % "1.0.0",
     "org.apache.maven" % "maven-aether-provider" % mavenVersion,
     "org.apache.maven" % "maven-artifact" % mavenVersion,
