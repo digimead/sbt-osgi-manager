@@ -232,33 +232,33 @@ object Resolve extends Support.Resolve {
 
     // FYI:
     //   single P2ResolutionResult.Entry may have any number of InstallableUnits that point to the same artifact
-    //   single InstallableUnit may be bound to multiple originModuleIDs. Some of ModuleIDs may require source code, some not
+    //   single InstallableUnit may be bound to multiple originModuleIds. Some of ModuleIDs may require source code, some not
     artifacts.map { entry =>
-      val originModuleIDs = rePerDependencyMap.get(entry).map(dependencies => dependencies.flatMap(getOrigin)) getOrElse Seq()
+      val originModuleIds = rePerDependencyMap.get(entry).map(dependencies => dependencies.flatMap(getOrigin)) getOrElse Seq()
       entry.getInstallableUnits().map(_ match {
         case riu: IInstallableUnit =>
-          if (originModuleIDs.nonEmpty) {
-            if (originModuleIDs.exists(_.withSources)) {
+          if (originModuleIds.nonEmpty) {
+            if (originModuleIds.exists(_.withSources)) {
               val sources = actualRepositories.map(aquireP2SourceCodeArtifacts(entry, riu, _)).flatten.distinct
               if (sources.isEmpty) {
                 arg.log.info(logPrefix(name) + "Collect P2 IU %s".format(riu))
                 arg.log.warn(logPrefix(name) + "Unable to find source code for " + riu)
-                arg.log.debug("%s -> [%s]".format(riu, originModuleIDs.map(_.moduleId.copy(extraAttributes = Map())).mkString(",")))
+                arg.log.debug("%s -> [%s]".format(riu, originModuleIds.map(_.moduleId.copy(extraAttributes = Map())).mkString(",")))
                 Some(riu.getId() % entry.getId() % riu.getVersion().getOriginal()
                   from entry.getLocation.getAbsoluteFile.toURI.toURL.toString)
               } else {
                 arg.log.info(logPrefix(name) + "Collect P2 IU %s with source code".format(riu))
-                arg.log.debug("%s -> [%s]".format(riu, originModuleIDs.map(_.moduleId.copy(extraAttributes = Map())).mkString(",")))
-                val moduleID = riu.getId() % entry.getId() % riu.getVersion().getOriginal() from
+                arg.log.debug("%s -> [%s]".format(riu, originModuleIds.map(_.moduleId.copy(extraAttributes = Map())).mkString(",")))
+                val moduleId = riu.getId() % entry.getId() % riu.getVersion().getOriginal() from
                   entry.getLocation.getAbsoluteFile.toURI.toURL.toString
                 val artifactsWithSourceCode = sources.map(file =>
-                  sbt.Artifact.classified(moduleID.name, sbt.Artifact.SourceClassifier).copy(url = Some(file.toURI.toURL())))
-                val moduleIDWithSourceCode = moduleID.copy(explicitArtifacts = moduleID.explicitArtifacts ++ artifactsWithSourceCode)
-                Some(moduleIDWithSourceCode)
+                  sbt.Artifact.classified(moduleId.name, sbt.Artifact.SourceClassifier).copy(url = Some(file.toURI.toURL())))
+                val moduleIdWithSourceCode = moduleId.copy(explicitArtifacts = moduleId.explicitArtifacts ++ artifactsWithSourceCode)
+                Some(moduleIdWithSourceCode)
               }
             } else {
               arg.log.info(logPrefix(name) + "Collect P2 IU %s".format(riu))
-              arg.log.debug("%s -> [%s]".format(riu, originModuleIDs.map(_.moduleId.copy(extraAttributes = Map())).mkString(",")))
+              arg.log.debug("%s -> [%s]".format(riu, originModuleIds.map(_.moduleId.copy(extraAttributes = Map())).mkString(",")))
               Some(riu.getId() % entry.getId() % riu.getVersion().getOriginal()
                 from entry.getLocation.getAbsoluteFile.toURI.toURL.toString)
             }

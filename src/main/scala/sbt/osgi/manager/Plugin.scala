@@ -20,6 +20,8 @@ package sbt.osgi.manager
 
 import java.util.jar.JarFile
 
+import scala.collection.immutable
+
 import aQute.bnd.osgi.Analyzer
 import aQute.bnd.osgi.Jar
 import aQute.bnd.osgi.{ Constants => BndConstant }
@@ -71,9 +73,9 @@ object Plugin {
   // We will support him in his beginning.
   // Let's eat a shit that we have.
   /** Mark OSGi dependency as OBR */
-  def markDependencyAsOBR(moduleID: ModuleID): ModuleID = moduleID.extra((Dependency.OBR.key, Dependency.OBR.name))
+  def markDependencyAsOBR(moduleId: ModuleID): ModuleID = moduleId.extra((Dependency.OBR.key, Dependency.OBR.name))
   /** Mark OSGi dependency as P2 */
-  def markDependencyAsP2(moduleID: ModuleID): ModuleID = moduleID.extra((Dependency.P2.key, Dependency.P2.name))
+  def markDependencyAsP2(moduleId: ModuleID): ModuleID = moduleId.extra((Dependency.P2.key, Dependency.P2.name))
   /** Mark OSGi resolver as P2 */
   def markResolverAsOBR(resolver: Resolver): Resolver = resolver match {
     case mavenResolver: MavenRepository =>
@@ -129,8 +131,13 @@ object Plugin {
         else
           Seq[Project.Setting[_]]()
         // resolve OBR
-        val dependencyOBR = bnd.action.Resolve.resolveOBRCommand(dependencyP2)
-        val dependencySettings = dependencySettingsP2.flatten //   ++ dependencySettingsOBR
+        val resolvedDependencies = collectResolvedDependencies(dependencyP2)
+        val dependencyOBR = bnd.action.Resolve.resolveOBRCommand(resolvedDependencies)
+        val dependencySettingsOBR = for (projectRef <- dependencyOBR.keys) yield if (dependencyOBR(projectRef).nonEmpty)
+          Seq[Project.Setting[_]](libraryDependencies in projectRef ++= dependencyOBR(projectRef))
+        else
+          Seq[Project.Setting[_]]()
+        val dependencySettings = dependencySettingsP2.flatten ++ dependencySettingsOBR.flatten
         if (dependencySettings.nonEmpty) {
           arg.log.info(logPrefix(arg.name) + "Update library dependencies")
           val newStructure = {
@@ -179,6 +186,35 @@ object Plugin {
       implicit val arg = TaskArgument(state, Some(streams))
       maven.Maven.prepareHome()
     }
+  /** Collects resolved artifacts per project */
+  protected def collectResolvedDependencies(resolvedDependencies: immutable.HashMap[ProjectRef, Seq[ModuleID]])(implicit arg: Plugin.TaskArgument): immutable.HashMap[ProjectRef, Seq[File]] = {
+    val uri = arg.extracted.currentRef.build
+    val build = arg.extracted.structure.units(uri)
+    val result = for (id <- build.defined.keys) yield {
+      implicit val projectRef = ProjectRef(uri, id)
+      val scope = arg.thisScope.copy(project = Select(projectRef))
+      val taskExternalDependencyClasspath = externalDependencyClasspath in scope in Compile
+      arg.log.debug(logPrefix(Support.name) + "Collect external-dependency-classpath")
+      val projectDependencies = Project.runTask(taskExternalDependencyClasspath, arg.state) match {
+        case None =>
+          None // Key wasn't defined.
+        case Some((state, Inc(inc))) =>
+          Incomplete.show(inc.tpe); None // Error detail, inc is of type Incomplete
+        case Some((state, Value(classpath))) =>
+          Some(classpath)
+      }
+      val additionalDependencies = resolvedDependencies.get(projectRef) getOrElse Seq() map { moduleId =>
+        moduleId.explicitArtifacts.flatMap { artifact =>
+          if (artifact.classifier == None || artifact.classifier == Some(""))
+            artifact.url.flatMap(url => if (url.getProtocol() == "file") Some(new File(url.toURI())) else None)
+          else
+            None
+        }
+      }
+      (projectRef, ((projectDependencies.map(_.map(_.data)) getOrElse Seq()) ++ additionalDependencies.flatten).distinct)
+    }
+    immutable.HashMap(result.toSeq: _*)
+  }
 
   /** Consolidated argument with all required information */
   case class TaskArgument(

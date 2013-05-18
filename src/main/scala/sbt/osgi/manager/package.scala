@@ -46,8 +46,8 @@ package object manager {
   lazy val OSGiKey = Keys
   lazy val OSGiConf = Keys.OSGiConf
 
-  implicit def moduleID2Dependency(dependencies: Seq[ModuleID]): Seq[Dependency] =
-    Dependency.moduleID2Dependency(dependencies)
+  implicit def moduleId2Dependency(dependencies: Seq[ModuleID]): Seq[Dependency] =
+    Dependency.moduleId2Dependency(dependencies)
   implicit def tuplesWithString2repositories(repositories: Seq[(String, String)]): Seq[(String, URI)] =
     Dependency.tuplesWithString2repositories(repositories)
   implicit def tuplesWithURL2repositories(repositories: Seq[(String, URL)]): Seq[(String, URI)] =
@@ -55,16 +55,16 @@ package object manager {
   implicit def version2string(version: Version): String =
     Dependency.version2string(version)
 
-  def typeOBR(moduleID: ModuleID): ModuleID = Plugin.markDependencyAsOBR(moduleID)
-  def typeP2(moduleID: ModuleID): ModuleID = Plugin.markDependencyAsP2(moduleID)
+  def typeOBR(moduleId: ModuleID): ModuleID = Plugin.markDependencyAsOBR(moduleId)
+  def typeP2(moduleId: ModuleID): ModuleID = Plugin.markDependencyAsP2(moduleId)
 
   def typeOBR(resolver: Resolver): Resolver = Plugin.markResolverAsOBR(resolver)
   def typeP2(resolver: Resolver): Resolver = Plugin.markResolverAsP2(resolver)
 
   def typeP2(module1: ModuleID, module2: ModuleID, modulen: ModuleID*): Seq[ModuleID] =
     (module1 +: module2 +: modulen).map(typeP2)
-  def typeP2(moduleID: String): ModuleID =
-    typeP2(OSGi.ECLIPSE_PLUGIN % moduleID % OSGi.ANY_VERSION)
+  def typeP2(moduleId: String): ModuleID =
+    typeP2(OSGi.ECLIPSE_PLUGIN % moduleId % OSGi.ANY_VERSION)
   def typeP2WithSources(module1: String, module2: String, modulen: String*): Seq[ModuleID] =
     (module1 +: module2 +: modulen).map(name => typeP2((OSGi.ECLIPSE_PLUGIN % name % OSGi.ANY_VERSION).withSources))
   def typeP2(module1: String, module2: String, modulen: String*): Seq[ModuleID] =

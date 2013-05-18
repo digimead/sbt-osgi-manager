@@ -36,7 +36,7 @@ import sbt.ModuleID
  * It is also contains plugin weak hash map of Maven.Dependency -> SBT.ModuleID
  */
 object Dependency {
-  implicit def moduleID2Dependency(dependencies: Seq[ModuleID]): Seq[MavenDependency] =
+  implicit def moduleId2Dependency(dependencies: Seq[ModuleID]): Seq[MavenDependency] =
     dependencies.map(convertDependency)
   implicit def tuplesWithString2repositories(repositories: Seq[(String, String)]): Seq[(String, URI)] =
     repositories.map { case (id, url) => (id, new URL(url).toURI) }

@@ -139,8 +139,6 @@ object Bnd {
     osgiBndRunFramework := "",
     osgiBndRunFW := "org.eclipse.osgi", // "org.apache.felix.framework"
     osgiBndRunProperties := "",
-    // osgiBndRunRepos := List[String](), SKIP
-    osgiBndRunRequires := "",
     osgiBndRunVM := "",
     osgiBndSub := List[String](),
     osgiBndServiceComponent := "",
@@ -262,8 +260,6 @@ are currently running Bndtools on, use the ${native_capability} macro:
     show("RUNFRAMEWORK", Model.getPropertyRunFramework getOrElse "")
     show("RUNFW", Model.getPropertyRunFW getOrElse "", "UNKNOWN", scala.Console.RED)
     /*show("RUNPROPERTIES", Option(model.getRunProperties()).map(_.mkString(",")).getOrElse(""))
-    show("RUNREPOS", Option(model.getRunRepos()).map(_.mkString(",")).getOrElse(""))
-    show("RUNREQUIRES", Option(model.getRunRequires()).map(_.mkString(",")).getOrElse(""))
     show("RUNVM", model.getRunVMArgs())
     show("SUB", Option(model.getSubBndFiles()).map(_.mkString(",")).getOrElse(""))
     show("SOURCES", Option(model.isIncludeSources()).map(Boolean.box).getOrElse(""))

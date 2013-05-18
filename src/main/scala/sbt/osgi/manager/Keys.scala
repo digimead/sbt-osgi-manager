@@ -97,10 +97,8 @@ object Keys {
   lazy val osgiBndRunProperties = SettingKey[String]("bnd-runproperties",
     "Bnd RUNPROPERTIES parameter. Properties that are set as system properties before the framework is started.")
   // DANGER: if RUNREPOS is List() than BndrunResolveContext drop all known repos, if null - accept all known repos. Funny.
-  //lazy val osgiBndRunRepos = SettingKey[List[String]]("bnd-runrepos",
-  //  "Bnd RUNREPOS parameter. It provides a filter for active Bnd repositories.")
-  lazy val osgiBndRunRequires = SettingKey[String]("bnd-runrequires",
-    "Bnd RUNREQUIRES parameter. ???")
+  // SKIP RUNREPOS parameter. It provides a filter for active Bnd repositories.
+  // SKIP RUNREQUIRES parameter. It provides a list of requirements for resolution process.
   lazy val osgiBndRunVM = SettingKey[String]("bnd-runvm",
     "Bnd RUNVM parameter. Additional arguments for the VM invokation. Keys that start with a - are added as options, otherwise they are treated as -D properties for the VM.")
   lazy val osgiBndSub = SettingKey[List[String]]("bnd-sub",

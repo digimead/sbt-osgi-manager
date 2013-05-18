@@ -71,6 +71,9 @@ object Support {
   }
   /** Default sbt-osgi-manager log prefix */
   def logPrefix(name: String) = "[OSGi manager:%s] ".format(name)
+  /** Get projectRef name */
+  def name()(implicit arg: Plugin.TaskArgument, projectRef: ProjectRef) =
+    sbt.Keys.name in arg.thisScope.copy(project = Select(projectRef)) get arg.extracted.structure.data getOrElse projectRef.project
   /**
    * Executes the function f within the ContextClassLoader of 'classOf'.
    * After execution the original ClassLoader will be restored.
@@ -99,9 +102,6 @@ object Support {
       thread.setContextClassLoader(oldContext)
     }
   }
-  /** Get projectRef name */
-  protected def name()(implicit arg: Plugin.TaskArgument, projectRef: ProjectRef) =
-    sbt.Keys.name in arg.thisScope.copy(project = Select(projectRef)) get arg.extracted.structure.data getOrElse projectRef.project
 
   class RichOption[T](option: Option[T]) {
     def getOrThrow(onError: String) = option getOrElse { throw new NoSuchElementException(onError) }
