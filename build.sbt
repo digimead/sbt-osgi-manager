@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2012-2013 Alexey Aksenov ezh@ezh.msk.ru
+// Copyright (c) 2013 Alexey Aksenov ezh@ezh.msk.ru
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,6 +14,8 @@
 // limitations under the License.
 
 // PRODUCTION CONFIGURATION
+
+ScriptedPlugin.scriptedSettings
 
 name := "sbt-osgi-manager"
 
@@ -48,5 +50,7 @@ libraryDependencies ++= {
     "org.sonatype.aether" % "aether-connector-wagon" % "1.13.1"
   )
 }
+
+scriptedBufferLog := false
 
 //logLevel := Level.Debug

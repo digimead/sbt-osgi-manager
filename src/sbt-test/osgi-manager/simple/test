@@ -1,1 +1,9 @@
+> osgi-show
+
+-$ exists target/deps/
+-$ exists target/osgi/
 > osgi-resolve
+> dependency-fetch
+$ exists target/osgi/
+$ exists target/deps/org.eclipse.ui-3.103.0.v20120705-114351.jar
+> clean
