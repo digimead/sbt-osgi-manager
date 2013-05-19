@@ -1,16 +1,27 @@
 sbt-osgi-manager
 ================
+[![Build Status](https://travis-ci.org/digimead/sbt-osgi-manager.png)](https://travis-ci.org/digimead/sbt-osgi-manager)
 
 OSGi development bridge based on Bnd and Tycho.
 
 TODO demo
 
-TODO brief
+What is it? You may use OSGi infrastructure via [SBT](https://github.com/sbt/sbt "Simple Build Tool") project and your favorite IDE.
+
+It is provide an ability:
+
+* resolve OSGi dependencies and dependencies source code via Eclipse P2 update site / with Tycho API
+* resolve OSGi dependencies via OSGi R5 repositories / with Bnd API, only local repository tested, but remote maybe worked too
+* generate bundle manifest with Bnd API
+
+Resolved bundles added to project 'library-dependencies' property.
 
 TODO index
 
 DOCUMENTATION
 -------------
+
+Please note, that OSGi infrastructure has no dependency `organization` field as Ivy or Maven has. The bundle symbolic name and bundle version identify a unique artifact.
 
 TODO doc
 
@@ -28,6 +39,8 @@ TODO doc
 
 TODO doc
 
+`osgi-show`
+
 ### Resolve OSGi dependencies
 
 TODO doc
@@ -36,9 +49,28 @@ TODO doc
 
 TODO doc
 
+    inConfig(OSGiConf)({
+    import OSGiKey._
+      Seq[Project.Setting[_]](
+        resolvers += typeP2("Eclipse P2 update site" at "http://eclipse.ialto.com/eclipse/updates/4.2/R-4.2.1-201209141800/"),
+        libraryDependencies += typeP2((OSGi.ECLIPSE_PLUGIN % "org.eclipse.ui" % OSGi.ANY_VERSION).withSources),
+        libraryDependencies += typeP2((OSGi.ECLIPSE_PLUGIN % "org.eclipse.core.runtime" % OSGi.ANY_VERSION).withSources))
+    })
+
+> `osgi-resolve`
+
 #### Resolver OSGi dependencies against OBR R5 repository
 
 TODO doc
+
+    inConfig(OSGiConf)({
+      import OSGiKey._
+      Seq[Project.Setting[_]](
+        resolvers += typeOBR("Local OBR repository" at "file:/path/to/obr"),
+        libraryDependencies += typeOBR((OSGi.ANY_ORGANIZATION % "org.digimead.digi.lib" % OSGi.ANY_VERSION).withSources))
+    })
+
+> `osgi-resolve`
 
 ### How to install
 
