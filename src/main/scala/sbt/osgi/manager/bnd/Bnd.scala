@@ -135,7 +135,7 @@ object Bnd {
     osgiBndPluginPath := List[String](),
     osgiBndPrivatePackage := List[String](),
     osgiBndRunBundles := List[String](),
-    osgiBndRunEE := "JavaSE-1.7",
+    osgiBndRunEE := "JavaSE-1.6",
     osgiBndRunFramework := "",
     osgiBndRunFW := "org.eclipse.osgi", // "org.apache.felix.framework"
     osgiBndRunProperties := "",
