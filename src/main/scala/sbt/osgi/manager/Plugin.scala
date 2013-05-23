@@ -47,7 +47,7 @@ object Plugin {
   // So how do we may to provide an actual mutable "something" (like log handler that may be recreated at any moment) for singleton
   // that is instantiated from the OSGi infrastructure? lol
   /** Instance of the last known State */
-  @volatile private var lastKnownState: Option[State] = None
+  @volatile private var lastKnownState: Option[TaskArgument] = None
 
   /** Entry point for plugin in user's project */
   lazy val defaultSettings =
@@ -68,7 +68,7 @@ object Plugin {
         osgiShow <<= Plugin.osgiShowTask)
 
   /** Returns last known State. It is a complex helper for Simple Build Tool simple architecture. lol */
-  def getLastKnownState(): Option[State] = lastKnownState
+  def getLastKnownState(): Option[TaskArgument] = lastKnownState
   // Mark Harrah mark sbt.Resolver as sealed and all other classes as final ;-) It is so funny.
   // We will support him in his beginning.
   // Let's eat a shit that we have.
@@ -164,24 +164,25 @@ object Plugin {
     val osgiResolveCommandDetailed = "Add OSGi dependencies to libraryDependencies setting per user project."
     Help(osgiResolveCommand, osgiResolveCommandBrief, osgiResolveCommandDetailed)
   }
-  def osgiShowTask: Project.Initialize[Task[Unit]] = (name, thisProjectRef, state, streams) map { (name, thisProjectRef, state, streams) =>
+  def osgiShowTask = (name, thisProjectRef, state, streams) map { (name, thisProjectRef, state, streams) =>
     implicit val arg = TaskArgument(state, Some(streams))
     Bnd.show()
+    () // Project/Def.Initialize[Task[Unit]]
   }
-  def packageOptionsTask: Project.Initialize[Task[Seq[PackageOption]]] =
+  def packageOptionsTask =
     (dependencyClasspath in Compile, state, streams, packageOptions in (Compile, packageBin), products in Compile) map {
       (dependencyClasspath, state, streams, packageOptions, products) =>
         implicit val arg = TaskArgument(state, Some(streams))
         bnd.action.GenerateManifest.generateTask(dependencyClasspath, packageOptions, products)
     }
   /** Prepare Bnd home directory. Returns the home location. */
-  def prepareBndHomeTask: Project.Initialize[Task[File]] =
+  def prepareBndHomeTask =
     (state, streams) map { (state, streams) =>
       implicit val arg = TaskArgument(state, Some(streams))
       bnd.Bnd.prepareHome()
     }
   /** Prepare Maven home directory. Returns the home location. */
-  def prepareMavenHomeTask: Project.Initialize[Task[File]] =
+  def prepareMavenHomeTask =
     (state, streams) map { (state, streams) =>
       implicit val arg = TaskArgument(state, Some(streams))
       maven.Maven.prepareHome()
@@ -225,10 +226,19 @@ object Plugin {
     lazy val extracted = Project.extract(state)
     /** SBT logger */
     val log = streams.map(_.log) getOrElse {
-      // Heh, another feature not bug?
+      // Heh, another feature not bug? SBT 0.12.3
       // MultiLogger and project level is debug, but ConsoleLogger is still info...
       // Don't care about CPU time
-      state.globalLogging.full match {
+      val globalLoggin = (state.getClass().getDeclaredMethods().find(_.getName() == "globalLogging")) match {
+        case Some(method) =>
+          // SBT 0.12+
+          method.invoke(state).asInstanceOf[GlobalLogging]
+        case None =>
+          // SBT 0.11.x
+          CommandSupport.asInstanceOf[{ def globalLogging(s: State): GlobalLogging }].globalLogging(state)
+      }
+      import globalLoggin._
+      full match {
         case logger: AbstractLogger =>
           val level = logLevel in thisScope get extracted.structure.data
           level.foreach(logger.setLevel(_)) // force level
@@ -251,7 +261,7 @@ object Plugin {
     /** Update last known state */
     def updateLastKnownState() = synchronized {
       if (!lastKnownState.exists(_.eq(state)))
-        lastKnownState = Some(state)
+        lastKnownState = Some(this)
     }
   }
 }

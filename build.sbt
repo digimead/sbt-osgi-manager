@@ -13,19 +13,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// PRODUCTION CONFIGURATION
-
 ScriptedPlugin.scriptedSettings
 
 name := "sbt-osgi-manager"
 
-organization := "sbt.osgi.manager"
+description := "OSGi development bridge based on Bndtools and Tycho."
 
-version := "0.0.1.1"
+licenses := Seq("The Apache Software License, Version 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt"))
 
-scalacOptions ++= Seq("-unchecked", "-deprecation", "-Xcheckinit", "-Xfatal-warnings")
+organization := "org.digimead"
 
-javacOptions ++= Seq("-source", "1.6", "-target", "1.6")
+organizationHomepage := Some(url("http://digimead.org"))
+
+homepage := Some(url("https://github.com/digimead/sbt-osgi-manager"))
+
+version <<= (baseDirectory) { (b) => scala.io.Source.fromFile(b / "version").mkString.trim }
+
+// There is no "-Xfatal-warnings" because we have cross compilation against different Scala versions
+scalacOptions ++= Seq("-unchecked", "-deprecation", "-Xcheckinit")
+
+// http://vanillajava.blogspot.ru/2012/02/using-java-7-to-target-much-older-jvms.html
+javacOptions ++= Seq("-Xlint:unchecked", "-Xlint:deprecation", "-source", "1.6", "-target", "1.6")
+
+if (sys.env.contains("XBOOTCLASSPATH")) Seq(javacOptions += "-Xbootclasspath:" + sys.env("XBOOTCLASSPATH")) else Seq()
 
 sbtPlugin := true
 
@@ -53,6 +63,10 @@ libraryDependencies ++= {
 
 scriptedBufferLog := false
 
-scriptedLaunchOpts := Seq("-Xms512m", "-Xmx512m", "-XX:MaxPermSize=256m")
+resolvers ++= Seq(
+  Resolver.url("typesafe-ivy-releases-for-online-crossbuild", url("http://repo.typesafe.com/typesafe/ivy-releases/"))(Resolver.defaultIvyPatterns),
+  Resolver.url("typesafe-ivy-snapshots-for-online-crossbuild", url("http://repo.typesafe.com/typesafe/ivy-snapshots/"))(Resolver.defaultIvyPatterns),
+  Resolver.url("typesafe-repository-for-online-crossbuild", url("http://typesafe.artifactoryonline.com/typesafe/ivy-releases/"))(Resolver.defaultIvyPatterns),
+  Resolver.url("typesafe-shapshots-for-online-crossbuild", url("http://typesafe.artifactoryonline.com/typesafe/ivy-snapshots/"))(Resolver.defaultIvyPatterns))
 
 //logLevel := Level.Debug

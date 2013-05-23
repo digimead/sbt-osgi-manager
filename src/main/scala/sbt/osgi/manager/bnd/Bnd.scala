@@ -109,7 +109,7 @@ object Bnd {
   val defaultProjectName = "default"
   /** Name of the default Bnd properties file */
   val defaultPropertiesFileName = aQute.bnd.build.Project.BNDFILE
-  lazy val settings = inConfig(OSGiConf)(Seq[sbt.Project.Setting[_]](
+  lazy val settings = inConfig(OSGiConf)(Seq(
     osgiBndDirectory <<= (osgiDirectory) { _ / "bnd" },
     osgiBndBuildPath := List[String](),
     osgiBndBundleActivator := "",

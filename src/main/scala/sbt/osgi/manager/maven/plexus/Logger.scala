@@ -99,7 +99,7 @@ object Logger {
   }
   /** Get the default logger */
   def logger: Option[sbt.Logger] =
-    Plugin.getLastKnownState.map(_.globalLogging.full)
+    Plugin.getLastKnownState.map(_.log)
   /** Get throwable as string */
   protected def getThrowableDump(throwable: Throwable): String = {
     val writer = new StringWriter()
