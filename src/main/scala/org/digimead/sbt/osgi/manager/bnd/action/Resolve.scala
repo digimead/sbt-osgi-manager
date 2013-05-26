@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package sbt.osgi.manager.bnd.action
+package org.digimead.sbt.osgi.manager.bnd.action
 
 import java.io.BufferedOutputStream
 import java.io.File
@@ -50,13 +50,13 @@ import org.osgi.resource.Requirement
 import org.osgi.resource.Resource
 import org.osgi.service.resolver.ResolutionException
 import sbt._
-import sbt.osgi.manager.Dependency
-import sbt.osgi.manager.Dependency._
-import sbt.osgi.manager.Plugin
-import sbt.osgi.manager.Support
-import sbt.osgi.manager.Support._
-import sbt.osgi.manager.bnd.Bnd
-import sbt.osgi.manager.bnd.Logger
+import org.digimead.sbt.osgi.manager.Dependency
+import org.digimead.sbt.osgi.manager.Dependency._
+import org.digimead.sbt.osgi.manager.Plugin
+import org.digimead.sbt.osgi.manager.Support
+import org.digimead.sbt.osgi.manager.Support._
+import org.digimead.sbt.osgi.manager.bnd.Bnd
+import org.digimead.sbt.osgi.manager.bnd.Logger
 
 // This is consolidated thoughts about Bnd that was located across first version of my code.
 // It may save a bit of time for someone who will choose the same way.

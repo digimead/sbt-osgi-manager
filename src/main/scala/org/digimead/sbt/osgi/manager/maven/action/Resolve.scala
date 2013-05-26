@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package sbt.osgi.manager.maven.action
+package org.digimead.sbt.osgi.manager.maven.action
 
 import java.io.BufferedOutputStream
 import java.io.FileOutputStream
@@ -52,13 +52,13 @@ import org.eclipse.tycho.osgi.adapters.MavenLoggerAdapter
 import org.eclipse.tycho.p2.resolver.facade.P2ResolutionResult
 import sbt._
 import sbt.Keys._
-import sbt.osgi.manager.Dependency
-import sbt.osgi.manager.Dependency._
-import sbt.osgi.manager.OSGiManagerException
-import sbt.osgi.manager.Plugin
-import sbt.osgi.manager.Support
-import sbt.osgi.manager.Support._
-import sbt.osgi.manager.maven.Maven
+import org.digimead.sbt.osgi.manager.Dependency
+import org.digimead.sbt.osgi.manager.Dependency._
+import org.digimead.sbt.osgi.manager.OSGiManagerException
+import org.digimead.sbt.osgi.manager.Plugin
+import org.digimead.sbt.osgi.manager.Support
+import org.digimead.sbt.osgi.manager.Support._
+import org.digimead.sbt.osgi.manager.maven.Maven
 
 // Unfortunately:
 //   - from the one side SBT is too simple for handle mixed ModuleID with explicit artifacts,

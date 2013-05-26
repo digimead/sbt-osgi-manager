@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package sbt.osgi.manager
+package org.digimead.sbt.osgi.manager
 
 import java.util.Locale
 import java.util.Properties

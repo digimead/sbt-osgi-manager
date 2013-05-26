@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package sbt.osgi.manager.bnd
+package org.digimead.sbt.osgi.manager.bnd
 
 import scala.collection.JavaConversions._
 import scala.ref.WeakReference
@@ -35,11 +35,11 @@ import aQute.bnd.header.Attrs
 import aQute.bnd.service.{ Plugin => BndPlugin }
 import sbt._
 import sbt.Keys._
-import sbt.osgi.manager.Keys._
-import sbt.osgi.manager.Model
-import sbt.osgi.manager.OSGiManagerException
-import sbt.osgi.manager.Plugin
-import sbt.osgi.manager.Support._
+import org.digimead.sbt.osgi.manager.Keys._
+import org.digimead.sbt.osgi.manager.Model
+import org.digimead.sbt.osgi.manager.OSGiManagerException
+import org.digimead.sbt.osgi.manager.Plugin
+import org.digimead.sbt.osgi.manager.Support._
 
 class Bnd(home: File) {
   def createModel()(implicit arg: Plugin.TaskArgument): BndEditModel = {
@@ -110,6 +110,7 @@ object Bnd {
   /** Name of the default Bnd properties file */
   val defaultPropertiesFileName = aQute.bnd.build.Project.BNDFILE
   lazy val settings = inConfig(OSGiConf)(Seq(
+    osgiFetchInfo := action.Fetch.defaultFetchInfo,
     osgiBndDirectory <<= (osgiDirectory) { _ / "bnd" },
     osgiBndBuildPath := List[String](),
     osgiBndBundleActivator := "",
@@ -118,8 +119,8 @@ object Bnd {
     osgiBndBundleContactAddress := "",
     osgiBndBundleCopyright := "",
     osgiBndBundleDescription <<= description in This,
-    osgiBndBundleDocURL :== "",
-    osgiBndBundleIcon :== List[String](),
+    osgiBndBundleDocURL := "",
+    osgiBndBundleIcon := List[String](),
     osgiBndBundleUpdateLocation := "",
     osgiBndBundleSymbolicName := "",
     osgiBndBundleSymbolicNameSingleton := false,

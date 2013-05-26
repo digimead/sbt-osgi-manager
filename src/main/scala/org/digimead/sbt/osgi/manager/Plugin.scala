@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package sbt.osgi.manager
+package org.digimead.sbt.osgi.manager
 
 import java.util.jar.JarFile
 
@@ -31,11 +31,11 @@ import org.apache.ivy.plugins.resolver.DependencyResolver
 import org.eclipse.tycho.ArtifactKey
 import sbt.Keys._
 import sbt._
-import sbt.osgi.manager.Dependency._
-import sbt.osgi.manager.Keys._
-import sbt.osgi.manager.Support.logPrefix
-import sbt.osgi.manager.bnd.Bnd
-import sbt.osgi.manager.maven.Maven
+import org.digimead.sbt.osgi.manager.Dependency._
+import org.digimead.sbt.osgi.manager.Keys._
+import org.digimead.sbt.osgi.manager.Support.logPrefix
+import org.digimead.sbt.osgi.manager.bnd.Bnd
+import org.digimead.sbt.osgi.manager.maven.Maven
 import sbt.std.TaskStreams
 
 object Plugin {
@@ -53,7 +53,8 @@ object Plugin {
   lazy val defaultSettings =
     // base settings
     inConfig(Keys.OSGiConf)(Seq(
-      osgiDirectory <<= (target) { _ / "osgi" })) ++
+      osgiDirectory <<= (target) { _ / "osgi" },
+      osgiFetchPath := None)) ++
       // plugin settings
       Bnd.settings ++
       Maven.settings ++
@@ -65,7 +66,8 @@ object Plugin {
       // and global settings
       Seq(
         commands += Command.command("osgi-resolve", osgiResolveCommandHelp)(osgiResolveCommand),
-        osgiShow <<= Plugin.osgiShowTask)
+        osgiFetch <<= osgiFetchTask,
+        osgiShow <<= osgiShowTask)
 
   /** Returns last known State. It is a complex helper for Simple Build Tool simple architecture. lol */
   def getLastKnownState(): Option[TaskArgument] = lastKnownState
@@ -91,6 +93,20 @@ object Plugin {
       new URLRepository(name, new Patterns(Seq[String](root), Seq[String](Dependency.P2.name), false))
     case unsupported =>
       throw new UnsupportedOperationException("Unknown resolver type %s for %s".format(resolver.getClass(), resolver))
+  }
+
+  /** Fetch all project dependencies as bundles */
+  def osgiFetchTask = (dependencyClasspath in Compile, osgiFetchPath in Keys.OSGiConf, state, streams) map {
+    (dependencyClasspath, osgiFetchPath, state, streams) =>
+      implicit val arg = TaskArgument(state, Some(streams))
+      osgiFetchPath match {
+        case Some(osgiFetchPath) =>
+          bnd.action.Fetch.fetchTask(osgiFetchPath, dependencyClasspath.map(cp =>
+            bnd.action.Fetch.Item(cp.get(moduleID.key), cp.data)).toSet)
+        case None =>
+          streams.log.info(logPrefix(arg.name) + "Fetch task disabled.")
+      }
+      () // Project/Def.Initialize[Task[Unit]]
   }
 
   /** Command that populates libraryDependencies with required bundles */
@@ -164,7 +180,7 @@ object Plugin {
     val osgiResolveCommandDetailed = "Add OSGi dependencies to libraryDependencies setting per user project."
     Help(osgiResolveCommand, osgiResolveCommandBrief, osgiResolveCommandDetailed)
   }
-  def osgiShowTask = (name, thisProjectRef, state, streams) map { (name, thisProjectRef, state, streams) =>
+  def osgiShowTask = (state, streams) map { (state, streams) =>
     implicit val arg = TaskArgument(state, Some(streams))
     Bnd.show()
     () // Project/Def.Initialize[Task[Unit]]

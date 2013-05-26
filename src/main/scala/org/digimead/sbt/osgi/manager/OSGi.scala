@@ -16,9 +16,18 @@
  * limitations under the License.
  */
 
-package sbt.osgi.manager
+package org.digimead.sbt.osgi.manager
 
-class OSGiManagerException(message: String, cause: Throwable) extends Exception(message, cause) {
-  def this(message: String) = this(message, null)
-  def this() = this("Something wrong", null)
+import org.eclipse.tycho.ArtifactKey
+
+/** Various declarations for end user */
+object OSGi {
+  lazy val ECLIPSE_APPLICATION = ArtifactKey.TYPE_ECLIPSE_APPLICATION
+  lazy val ECLIPSE_FEATURE = ArtifactKey.TYPE_ECLIPSE_FEATURE
+  lazy val ECLIPSE_PLUGIN = ArtifactKey.TYPE_ECLIPSE_PLUGIN
+  lazy val ECLIPSE_REPOSITORY = ArtifactKey.TYPE_ECLIPSE_REPOSITORY
+  lazy val ECLIPSE_TEST_PLUGIN = ArtifactKey.TYPE_ECLIPSE_TEST_PLUGIN
+  lazy val ECLIPSE_UPDATE_SITE = ArtifactKey.TYPE_ECLIPSE_UPDATE_SITE
+  lazy val ANY_VERSION = Dependency.ANY_VERSION
+  lazy val ANY_ORGANIZATION = Dependency.ANY_ORGANIZATION
 }

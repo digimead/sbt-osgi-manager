@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package sbt.osgi.manager.bnd
+package org.digimead.sbt.osgi.manager.bnd
 
 import java.io.PrintWriter
 import java.io.StringWriter

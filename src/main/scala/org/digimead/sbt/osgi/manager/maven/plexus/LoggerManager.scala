@@ -16,18 +16,13 @@
  * limitations under the License.
  */
 
-package sbt.osgi.manager
+package org.digimead.sbt.osgi.manager.maven.plexus
 
-import org.eclipse.tycho.ArtifactKey
+import org.codehaus.plexus.logging.BaseLoggerManager
+import org.codehaus.plexus.logging.{ Logger => PlexusLogger }
 
-/** Various declarations for end user */
-object OSGi {
-  lazy val ECLIPSE_APPLICATION = ArtifactKey.TYPE_ECLIPSE_APPLICATION
-  lazy val ECLIPSE_FEATURE = ArtifactKey.TYPE_ECLIPSE_FEATURE
-  lazy val ECLIPSE_PLUGIN = ArtifactKey.TYPE_ECLIPSE_PLUGIN
-  lazy val ECLIPSE_REPOSITORY = ArtifactKey.TYPE_ECLIPSE_REPOSITORY
-  lazy val ECLIPSE_TEST_PLUGIN = ArtifactKey.TYPE_ECLIPSE_TEST_PLUGIN
-  lazy val ECLIPSE_UPDATE_SITE = ArtifactKey.TYPE_ECLIPSE_UPDATE_SITE
-  lazy val ANY_VERSION = Dependency.ANY_VERSION
-  lazy val ANY_ORGANIZATION = Dependency.ANY_ORGANIZATION
+class LoggerManager extends BaseLoggerManager {
+  override protected def createLogger(key: String): PlexusLogger = {
+    return new Logger(getThreshold(), key)
+  }
 }

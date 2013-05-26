@@ -16,19 +16,22 @@
  * limitations under the License.
  */
 
-package sbt.osgi.manager
+package org.digimead.sbt.osgi.manager
 
 import java.util.Properties
-
 import sbt._
+import aQute.bnd.osgi.Analyzer
 
 object Keys {
   def OSGiConf = config("osgi-manager") extend (Compile)
 
   lazy val osgiDirectory = SettingKey[java.io.File]("directory", "Root directory with temporary OSGi data")
+  lazy val osgiFetchPath = SettingKey[Option[java.io.File]]("fetch-path", "Location for 'fetch' task bundles")
+  lazy val osgiFetchInfo = SettingKey[(Option[ModuleID], String, Analyzer) => Unit]("fetch-info", "Add infromation about bundle to analyzer.")
 
   // Tasks
 
+  lazy val osgiFetch = TaskKey[Unit]("osgi-fetch", "Fetch all depencencies as bundles to the specific directory.") // global
   lazy val osgiShow = TaskKey[Unit]("osgi-show", "Show the bundle properties") // global
   lazy val osgiBndPrepareHome = TaskKey[java.io.File]("prepare-bnd-home", "Prepare Bnd home directory")
   lazy val osgiMavenPrepareHome = TaskKey[java.io.File]("prepare-maven-home", "Prepare Maven home directory")
@@ -113,7 +116,6 @@ object Keys {
   // Various Bndtool settings
 
   lazy val osgiBndDirectory = SettingKey[java.io.File]("bnd-directory", "Bnd directory")
-  //lazy val osgiBndHomeDirectoryosgiBndCnfPath = SettingKey[java.io.File]("bnd-cnf-path", "Path to the cnf project that contains a workspace-wide configuration")
 
   /////////////////////////////////////
   // Maven

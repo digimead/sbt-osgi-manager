@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package sbt.osgi.manager
+package org.digimead.sbt.osgi.manager
 
 import scala.collection.JavaConversions._
 
@@ -33,8 +33,8 @@ import aQute.bnd.build.model.conversions.HeaderClauseListConverter
 import aQute.bnd.build.model.conversions.VersionedClauseConverter
 import aQute.bnd.header.Attrs
 import sbt._
-import sbt.osgi.manager.Keys._
-import sbt.osgi.manager.Support._
+import org.digimead.sbt.osgi.manager.Keys._
+import org.digimead.sbt.osgi.manager.Support._
 
 object Model {
   /////////////////////////////////////
@@ -130,6 +130,8 @@ object Model {
 
   def getSettingsDirectory(implicit arg: Plugin.TaskArgument) =
     osgiDirectory in arg.thisOSGiScope get arg.extracted.structure.data
+  def getSettingsFetchInfo(implicit arg: Plugin.TaskArgument) =
+    osgiFetchInfo in arg.thisOSGiScope get arg.extracted.structure.data
 
   /////////////////////////////////////
   // Maven
