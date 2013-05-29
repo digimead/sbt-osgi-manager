@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.digimead.sbt.osgi.manager.maven
+package sbt.osgi.manager.maven
 
 import java.io.File
 import java.io.FilenameFilter
@@ -65,11 +65,11 @@ import org.osgi.framework.Bundle
 import org.osgi.framework.BundleContext
 import org.osgi.framework.BundleException
 import sbt._
-import org.digimead.sbt.osgi.manager.Keys._
-import org.digimead.sbt.osgi.manager.Model
-import org.digimead.sbt.osgi.manager.OSGiManagerException
-import org.digimead.sbt.osgi.manager.Plugin
-import org.digimead.sbt.osgi.manager.Support._
+import sbt.osgi.manager.Keys._
+import sbt.osgi.manager.Model
+import sbt.osgi.manager.OSGiManagerException
+import sbt.osgi.manager.Plugin
+import sbt.osgi.manager.Support._
 
 class Maven(val plexus: DefaultPlexusContainer, val information: Maven.Information)(implicit arg: Plugin.TaskArgument) {
   val home = Maven.getHome()
@@ -252,7 +252,7 @@ object Maven {
     val realm = buildClassRealm(mavenHome, Some(world))
     Maven.getMavenVersion(mavenHome, Some(realm)) match {
       case Some(information) =>
-        org.digimead.sbt.osgi.manager.maven.plexus.Logger.
+        sbt.osgi.manager.maven.plexus.Logger.
           info("Initialize Maven core. Maven version: " + information.version, null)
         val plexus = buildPlexusContainer(realm, getPlexusOverridingComponentsXml)
         val instance = new Maven(plexus, information)

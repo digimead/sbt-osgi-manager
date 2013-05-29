@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.digimead.sbt.osgi.manager
+package sbt.osgi.manager
 
 import java.util.jar.JarFile
 
@@ -31,11 +31,11 @@ import org.apache.ivy.plugins.resolver.DependencyResolver
 import org.eclipse.tycho.ArtifactKey
 import sbt.Keys._
 import sbt._
-import org.digimead.sbt.osgi.manager.Dependency._
-import org.digimead.sbt.osgi.manager.Keys._
-import org.digimead.sbt.osgi.manager.Support.logPrefix
-import org.digimead.sbt.osgi.manager.bnd.Bnd
-import org.digimead.sbt.osgi.manager.maven.Maven
+import sbt.osgi.manager.Dependency._
+import sbt.osgi.manager.Keys._
+import sbt.osgi.manager.Support.logPrefix
+import sbt.osgi.manager.bnd.Bnd
+import sbt.osgi.manager.maven.Maven
 import sbt.std.TaskStreams
 
 object Plugin {
@@ -96,9 +96,9 @@ object Plugin {
   }
 
   /** Fetch all project dependencies as bundles */
-  def osgiFetchTask = (dependencyClasspath in Compile, osgiFetchPath in Keys.OSGiConf, state, streams) map {
-    (dependencyClasspath, osgiFetchPath, state, streams) =>
-      implicit val arg = TaskArgument(state, Some(streams))
+  def osgiFetchTask = (dependencyClasspath in Compile, osgiFetchPath in Keys.OSGiConf, state, streams, thisProjectRef) map {
+    (dependencyClasspath, osgiFetchPath, state, streams, thisProjectRef) =>
+      implicit val arg = TaskArgument(state, thisProjectRef, Some(streams))
       osgiFetchPath match {
         case Some(osgiFetchPath) =>
           bnd.action.Fetch.fetchTask(osgiFetchPath, dependencyClasspath.map(cp =>
@@ -111,62 +111,56 @@ object Plugin {
 
   /** Command that populates libraryDependencies with required bundles */
   def osgiResolveCommand(state: State): State = {
-    implicit val arg = TaskArgument(state, None)
-    // This selects the 'osgi-maven-prepare' task for the current project.
-    // The value produced by 'osgi-maven-prepare' is of type File
-    val taskMavenPrepareHomeKey = osgiMavenPrepareHome in Compile in OSGiConf
-    // This selects the 'osgi-bnd-prepare' task for the current project.
-    // The value produced by 'osgi-bnd-prepare' is of type File
-    val taskBndPrepareHomeKey = osgiBndPrepareHome in Compile in OSGiConf
-    // Evaluate the tasks
-    // None if the key is not defined
-    // Some(Inc) if the task does not complete successfully (Inc for incomplete)
-    // Some(Value(v)) with the resulting value
-    val mavenPrepareTaskResult = Project.runTask(taskMavenPrepareHomeKey, state) match {
-      case None =>
-        None // Key wasn't defined.
-      case Some((state, Inc(inc))) =>
-        Incomplete.show(inc.tpe); None // Error detail, inc is of type Incomplete
-      case Some((state, Value(mavenHome))) =>
-        Some(state)
+    val extracted = Project.extract(state)
+    val uri = extracted.currentRef.build
+    val build = extracted.structure.units(uri)
+    var actualState: State = state
+    for (id <- build.defined.keys) yield {
+      implicit val projectRef = ProjectRef(uri, id)
+      // This selects the 'osgi-maven-prepare' task for the current project.
+      // The value produced by 'osgi-maven-prepare' is of type File
+      val taskMavenPrepareHomeKey = osgiMavenPrepareHome in Compile in OSGiConf
+      EvaluateTask(extracted.structure, taskMavenPrepareHomeKey, actualState, projectRef) match {
+        case Some((state, result)) =>
+          actualState = state
+        case None =>
+          throw new OSGiManagerException("Unable to prepare Maven home for project %s.".format(projectRef.project))
+      }
+      // This selects the 'osgi-bnd-prepare' task for the current project.
+      // The value produced by 'osgi-bnd-prepare' is of type File
+      val taskBndPrepareHomeKey = osgiBndPrepareHome in Compile in OSGiConf
+      EvaluateTask(extracted.structure, taskBndPrepareHomeKey, actualState, projectRef) match {
+        case Some((state, result)) =>
+          actualState = state
+        case None =>
+          throw new OSGiManagerException("Unable to prepare Bnd home for project %s.".format(projectRef.project))
+      }
     }
-    val bndPrepareTaskResult = mavenPrepareTaskResult.flatMap(Project.runTask(taskBndPrepareHomeKey, _) match {
-      case None =>
-        None // Key wasn't defined.
-      case Some((state, Inc(inc))) =>
-        Incomplete.show(inc.tpe); None // Error detail, inc is of type Incomplete
-      case Some((state, Value(bndHome))) =>
-        Some(state)
-    })
-    bndPrepareTaskResult match {
-      case Some(state) =>
-        // resolve P2
-        val dependencyP2 = maven.action.Resolve.resolveP2Command()
-        val dependencySettingsP2 = for (projectRef <- dependencyP2.keys) yield if (dependencyP2(projectRef).nonEmpty)
-          Seq[Project.Setting[_]](libraryDependencies in projectRef ++= dependencyP2(projectRef))
-        else
-          Seq[Project.Setting[_]]()
-        // resolve OBR
-        val resolvedDependencies = collectResolvedDependencies(dependencyP2)
-        val dependencyOBR = bnd.action.Resolve.resolveOBRCommand(resolvedDependencies)
-        val dependencySettingsOBR = for (projectRef <- dependencyOBR.keys) yield if (dependencyOBR(projectRef).nonEmpty)
-          Seq[Project.Setting[_]](libraryDependencies in projectRef ++= dependencyOBR(projectRef))
-        else
-          Seq[Project.Setting[_]]()
-        val dependencySettings = dependencySettingsP2.flatten ++ dependencySettingsOBR.flatten
-        if (dependencySettings.nonEmpty) {
-          arg.log.info(logPrefix(arg.name) + "Update library dependencies")
-          val newStructure = {
-            import arg.extracted._
-            val append = Load.transformSettings(Load.projectScope(currentRef), currentRef.build, rootProject, dependencySettings.toSeq)
-            Load.reapply(session.original ++ append, structure)
-          }
-          Project.setProject(arg.extracted.session, newStructure, state)
-        } else
-          state
-      case None =>
-        state
-    }
+    implicit val arg = TaskArgument(actualState, Project.current(actualState), None)
+    // resolve P2
+    val dependencyP2 = maven.action.Resolve.resolveP2Command()
+    val dependencySettingsP2 = for (projectRef <- dependencyP2.keys) yield if (dependencyP2(projectRef).nonEmpty)
+      Seq[Project.Setting[_]](libraryDependencies in projectRef ++= dependencyP2(projectRef))
+    else
+      Seq[Project.Setting[_]]()
+    // resolve OBR
+    val resolvedDependencies = collectResolvedDependencies(dependencyP2)
+    val dependencyOBR = bnd.action.Resolve.resolveOBRCommand(resolvedDependencies)
+    val dependencySettingsOBR = for (projectRef <- dependencyOBR.keys) yield if (dependencyOBR(projectRef).nonEmpty)
+      Seq[Project.Setting[_]](libraryDependencies in projectRef ++= dependencyOBR(projectRef))
+    else
+      Seq[Project.Setting[_]]()
+    val dependencySettings = dependencySettingsP2.flatten ++ dependencySettingsOBR.flatten
+    if (dependencySettings.nonEmpty) {
+      arg.log.info(logPrefix(arg.name) + "Update library dependencies")
+      val newStructure = {
+        import arg.extracted._
+        val append = Load.transformSettings(Load.projectScope(currentRef), currentRef.build, rootProject, dependencySettings.toSeq)
+        Load.reapply(session.original ++ append, structure)
+      }
+      Project.setProject(arg.extracted.session, newStructure, actualState)
+    } else
+      actualState
   }
   /** Reset all plugin caches */
   def osgiResetCacheTask {
@@ -180,27 +174,27 @@ object Plugin {
     val osgiResolveCommandDetailed = "Add OSGi dependencies to libraryDependencies setting per user project."
     Help(osgiResolveCommand, osgiResolveCommandBrief, osgiResolveCommandDetailed)
   }
-  def osgiShowTask = (state, streams) map { (state, streams) =>
-    implicit val arg = TaskArgument(state, Some(streams))
+  def osgiShowTask = (state, streams, thisProjectRef) map { (state, streams, thisProjectRef) =>
+    implicit val arg = TaskArgument(state, thisProjectRef, Some(streams))
     Bnd.show()
     () // Project/Def.Initialize[Task[Unit]]
   }
   def packageOptionsTask =
-    (dependencyClasspath in Compile, state, streams, packageOptions in (Compile, packageBin), products in Compile) map {
-      (dependencyClasspath, state, streams, packageOptions, products) =>
-        implicit val arg = TaskArgument(state, Some(streams))
+    (dependencyClasspath in Compile, state, streams, thisProjectRef, packageOptions in (Compile, packageBin), products in Compile) map {
+      (dependencyClasspath, state, streams, thisProjectRef, packageOptions, products) =>
+        implicit val arg = TaskArgument(state, thisProjectRef, Some(streams))
         bnd.action.GenerateManifest.generateTask(dependencyClasspath, packageOptions, products)
     }
   /** Prepare Bnd home directory. Returns the home location. */
   def prepareBndHomeTask =
-    (state, streams) map { (state, streams) =>
-      implicit val arg = TaskArgument(state, Some(streams))
+    (state, streams, thisProjectRef) map { (state, streams, thisProjectRef) =>
+      implicit val arg = TaskArgument(state, thisProjectRef, Some(streams))
       bnd.Bnd.prepareHome()
     }
   /** Prepare Maven home directory. Returns the home location. */
   def prepareMavenHomeTask =
-    (state, streams) map { (state, streams) =>
-      implicit val arg = TaskArgument(state, Some(streams))
+    (state, streams, thisProjectRef) map { (state, streams, thisProjectRef) =>
+      implicit val arg = TaskArgument(state, thisProjectRef, Some(streams))
       maven.Maven.prepareHome()
     }
   /** Collects resolved artifacts per project */
@@ -211,7 +205,7 @@ object Plugin {
       implicit val projectRef = ProjectRef(uri, id)
       val scope = arg.thisScope.copy(project = Select(projectRef))
       val taskExternalDependencyClasspath = externalDependencyClasspath in scope in Compile
-      arg.log.debug(logPrefix(Support.name) + "Collect external-dependency-classpath")
+      arg.log.debug(logPrefix(arg.copy(thisProjectRef = projectRef).name) + "Collect external-dependency-classpath")
       val projectDependencies = Project.runTask(taskExternalDependencyClasspath, arg.state) match {
         case None =>
           None // Key wasn't defined.
@@ -235,8 +229,12 @@ object Plugin {
 
   /** Consolidated argument with all required information */
   case class TaskArgument(
-    /** Data structure representing all command execution information. */
+    /** The data structure representing all command execution information. */
     state: State,
+    // It is more reasonable to pass it from SBT than of fetch it directly.
+    /** The reference to the current project. */
+    thisProjectRef: ProjectRef,
+    /** The structure that contains reference to log facilities. */
     streams: Option[TaskStreams[ScopedKey[_]]] = None) {
     /** Extracted state projection */
     lazy val extracted = Project.extract(state)
@@ -264,9 +262,7 @@ object Plugin {
       }
     }
     /** Current project name */
-    val name: String = (sbt.Keys.name in thisScope get extracted.structure.data) getOrElse thisProjectRef.project
-    /** Reference to current current project */
-    lazy val thisProjectRef = Project.current(state)
+    val name: String = (sbt.Keys.name in thisScope get extracted.structure.data) getOrElse thisProjectRef.project.toString()
     /** Scope of current project */
     lazy val thisScope = Load.projectScope(thisProjectRef)
     /** Scope of current project withing plugin configuration */

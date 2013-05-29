@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.digimead.sbt.osgi.manager
+package sbt.osgi.manager
 
 import java.util.Locale
 import java.util.Properties
@@ -42,7 +42,7 @@ object Support {
     envVars
   }
   /** Returns dependencies */
-  def getDependencies(dependencyType: Dependency.Type, scope: Scope)(implicit arg: Plugin.TaskArgument, projectRef: ProjectRef): Seq[ModuleID] = {
+  def getDependencies(dependencyType: Dependency.Type, scope: Scope)(implicit arg: Plugin.TaskArgument): Seq[ModuleID] = {
     ((libraryDependencies in scope get arg.extracted.structure.data): Option[Seq[ModuleID]]).
       getOrElse(Seq[ModuleID]()).filter(_ match {
         case dependency if dependency.extraAttributes.get(dependencyType.key) == Some(dependencyType.name) =>
@@ -54,12 +54,12 @@ object Support {
       })
   }
   /** Returns resolvers as Seq[(id, url)] */
-  def getResolvers(dependencyType: Dependency.Type, scope: Scope)(implicit arg: Plugin.TaskArgument, projectRef: ProjectRef): Seq[(String, String)] = {
+  def getResolvers(dependencyType: Dependency.Type, scope: Scope)(implicit arg: Plugin.TaskArgument): Seq[(String, String)] = {
     ((sbt.Keys.resolvers in scope get arg.extracted.structure.data): Option[Seq[Resolver]]).
       getOrElse(Seq[Resolver]()).filter(_ match {
         case resolver: URLRepository if resolver.patterns.artifactPatterns == Seq(dependencyType.name) =>
           val repo = resolver.patterns.ivyPatterns.head // always one element, look at markResolverAsP2
-          arg.log.debug(logPrefix(name) + "Add %s resolver \"%s\" at %s".format(dependencyType.name, resolver.name, repo))
+          arg.log.debug(logPrefix(arg.name) + "Add %s resolver \"%s\" at %s".format(dependencyType.name, resolver.name, repo))
           true
         case otherResolver =>
           //arg.log.debug(logPrefix(name) + "Skip resolver " + otherResolver)
@@ -71,9 +71,6 @@ object Support {
   }
   /** Default sbt-osgi-manager log prefix */
   def logPrefix(name: String) = "[OSGi manager:%s] ".format(name)
-  /** Get projectRef name */
-  def name()(implicit arg: Plugin.TaskArgument, projectRef: ProjectRef) =
-    sbt.Keys.name in arg.thisScope.copy(project = Select(projectRef)) get arg.extracted.structure.data getOrElse projectRef.project
   /**
    * Executes the function f within the ContextClassLoader of 'classOf'.
    * After execution the original ClassLoader will be restored.
@@ -112,17 +109,27 @@ object Support {
     /** Reset resolution cache */
     def resetCache() = cache.clear
     /** Check if there are settings which is already cached for the cacheKey */
-    def isCached(cacheKey: CacheKey, dependencies: Seq[ModuleID], resolvers: Seq[(String, String)]): Boolean = cache.get(cacheKey) match {
-      case Some(cached) => cached.sameElements((dependencies.map(_.hashCode) ++ resolvers.map(_.hashCode)).sorted)
-      case None => false
+    def isCached(cacheKey: CacheKey, dependencies: Seq[ModuleID], resolvers: Seq[(String, String)])(implicit arg: Plugin.TaskArgument): Boolean = cache.get(cacheKey) match {
+      case Some(cached) =>
+        val value = (dependencies.map(_.hashCode) ++ resolvers.map(_.hashCode)).sorted
+        arg.log.debug(logPrefix(arg.name) + "Check cache for " + cacheKey + " with value " + cached + " against value: " + value)
+        val result = cached.sameElements(value)
+        if (result)
+          arg.log.debug(logPrefix(arg.name) + "Cache HIT.")
+        else
+          arg.log.debug(logPrefix(arg.name) + "Cache MISS.")
+        result
+      case None =>
+        arg.log.debug(logPrefix(arg.name) + "Cache is empty.")
+        arg.log.error("!" + cacheKey + cache)
+        false
     }
     /** Update P2 cache value */
     def updateCache(cacheKey: CacheKey, dependencies: Seq[ModuleID], resolvers: Seq[(String, String)])(implicit arg: Plugin.TaskArgument) = {
-      arg.log.debug(logPrefix(arg.name) + "Update cache for " + cacheKey)
-      cache(cacheKey) = (dependencies.map(_.hashCode) ++ resolvers.map(_.hashCode)).sorted
+      val value = (dependencies.map(_.hashCode) ++ resolvers.map(_.hashCode)).sorted
+      arg.log.debug(logPrefix(arg.name) + "Update cache for " + cacheKey + " with value: " + value)
+      cache(cacheKey) = value
     }
-    /** Get projectRef name */
-    protected def name()(implicit arg: Plugin.TaskArgument, projectRef: ProjectRef) = Support.name()
   }
   sealed trait CacheKey {
     val projectId: String

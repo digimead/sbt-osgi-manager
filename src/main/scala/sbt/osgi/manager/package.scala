@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.digimead.sbt.osgi
+package sbt.osgi
 
 import java.net.URI
 import java.net.URL
@@ -26,9 +26,9 @@ import org.eclipse.equinox.p2.metadata.Version
 
 import sbt._
 import sbt.Keys._
-import org.digimead.sbt.osgi.manager.Dependency
-import org.digimead.sbt.osgi.manager.Keys
-import org.digimead.sbt.osgi.manager.Plugin
+import sbt.osgi.manager.Dependency
+import sbt.osgi.manager.Keys
+import sbt.osgi.manager.Plugin
 
 package object manager {
   /** Entry point for the plugin in user's project */

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.digimead.sbt.osgi.manager.maven.action
+package sbt.osgi.manager.maven.action
 
 import java.io.BufferedOutputStream
 import java.io.FileOutputStream
@@ -52,13 +52,13 @@ import org.eclipse.tycho.osgi.adapters.MavenLoggerAdapter
 import org.eclipse.tycho.p2.resolver.facade.P2ResolutionResult
 import sbt._
 import sbt.Keys._
-import org.digimead.sbt.osgi.manager.Dependency
-import org.digimead.sbt.osgi.manager.Dependency._
-import org.digimead.sbt.osgi.manager.OSGiManagerException
-import org.digimead.sbt.osgi.manager.Plugin
-import org.digimead.sbt.osgi.manager.Support
-import org.digimead.sbt.osgi.manager.Support._
-import org.digimead.sbt.osgi.manager.maven.Maven
+import sbt.osgi.manager.Dependency
+import sbt.osgi.manager.Dependency._
+import sbt.osgi.manager.OSGiManagerException
+import sbt.osgi.manager.Plugin
+import sbt.osgi.manager.Support
+import sbt.osgi.manager.Support._
+import sbt.osgi.manager.maven.Maven
 
 // Unfortunately:
 //   - from the one side SBT is too simple for handle mixed ModuleID with explicit artifacts,
@@ -147,20 +147,25 @@ object Resolve extends Support.Resolve {
       + result.getRepository());*/
   }
   /** Resolve the dependency for the specific project against Eclipse P2 repository */
-  def resolveP2()(implicit arg: Plugin.TaskArgument, projectRef: ProjectRef): Seq[ModuleID] = {
-    val scope = arg.thisOSGiScope.copy(project = Select(projectRef))
+  def resolveP2()(implicit arg: Plugin.TaskArgument): Seq[ModuleID] = {
     // get resolvers as Seq[(id, url)]
-    val resolvers = getResolvers(Dependency.P2, scope)
-    val dependencies = getDependencies(Dependency.P2, scope)
+    val resolvers = getResolvers(Dependency.P2, arg.thisOSGiScope)
+    val dependencies = getDependencies(Dependency.P2, arg.thisOSGiScope)
     if (resolvers.nonEmpty && dependencies.nonEmpty) {
-      arg.log.info(logPrefix(name) + "Resolve P2 dependencies")
+      arg.log.info(logPrefix(arg.name) + "Resolve P2 dependencies")
       val bridge = Maven()
       val modules = resolveP2(dependencies, resolvers, bridge)
-      updateCache(Support.CacheP2Key(projectRef.project), dependencies, resolvers)
-      modules
+      val resolved = sbt.Keys.libraryDependencies in arg.thisScope get arg.extracted.structure.data getOrElse Seq()
+      updateCache(CacheP2Key(arg.thisProjectRef.project), dependencies, resolvers)
+      modules.filterNot { m =>
+        val alreadyInLibraryDependencies = resolved.exists(_ == m)
+        if (alreadyInLibraryDependencies)
+          arg.log.debug(logPrefix(arg.name) + "skip, already in libraryDependencies: " + m)
+        alreadyInLibraryDependencies
+      }
     } else {
-      arg.log.info(logPrefix(name) + "No P2 dependencies found")
-      updateCache(Support.CacheP2Key(projectRef.project), Seq(), Seq())
+      arg.log.info(logPrefix(arg.name) + "No P2 dependencies found")
+      updateCache(CacheP2Key(arg.thisProjectRef.project), Seq(), Seq())
       Seq()
     }
   }
@@ -168,7 +173,7 @@ object Resolve extends Support.Resolve {
   // For more information about metadata and artifact repository manager, look at
   // http://eclipsesource.com/blogs/tutorials/eclipse-p2-tutorial-managing-metadata/
   def resolveP2(dependencies: Seq[MavenDependency], p2Pepositories: Seq[(String, URI)],
-    maven: Maven, includeLocalMavenRepo: Boolean = true)(implicit arg: Plugin.TaskArgument, projectRef: ProjectRef): Seq[ModuleID] = {
+    maven: Maven, includeLocalMavenRepo: Boolean = true)(implicit arg: Plugin.TaskArgument): Seq[ModuleID] = {
     val provisioningAgentInterface = maven.equinox.getClass.getClassLoader.loadClass("org.eclipse.equinox.p2.core.IProvisioningAgent")
     val remoteAgent = maven.equinox.getService(provisioningAgentInterface).asInstanceOf[{ def getService(serviceName: String): AnyRef }]
     val remoteArtifactRepositoryManager = remoteAgent.getService(IArtifactRepositoryManager.SERVICE_NAME).asInstanceOf[IArtifactRepositoryManager]
@@ -186,19 +191,19 @@ object Resolve extends Support.Resolve {
           Some(location)
         } catch {
           case e: URISyntaxException =>
-            arg.log.warn(logPrefix(name) + "Unable to resolve repository URI : " + location)
+            arg.log.warn(logPrefix(arg.name) + "Unable to resolve repository URI : " + location)
             None
           case e: ProvisionException =>
-            arg.log.warn(logPrefix(name) + e.getMessage())
+            arg.log.warn(logPrefix(arg.name) + e.getMessage())
             None
           case e: Throwable =>
-            arg.log.warn(logPrefix(name) + e.getMessage())
+            arg.log.warn(logPrefix(arg.name) + e.getMessage())
             None
         }
       }
     }.flatten
     if (loadedPepositories.isEmpty) {
-      arg.log.info(logPrefix(name) + "There are no any usable repositories")
+      arg.log.info(logPrefix(arg.name) + "There are no any usable repositories")
       return Seq()
     }
     val targetPlatform = targetPlatformBuilder.buildTargetPlatform()
@@ -209,7 +214,7 @@ object Resolve extends Support.Resolve {
     val nonReactorUnits = (for (r <- resolutionResult) yield r.getNonReactorUnits().toArray()).flatten
     val artifacts = (for (r <- resolutionResult) yield r.getArtifacts()).flatten
     if (nonReactorUnits.isEmpty && artifacts.isEmpty) {
-      arg.log.info(logPrefix(name) + "There are no any resolved entries")
+      arg.log.info(logPrefix(arg.name) + "There are no any resolved entries")
       return Seq()
     }
 
@@ -225,9 +230,9 @@ object Resolve extends Support.Resolve {
       case nriu: IInstallableUnit =>
         // check if IInstallableUnit not exists in artifacts
         if (!artifacts.exists(_.getInstallableUnits().exists(_ == nriu)))
-          arg.log.info(logPrefix(name) + "Skip non reactor installable unit: " + nriu)
+          arg.log.info(logPrefix(arg.name) + "Skip non reactor installable unit: " + nriu)
       case nru =>
-        arg.log.info(logPrefix(name) + "Skip non reactor unit: " + nru)
+        arg.log.info(logPrefix(arg.name) + "Skip non reactor unit: " + nru)
     })
 
     // FYI:
@@ -241,13 +246,13 @@ object Resolve extends Support.Resolve {
             if (originModuleIds.exists(_.withSources)) {
               val sources = actualRepositories.map(aquireP2SourceCodeArtifacts(entry, riu, _)).flatten.distinct
               if (sources.isEmpty) {
-                arg.log.info(logPrefix(name) + "Collect P2 IU %s".format(riu))
-                arg.log.warn(logPrefix(name) + "Unable to find source code for " + riu)
+                arg.log.info(logPrefix(arg.name) + "Collect P2 IU %s".format(riu))
+                arg.log.warn(logPrefix(arg.name) + "Unable to find source code for " + riu)
                 arg.log.debug("%s -> [%s]".format(riu, originModuleIds.map(_.moduleId.copy(extraAttributes = Map())).mkString(",")))
                 Some(riu.getId() % entry.getId() % riu.getVersion().getOriginal()
                   from entry.getLocation.getAbsoluteFile.toURI.toURL.toString)
               } else {
-                arg.log.info(logPrefix(name) + "Collect P2 IU %s with source code".format(riu))
+                arg.log.info(logPrefix(arg.name) + "Collect P2 IU %s with source code".format(riu))
                 arg.log.debug("%s -> [%s]".format(riu, originModuleIds.map(_.moduleId.copy(extraAttributes = Map())).mkString(",")))
                 val moduleId = riu.getId() % entry.getId() % riu.getVersion().getOriginal() from
                   entry.getLocation.getAbsoluteFile.toURI.toURL.toString
@@ -257,18 +262,18 @@ object Resolve extends Support.Resolve {
                 Some(moduleIdWithSourceCode)
               }
             } else {
-              arg.log.info(logPrefix(name) + "Collect P2 IU %s".format(riu))
+              arg.log.info(logPrefix(arg.name) + "Collect P2 IU %s".format(riu))
               arg.log.debug("%s -> [%s]".format(riu, originModuleIds.map(_.moduleId.copy(extraAttributes = Map())).mkString(",")))
               Some(riu.getId() % entry.getId() % riu.getVersion().getOriginal()
                 from entry.getLocation.getAbsoluteFile.toURI.toURL.toString)
             }
           } else {
-            arg.log.warn(logPrefix(name) + "Collect an unbound installable unit: " + riu)
+            arg.log.warn(logPrefix(arg.name) + "Collect an unbound installable unit: " + riu)
             Some(riu.getId() % entry.getId() % riu.getVersion().getOriginal()
               from entry.getLocation.getAbsoluteFile.toURI.toURL.toString)
           }
         case ru =>
-          arg.log.warn(logPrefix(name) + "Skip an unknown reactor unit: " + ru)
+          arg.log.warn(logPrefix(arg.name) + "Skip an unknown reactor unit: " + ru)
           None
       }).flatten
     }.flatten
@@ -280,9 +285,8 @@ object Resolve extends Support.Resolve {
     // Check if we already processed our dependencies with same values
     val cached = for (id <- build.defined.keys) yield {
       implicit val projectRef = ProjectRef(uri, id)
-      val scope = arg.thisOSGiScope.copy(project = Select(projectRef))
-      arg.log.debug(logPrefix(name) + "Check is settings cached.")
-      isCached(Support.CacheP2Key(id), getDependencies(Dependency.P2, scope), getResolvers(Dependency.P2, scope))
+      isCached(Support.CacheP2Key(id), getDependencies(Dependency.P2, arg.thisOSGiScope),
+        getResolvers(Dependency.P2, arg.thisOSGiScope))(arg.copy(thisProjectRef = projectRef))
     }
     if (cached.forall(_ == true)) {
       arg.log.info("Pass P2 resolution: already resolved")
@@ -293,13 +297,13 @@ object Resolve extends Support.Resolve {
     } else {
       immutable.HashMap((for (id <- build.defined.keys) yield {
         implicit val projectRef = ProjectRef(uri, id)
-        (projectRef, resolveP2())
+        (projectRef, resolveP2()(arg.copy(thisProjectRef = projectRef)))
       }).toSeq: _*)
     }
   }
 
   /** Unpack packedAndGzipped to target */
-  protected def aquireGzippedPack200Artifact(packedAndGzipped: File, target: File)(implicit arg: Plugin.TaskArgument, projectRef: ProjectRef): Option[Throwable] = {
+  protected def aquireGzippedPack200Artifact(packedAndGzipped: File, target: File)(implicit arg: Plugin.TaskArgument): Option[Throwable] = {
     val out = new JarOutputStream(new BufferedOutputStream(new FileOutputStream(target)))
     val tmpFile = java.io.File.createTempFile("sbt-osgi-manager-", "-pack")
     tmpFile.deleteOnExit()
@@ -309,7 +313,7 @@ object Resolve extends Support.Resolve {
       None
     } catch {
       case e: Throwable =>
-        arg.log.error(logPrefix(name) + "Unable to unpack artifact: " + e)
+        arg.log.error(logPrefix(arg.name) + "Unable to unpack artifact: " + e)
         Some(e)
     } finally {
       try { out.close() } catch { case _: Throwable => }
@@ -317,7 +321,7 @@ object Resolve extends Support.Resolve {
     }
   }
   /** Download source code for P2 installable unit */
-  protected def aquireP2SourceCodeArtifacts(entry: P2ResolutionResult.Entry, iu: IInstallableUnit, repository: IArtifactRepository)(implicit arg: Plugin.TaskArgument, projectRef: ProjectRef): Seq[java.io.File] = try {
+  protected def aquireP2SourceCodeArtifacts(entry: P2ResolutionResult.Entry, iu: IInstallableUnit, repository: IArtifactRepository)(implicit arg: Plugin.TaskArgument): Seq[java.io.File] = try {
     // Assume that we have SimpleArtifactRepository
     val clazz = repository.getClass()
     val methodGetDescriptors = clazz.getDeclaredMethod("getDescriptors")
@@ -351,7 +355,7 @@ object Resolve extends Support.Resolve {
       val name = key.getId() + "_" + key.getVersion() + ".jar"
       val targetFile = new File(directory, name)
       if (!targetFile.exists()) {
-        arg.log.debug(logPrefix(name) + "Fetching source code of '" + key + "' to " + targetFile)
+        arg.log.debug(logPrefix(arg.name) + "Fetching source code of '" + key + "' to " + targetFile)
         val status = if (descriptor.getProperty(IArtifactDescriptor.FORMAT) == IArtifactDescriptor.FORMAT_PACKED) {
           val tmpFile = java.io.File.createTempFile("sbt-osgi-manager-", "-pack.gz")
           tmpFile.deleteOnExit()
@@ -382,27 +386,27 @@ object Resolve extends Support.Resolve {
           status
         }
         if (status.getCode() == IStatus.OK) {
-          arg.log.info(logPrefix(name) + "Aquire source code artifact: " + key)
+          arg.log.info(logPrefix(arg.name) + "Aquire source code artifact: " + key)
           Some(targetFile)
         } else {
-          arg.log.warn(logPrefix(name) + "Unable to download source code artifact %s: %s".format(key, status))
+          arg.log.warn(logPrefix(arg.name) + "Unable to download source code artifact %s: %s".format(key, status))
           try { targetFile.delete() } catch { case _: Throwable => }
           None
         }
       } else {
-        arg.log.debug(logPrefix(name) + "Get cached source code artifact " + key + " from " + targetFile)
+        arg.log.debug(logPrefix(arg.name) + "Get cached source code artifact " + key + " from " + targetFile)
         Some(targetFile)
       }
     }.flatten
     files.toSeq
   } catch {
     case e: Throwable =>
-      arg.log.debug(logPrefix(name) + "Unable to get source code dependency: " + e)
+      arg.log.debug(logPrefix(arg.name) + "Unable to get source code dependency: " + e)
       Seq()
   }
   /** Bind P2ResolutionResult.Entry(s) to SBT dependencies */
   protected def collectArtifactsPerDependency(dependencies: Seq[MavenDependency],
-    artifacts: Seq[P2ResolutionResult.Entry])(implicit arg: Plugin.TaskArgument, projectRef: ProjectRef): immutable.HashMap[P2ResolutionResult.Entry, Seq[MavenDependency]] = {
+    artifacts: Seq[P2ResolutionResult.Entry])(implicit arg: Plugin.TaskArgument): immutable.HashMap[P2ResolutionResult.Entry, Seq[MavenDependency]] = {
     // map id -> dependency
     val dependencyMap = immutable.HashMap(dependencies.map(d => d.getArtifactId() -> d): _*)
     // map parent IU -requires-> Seq(child IU) which represents the IU requirements
@@ -410,7 +414,7 @@ object Resolve extends Support.Resolve {
       case iu: IInstallableUnit =>
         Some(iu -> Seq[IInstallableUnit]())
       case iu =>
-        arg.log.error(logPrefix(name) + "Unknown type %s of installable unit '%s'".format(iu.getClass(), iu))
+        arg.log.error(logPrefix(arg.name) + "Unknown type %s of installable unit '%s'".format(iu.getClass(), iu))
         None
     }.flatten.toSeq).flatten: _*)
     // map child IU -used by-> Seq(parent IU)

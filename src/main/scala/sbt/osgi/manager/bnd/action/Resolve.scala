@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.digimead.sbt.osgi.manager.bnd.action
+package sbt.osgi.manager.bnd.action
 
 import java.io.BufferedOutputStream
 import java.io.File
@@ -50,13 +50,13 @@ import org.osgi.resource.Requirement
 import org.osgi.resource.Resource
 import org.osgi.service.resolver.ResolutionException
 import sbt._
-import org.digimead.sbt.osgi.manager.Dependency
-import org.digimead.sbt.osgi.manager.Dependency._
-import org.digimead.sbt.osgi.manager.Plugin
-import org.digimead.sbt.osgi.manager.Support
-import org.digimead.sbt.osgi.manager.Support._
-import org.digimead.sbt.osgi.manager.bnd.Bnd
-import org.digimead.sbt.osgi.manager.bnd.Logger
+import sbt.osgi.manager.Dependency
+import sbt.osgi.manager.Dependency._
+import sbt.osgi.manager.Plugin
+import sbt.osgi.manager.Support
+import sbt.osgi.manager.Support._
+import sbt.osgi.manager.bnd.Bnd
+import sbt.osgi.manager.bnd.Logger
 
 // This is consolidated thoughts about Bnd that was located across first version of my code.
 // It may save a bit of time for someone who will choose the same way.
@@ -87,7 +87,7 @@ import org.digimead.sbt.osgi.manager.bnd.Logger
 //    ... _p_allsourcepath, _p_dependson, _p_output and so on. Arhh pity aliens, I will decode your puzzle anyway ;-)
 //
 // Absolutely, Bnd code is bit more than junk.
-// I must to achieve my targets with only those instruments that I have. No one to blame.
+// I must achieve my targets with only those instruments that I have. No one to blame.
 //
 //    Ezh
 
@@ -99,34 +99,40 @@ object Resolve extends Support.Resolve {
   val localRepositoryLocation = new URI("file:/")
 
   /** Resolve the dependency for the specific project against OBR repository */
-  def resolveOBR(resolvedDependencies: Seq[File])(implicit arg: Plugin.TaskArgument, projectRef: ProjectRef): Seq[ModuleID] = {
-    val scope = arg.thisOSGiScope.copy(project = Select(projectRef))
+  def resolveOBR(resolvedDependencies: Seq[File])(implicit arg: Plugin.TaskArgument): Seq[ModuleID] = {
     // get resolvers as Seq[(id, url)]
-    val resolvers = getResolvers(Dependency.OBR, scope)
-    val dependencies = getDependencies(Dependency.OBR, scope)
+    val resolvers = getResolvers(Dependency.OBR, arg.thisOSGiScope)
+    val dependencies = getDependencies(Dependency.OBR, arg.thisOSGiScope)
     if (resolvers.nonEmpty && dependencies.nonEmpty) {
-      arg.log.info(logPrefix(name) + "Resolve OBR dependencies")
+      arg.log.info(logPrefix(arg.name) + "Resolve OBR dependencies")
       val bridge = Bnd.get()
       val modules = resolveOBR(dependencies, resolvers, bridge, resolvedDependencies)
-      updateCache(CacheOBRKey(projectRef.project), dependencies, resolvers)
+      val resolved = sbt.Keys.libraryDependencies in arg.thisScope get arg.extracted.structure.data getOrElse Seq()
+      updateCache(CacheOBRKey(arg.thisProjectRef.project), dependencies, resolvers)
+      modules.filterNot { m =>
+        val alreadyInLibraryDependencies = resolved.exists(_ == m)
+        if (alreadyInLibraryDependencies)
+          arg.log.debug(logPrefix(arg.name) + "skip, already in libraryDependencies: " + m)
+        alreadyInLibraryDependencies
+      }
       modules
     } else {
-      arg.log.info(logPrefix(name) + "No OBR dependencies found")
-      updateCache(CacheOBRKey(projectRef.project), Seq(), Seq())
+      arg.log.info(logPrefix(arg.name) + "No OBR dependencies found")
+      updateCache(CacheOBRKey(arg.thisProjectRef.project), Seq(), Seq())
       Seq()
     }
   }
   /** Resolve the dependency against OBR repository */
   def resolveOBR(dependencies: Seq[ModuleID], repositories: Seq[(String, URI)], bnd: Bnd,
-    resolvedDependencies: Seq[File])(implicit arg: Plugin.TaskArgument, projectRef: ProjectRef): Seq[ModuleID] = {
+    resolvedDependencies: Seq[File])(implicit arg: Plugin.TaskArgument): Seq[ModuleID] = {
     val model = bnd.createModel()
     val log = new Logger(arg.log)
     if (model.getRunFw() == null || model.getRunFw().isEmpty()) {
-      arg.log.error(logPrefix(name) + "The OSGi Framework and Execution Environment must be specified for resolution.")
+      arg.log.error(logPrefix(arg.name) + "The OSGi Framework and Execution Environment must be specified for resolution.")
       return Seq()
     }
     if (model.getEE() == null) {
-      arg.log.error(logPrefix(name) + "The OSGi Framework and Execution Environment must be specified for resolution.")
+      arg.log.error(logPrefix(arg.name) + "The OSGi Framework and Execution Environment must be specified for resolution.")
       return Seq()
     }
     val requirements = dependencies.map { moduleId =>
@@ -186,7 +192,7 @@ object Resolve extends Support.Resolve {
                 }
               } catch {
                 case e: Throwable =>
-                  arg.log.warn(logPrefix(name) + "Unable create ModuleID for %s %s at %s: %s".format(bsn, version, handle.getName(), e))
+                  arg.log.warn(logPrefix(arg.name) + "Unable create ModuleID for %s %s at %s: %s".format(bsn, version, handle.getName(), e))
                   None
               })
               file.map((bsn, version, _, repository))
@@ -203,7 +209,7 @@ object Resolve extends Support.Resolve {
           case (bsn, version, file, repository) => !resolvedDependencies.exists(_.getAbsolutePath() == file.getAbsolutePath())
         }.map {
           case (bsn, version, file, repository) =>
-            arg.log.info(logPrefix(name) + "Collect OBR bundle %s %s".format(bsn, version))
+            arg.log.info(logPrefix(arg.name) + "Collect OBR bundle %s %s".format(bsn, version))
             arg.log.debug("%s %s -> [%s] from %s".format(bsn, version, "?", repository.getName()))
             Some(bsn % bsn % version from file.getAbsoluteFile.toURI.toURL.toString)
         }.flatten
@@ -214,7 +220,7 @@ object Resolve extends Support.Resolve {
       }
     } catch {
       case e: Throwable =>
-        arg.log.error(logPrefix(name) + "Exception during resolution. " + e)
+        arg.log.error(logPrefix(arg.name) + "Exception during resolution. " + e)
         Seq()
     }
   }
@@ -226,8 +232,7 @@ object Resolve extends Support.Resolve {
     val cached = for (id <- build.defined.keys) yield {
       implicit val projectRef = ProjectRef(uri, id)
       val scope = arg.thisOSGiScope.copy(project = Select(projectRef))
-      arg.log.debug(logPrefix(name) + "Check is settings cached.")
-      isCached(CacheOBRKey(id), getDependencies(Dependency.OBR, scope), getResolvers(Dependency.OBR, scope))
+      isCached(CacheOBRKey(id), getDependencies(Dependency.OBR, scope), getResolvers(Dependency.OBR, scope))(arg.copy(thisProjectRef = projectRef))
     }
     if (cached.forall(_ == true)) {
       arg.log.info("Pass OBR resolution: already resolved")
@@ -238,12 +243,12 @@ object Resolve extends Support.Resolve {
     } else {
       immutable.HashMap((for (id <- build.defined.keys) yield {
         implicit val projectRef = ProjectRef(uri, id)
-        (projectRef, resolveOBR(resolvedDependencies.get(projectRef) getOrElse Seq()))
+        (projectRef, resolveOBR(resolvedDependencies.get(projectRef) getOrElse Seq())(arg.copy(thisProjectRef = projectRef)))
       }).toSeq: _*)
     }
   }
   /** Get exists or create new R5 index if user provides file:/directory URI */
-  protected def aquireRepositoryIndex(id: String, location: URI, workspace: Workspace)(implicit arg: Plugin.TaskArgument, projectRef: ProjectRef): Option[AbstractIndexedRepo] = {
+  protected def aquireRepositoryIndex(id: String, location: URI, workspace: Workspace)(implicit arg: Plugin.TaskArgument): Option[AbstractIndexedRepo] = {
     val repository = if (location.getScheme() == "file") {
       val local = new File(location)
       if (!local.exists) {
@@ -265,7 +270,7 @@ object Resolve extends Support.Resolve {
               return None
           }
         else
-          arg.log.debug(logPrefix(name) + "Use pregenerated OSGi R5 index '%s' with root URI '%s' at %s".format(id, location, index))
+          arg.log.debug(logPrefix(arg.name) + "Use pregenerated OSGi R5 index '%s' with root URI '%s' at %s".format(id, location, index))
         repository
       } else
         createR5FixedIndexedRepository(id, location) // URI points to file
@@ -281,7 +286,7 @@ object Resolve extends Support.Resolve {
       Some(repository)
     } catch {
       case e: Throwable =>
-        arg.log.error(logPrefix(name) + e.getMessage)
+        arg.log.error(logPrefix(arg.name) + e.getMessage)
         None
     }
   }
@@ -327,8 +332,8 @@ object Resolve extends Support.Resolve {
   }
   /** Generate R5 repository index */
   protected def generateR5Index(jarFiles: Set[File], repoName: String, rootUri: URI, index: File, generatingProviderR5: IRepositoryContentProvider,
-    workspace: Workspace, pretty: Boolean = true)(implicit arg: Plugin.TaskArgument, projectRef: ProjectRef): Option[File] = {
-    arg.log.debug(logPrefix(name) + "Generate new OSGi R5 index '%s' with root URI '%s' at %s".format(repoName, rootUri, index))
+    workspace: Workspace, pretty: Boolean = true)(implicit arg: Plugin.TaskArgument): Option[File] = {
+    arg.log.debug(logPrefix(arg.name) + "Generate new OSGi R5 index '%s' with root URI '%s' at %s".format(repoName, rootUri, index))
     var output: OutputStream = null
     try {
       output = new BufferedOutputStream(new FileOutputStream(index))
@@ -343,13 +348,13 @@ object Resolve extends Support.Resolve {
     }
   }
   /** Return R5 repository index for resolved dependencies */
-  protected def getResolvedDependenciesIndex(resolvedDependencies: Seq[File], workspace: Workspace)(implicit arg: Plugin.TaskArgument, projectRef: ProjectRef): Option[FixedIndexedRepo] =
+  protected def getResolvedDependenciesIndex(resolvedDependencies: Seq[File], workspace: Workspace)(implicit arg: Plugin.TaskArgument): Option[FixedIndexedRepo] =
     if (resolvedDependencies.isEmpty)
       None
     else {
       val jars = resolvedDependencies.filter(f => f.exists() && !f.isDirectory() && f.getName().endsWith(".jar")).toList
       if (jars.isEmpty) {
-        arg.log.warn(logPrefix(name) + "Resolved dependencies has no artifacts on local file system")
+        arg.log.warn(logPrefix(arg.name) + "Resolved dependencies has no artifacts on local file system")
         return None
       }
       val project = workspace.getProject(Bnd.defaultProjectName)
@@ -366,7 +371,7 @@ object Resolve extends Support.Resolve {
             return None
         }
       else
-        arg.log.debug(logPrefix(name) + "Use pregenerated OSGi R5 index '%s' with root URI '%s' at %s".format(internalRepositoryName, localRepositoryLocation, index))
+        arg.log.debug(logPrefix(arg.name) + "Use pregenerated OSGi R5 index '%s' with root URI '%s' at %s".format(internalRepositoryName, localRepositoryLocation, index))
       Option(repository)
     }
 }

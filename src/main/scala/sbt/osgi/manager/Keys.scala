@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.digimead.sbt.osgi.manager
+package sbt.osgi.manager
 
 import java.util.Properties
 import sbt._
@@ -36,6 +36,9 @@ object Keys {
   lazy val osgiBndPrepareHome = TaskKey[java.io.File]("prepare-bnd-home", "Prepare Bnd home directory")
   lazy val osgiMavenPrepareHome = TaskKey[java.io.File]("prepare-maven-home", "Prepare Maven home directory")
   lazy val osgiResetCache = TaskKey[Unit]("reset-cache", "Reset plugin cache(s)")
+
+  // Internal
+  //lazy val osgiResolutionHash = SettingKey[Seq[Any]]("resolution-hash", "Internal variable that contains a sequence of key object hash values")
 
   /////////////////////////////////////
   // Bnd

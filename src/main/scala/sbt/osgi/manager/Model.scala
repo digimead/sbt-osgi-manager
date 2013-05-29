@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.digimead.sbt.osgi.manager
+package sbt.osgi.manager
 
 import scala.collection.JavaConversions._
 
@@ -33,8 +33,8 @@ import aQute.bnd.build.model.conversions.HeaderClauseListConverter
 import aQute.bnd.build.model.conversions.VersionedClauseConverter
 import aQute.bnd.header.Attrs
 import sbt._
-import org.digimead.sbt.osgi.manager.Keys._
-import org.digimead.sbt.osgi.manager.Support._
+import sbt.osgi.manager.Keys._
+import sbt.osgi.manager.Support._
 
 object Model {
   /////////////////////////////////////

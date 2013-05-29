@@ -16,16 +16,20 @@
  * limitations under the License.
  */
 
-package org.digimead.sbt.osgi.manager.bnd.action
+package sbt.osgi.manager.bnd.action
 
 import java.io.File
-import org.digimead.sbt.osgi.manager.Plugin
-import org.digimead.sbt.osgi.manager.Support._
-import aQute.bnd.osgi.Jar
+
 import scala.collection.JavaConversions._
-import sbt._
+
+import sbt.osgi.manager.Model
+import sbt.osgi.manager.Plugin
+import sbt.osgi.manager.Support._
+
 import aQute.bnd.osgi.Analyzer
-import org.digimead.sbt.osgi.manager.Model
+import aQute.bnd.osgi.Jar
+import sbt.IO
+import sbt.ModuleID
 
 /** Fetch project dependencies as bundles */
 object Fetch {
@@ -91,6 +95,7 @@ object Fetch {
       analyzer = new Analyzer()
       // analyzer.use(null) // WTF? Processor? Not today.
       analyzer.setJar(from)
+      // add information about bundle via fetchInfo
       fetchInfo(moduleId, to.getName, analyzer)
       val newManifest = analyzer.calcManifest()
       if (analyzer.isOk()) {

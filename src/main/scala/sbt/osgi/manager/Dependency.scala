@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.digimead.sbt.osgi.manager
+package sbt.osgi.manager
 
 import java.net.URI
 import java.net.URL

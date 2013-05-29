@@ -16,15 +16,15 @@
  * limitations under the License.
  */
 
-package org.digimead.sbt.osgi.manager.maven.plexus
+package sbt.osgi.manager.maven.plexus
 
 import java.io.PrintWriter
 import java.io.StringWriter
 
 import org.codehaus.plexus.logging.AbstractLogger
 
-import org.digimead.sbt.osgi.manager.Plugin
-import org.digimead.sbt.osgi.manager.Support._
+import sbt.osgi.manager.Plugin
+import sbt.osgi.manager.Support._
 
 class Logger(threshold: Int, name: String) extends AbstractLogger(threshold, name) {
   def getChildLogger(name: String) = this

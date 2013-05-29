@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.digimead.sbt.osgi.manager.bnd.action
+package sbt.osgi.manager.bnd.action
 
 import java.io.File
 import java.util.Properties
@@ -27,9 +27,9 @@ import scala.collection.JavaConversions._
 import aQute.bnd.osgi.Analyzer
 import aQute.bnd.osgi.{ Constants => BndConstant }
 import sbt._
-import org.digimead.sbt.osgi.manager.Model
-import org.digimead.sbt.osgi.manager.Plugin
-import org.digimead.sbt.osgi.manager.Support._
+import sbt.osgi.manager.Model
+import sbt.osgi.manager.Plugin
+import sbt.osgi.manager.Support._
 
 object GenerateManifest {
   def generate(product: File, dependencyClasspath: Seq[File])(implicit arg: Plugin.TaskArgument): Manifest = {
