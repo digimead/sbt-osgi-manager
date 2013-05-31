@@ -112,13 +112,13 @@ object Resolve extends Support.Resolve {
       modules.filterNot { m =>
         val alreadyInLibraryDependencies = resolved.exists(_ == m)
         if (alreadyInLibraryDependencies)
-          arg.log.debug(logPrefix(arg.name) + "skip, already in libraryDependencies: " + m)
+          arg.log.debug(logPrefix(arg.name) + "Skip, already in libraryDependencies: " + m)
         alreadyInLibraryDependencies
       }
       modules
     } else {
       arg.log.info(logPrefix(arg.name) + "No OBR dependencies found")
-      updateCache(CacheOBRKey(arg.thisProjectRef.project), Seq(), Seq())
+      updateCache(CacheOBRKey(arg.thisProjectRef.project), dependencies, resolvers)
       Seq()
     }
   }
@@ -201,7 +201,7 @@ object Resolve extends Support.Resolve {
           }
         } catch {
           case _: Throwable =>
-            arg.log.error("Unable to process OBR resource %s from repository %s".format(resource, repository.getName()))
+            arg.log.error(logPrefix(arg.name) + "Unable to process OBR resource %s from repository %s".format(resource, repository.getName()))
             None
         })
         resources.flatten.filter {
@@ -210,12 +210,12 @@ object Resolve extends Support.Resolve {
         }.map {
           case (bsn, version, file, repository) =>
             arg.log.info(logPrefix(arg.name) + "Collect OBR bundle %s %s".format(bsn, version))
-            arg.log.debug("%s %s -> [%s] from %s".format(bsn, version, "?", repository.getName()))
+            arg.log.debug(logPrefix(arg.name) + "%s %s -> [%s] from %s".format(bsn, version, "?", repository.getName()))
             Some(bsn % bsn % version from file.getAbsoluteFile.toURI.toURL.toString)
         }.flatten
       } catch {
         case e: ResolutionException =>
-          arg.log.warn("Unable to resolve: " + e)
+          arg.log.warn(logPrefix(arg.name) + "Unable to resolve: " + e)
           Seq()
       }
     } catch {
@@ -231,11 +231,12 @@ object Resolve extends Support.Resolve {
     // Check if we already processed our dependencies with same values
     val cached = for (id <- build.defined.keys) yield {
       implicit val projectRef = ProjectRef(uri, id)
-      val scope = arg.thisOSGiScope.copy(project = Select(projectRef))
-      isCached(CacheOBRKey(id), getDependencies(Dependency.OBR, scope), getResolvers(Dependency.OBR, scope))(arg.copy(thisProjectRef = projectRef))
+      val localArg = arg.copy(thisProjectRef = projectRef)
+      isCached(CacheOBRKey(id), getDependencies(Dependency.OBR, localArg.thisOSGiScope)(localArg),
+        getResolvers(Dependency.OBR, localArg.thisOSGiScope)(localArg))(localArg)
     }
     if (cached.forall(_ == true)) {
-      arg.log.info("Pass OBR resolution: already resolved")
+      arg.log.info(logPrefix(arg.name) + "Pass OBR resolution: already resolved")
       immutable.HashMap((for (id <- build.defined.keys) yield {
         val projectRef = ProjectRef(uri, id)
         (projectRef, Seq())
@@ -252,7 +253,7 @@ object Resolve extends Support.Resolve {
     val repository = if (location.getScheme() == "file") {
       val local = new File(location)
       if (!local.exists) {
-        arg.log.warn("OBR %s with URI %s not found".format(id, location))
+        arg.log.warn(logPrefix(arg.name) + "OBR %s with URI %s not found".format(id, location))
         return None
       }
       if (local.isDirectory()) {
@@ -266,7 +267,7 @@ object Resolve extends Support.Resolve {
             case Some(generatingProviderR5) if generatingProviderR5.supportsGeneration() =>
               generateR5Index(jars.toSet, id, localRepositoryLocation, index, generatingProviderR5, workspace)
             case _ =>
-              arg.log.error("Unable to find R5 generating provider for '%s' with URI %s".format(id, location))
+              arg.log.error(logPrefix(arg.name) + "Unable to find R5 generating provider for '%s' with URI %s".format(id, location))
               return None
           }
         else
@@ -341,7 +342,7 @@ object Resolve extends Support.Resolve {
       Some(index)
     } catch {
       case e: Throwable =>
-        arg.log.error("Unable to generate repository index: " + e)
+        arg.log.error(logPrefix(arg.name) + "Unable to generate repository index: " + e)
         None
     } finally {
       try { Option(output).foreach(_.close) } catch { case _: Throwable => }
@@ -367,7 +368,7 @@ object Resolve extends Support.Resolve {
             generateR5Index(jars.toSet, internalRepositoryName, localRepositoryLocation,
               index, generatingProviderR5, workspace)
           case _ =>
-            arg.log.error("Unable to find R5 generating provider for resolved dependencies repository.")
+            arg.log.error(logPrefix(arg.name) + "Unable to find R5 generating provider for resolved dependencies repository.")
             return None
         }
       else

@@ -59,7 +59,7 @@ object Fetch {
     arg.log.info(logPrefix(arg.name) + "Fetch bundles to " + output)
     classpath.foreach {
       case Item(moduleId, artifact) if artifact.isFile =>
-        arg.log.debug(logPrefix(arg.name) + "process " + artifact.getCanonicalPath)
+        arg.log.debug(logPrefix(arg.name) + "Process " + artifact.getCanonicalPath)
         var jar: Jar = null
         try {
           jar = new Jar(artifact)
@@ -69,15 +69,15 @@ object Fetch {
           entries.find { _.getKey().toString == "Bundle-SymbolicName" } match {
             case Some(e) =>
               val bundleName = e.getValue().toString.split(";").head
-              arg.log.info("Fetch bundle %s: %s".format(bundleName, artifact.getName))
+              arg.log.info(logPrefix(arg.name) + "Fetch bundle %s: %s".format(bundleName, artifact.getName))
               try {
                 IO.copyFile(artifact, target)
               } catch {
                 case e: Throwable =>
-                  arg.log.error(logPrefix(arg.name) + "unable to fetch bundle %s: %s".format(bundleName, e))
+                  arg.log.error(logPrefix(arg.name) + "Unable to fetch bundle %s: %s".format(bundleName, e))
               }
             case None =>
-              arg.log.info("Convert plain jar %s to bundle".format(artifact.getName))
+              arg.log.info(logPrefix(arg.name) + "Convert plain jar %s to bundle".format(artifact.getName))
               val fetchInfo = Model.getSettingsFetchInfo getOrThrow "osgiFetchInfo not defined"
               convert(moduleId, jar, target, fetchInfo)
           }
@@ -107,7 +107,7 @@ object Fetch {
       }
     } catch {
       case e: Throwable =>
-        arg.log.error(logPrefix(arg.name) + "unable to convert %s to bundle: %s".format(to.getName, e))
+        arg.log.error(logPrefix(arg.name) + "Unable to convert %s to bundle: %s".format(to.getName, e))
     } finally {
       try { if (analyzer != null) analyzer.close() } catch { case _: Throwable => }
     }

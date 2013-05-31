@@ -104,28 +104,33 @@ object Support {
     def getOrThrow(onError: String) = option getOrElse { throw new NoSuchElementException(onError) }
   }
   trait Resolve {
-    /** Simple cache that holds per project resolvers + dependencies */
-    private val cache = new mutable.HashMap[CacheKey, Seq[Int]] with mutable.SynchronizedMap[CacheKey, Seq[Int]]
+    /** Simple cache that holds per project already processed: resolvers + dependencies */
+    private val cache = new mutable.HashMap[CacheKey, Seq[Int]]
+
     /** Reset resolution cache */
-    def resetCache() = cache.clear
+    def resetCache()(implicit arg: Plugin.TaskArgument) = synchronized {
+      arg.log.debug(logPrefix(arg.name) + "Clear cache.")
+      cache.clear
+    }
     /** Check if there are settings which is already cached for the cacheKey */
-    def isCached(cacheKey: CacheKey, dependencies: Seq[ModuleID], resolvers: Seq[(String, String)])(implicit arg: Plugin.TaskArgument): Boolean = cache.get(cacheKey) match {
-      case Some(cached) =>
-        val value = (dependencies.map(_.hashCode) ++ resolvers.map(_.hashCode)).sorted
-        arg.log.debug(logPrefix(arg.name) + "Check cache for " + cacheKey + " with value " + cached + " against value: " + value)
-        val result = cached.sameElements(value)
-        if (result)
-          arg.log.debug(logPrefix(arg.name) + "Cache HIT.")
-        else
-          arg.log.debug(logPrefix(arg.name) + "Cache MISS.")
-        result
-      case None =>
-        arg.log.debug(logPrefix(arg.name) + "Cache is empty.")
-        arg.log.error("!" + cacheKey + cache)
-        false
+    def isCached(cacheKey: CacheKey, dependencies: Seq[ModuleID], resolvers: Seq[(String, String)])(implicit arg: Plugin.TaskArgument): Boolean = synchronized {
+      cache.get(cacheKey) match {
+        case Some(cached) =>
+          val value = (dependencies.map(_.hashCode) ++ resolvers.map(_.hashCode)).sorted
+          arg.log.debug(logPrefix(arg.name) + "Check cache for " + cacheKey + " with value " + cached + " against value: " + value)
+          val result = cached.sameElements(value)
+          if (result)
+            arg.log.debug(logPrefix(arg.name) + "Cache HIT.")
+          else
+            arg.log.debug(logPrefix(arg.name) + "Cache MISS.")
+          result
+        case None =>
+          arg.log.debug(logPrefix(arg.name) + "Cache is empty.")
+          false
+      }
     }
     /** Update P2 cache value */
-    def updateCache(cacheKey: CacheKey, dependencies: Seq[ModuleID], resolvers: Seq[(String, String)])(implicit arg: Plugin.TaskArgument) = {
+    def updateCache(cacheKey: CacheKey, dependencies: Seq[ModuleID], resolvers: Seq[(String, String)])(implicit arg: Plugin.TaskArgument) = synchronized {
       val value = (dependencies.map(_.hashCode) ++ resolvers.map(_.hashCode)).sorted
       arg.log.debug(logPrefix(arg.name) + "Update cache for " + cacheKey + " with value: " + value)
       cache(cacheKey) = value

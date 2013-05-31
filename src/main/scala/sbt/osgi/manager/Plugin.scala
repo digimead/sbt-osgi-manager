@@ -163,7 +163,8 @@ object Plugin {
       actualState
   }
   /** Reset all plugin caches */
-  def osgiResetCacheTask {
+  def osgiResetCacheTask = (state, streams, thisProjectRef) map { (state, streams, thisProjectRef) =>
+    implicit val arg = TaskArgument(state, thisProjectRef, Some(streams))
     // It is only one now
     maven.action.Resolve.resetCache()
   }
@@ -205,8 +206,9 @@ object Plugin {
       implicit val projectRef = ProjectRef(uri, id)
       val scope = arg.thisScope.copy(project = Select(projectRef))
       val taskExternalDependencyClasspath = externalDependencyClasspath in scope in Compile
-      arg.log.debug(logPrefix(arg.copy(thisProjectRef = projectRef).name) + "Collect external-dependency-classpath")
-      val projectDependencies = Project.runTask(taskExternalDependencyClasspath, arg.state) match {
+      val localArg = arg.copy(thisProjectRef = projectRef)
+      arg.log.debug(logPrefix(localArg.name) + "Collect external-dependency-classpath")
+      val projectDependencies = Project.runTask(taskExternalDependencyClasspath, localArg.state) match {
         case None =>
           None // Key wasn't defined.
         case Some((state, Inc(inc))) =>

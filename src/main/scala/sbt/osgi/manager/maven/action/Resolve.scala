@@ -110,11 +110,11 @@ object Resolve extends Support.Resolve {
     arg.log.info(logPrefix(arg.name) + "Resolve artifact: " + artifact)
     val result = repositorySystem.resolve(request)
     for (exception <- result.getErrorArtifactExceptions())
-      arg.log.error(exception.toString())
+      arg.log.error(logPrefix(arg.name) + exception.toString())
     for (exception <- result.getCircularDependencyExceptions())
-      arg.log.error(exception.toString())
+      arg.log.error(logPrefix(arg.name) + exception.toString())
     if (result.getMissingArtifacts().nonEmpty)
-      arg.log.warn("Unable to locate " + result.getMissingArtifacts().mkString(","))
+      arg.log.warn(logPrefix(arg.name) + "Unable to locate " + result.getMissingArtifacts().mkString(","))
 
     val artifacts = result.getArtifacts()
     arg.log.info(logPrefix(arg.name) + "Resolved artifacts:\n" + result)
@@ -160,12 +160,12 @@ object Resolve extends Support.Resolve {
       modules.filterNot { m =>
         val alreadyInLibraryDependencies = resolved.exists(_ == m)
         if (alreadyInLibraryDependencies)
-          arg.log.debug(logPrefix(arg.name) + "skip, already in libraryDependencies: " + m)
+          arg.log.debug(logPrefix(arg.name) + "Skip, already in libraryDependencies: " + m)
         alreadyInLibraryDependencies
       }
     } else {
       arg.log.info(logPrefix(arg.name) + "No P2 dependencies found")
-      updateCache(CacheP2Key(arg.thisProjectRef.project), Seq(), Seq())
+      updateCache(CacheP2Key(arg.thisProjectRef.project), dependencies, resolvers)
       Seq()
     }
   }
@@ -248,12 +248,12 @@ object Resolve extends Support.Resolve {
               if (sources.isEmpty) {
                 arg.log.info(logPrefix(arg.name) + "Collect P2 IU %s".format(riu))
                 arg.log.warn(logPrefix(arg.name) + "Unable to find source code for " + riu)
-                arg.log.debug("%s -> [%s]".format(riu, originModuleIds.map(_.moduleId.copy(extraAttributes = Map())).mkString(",")))
+                arg.log.debug(logPrefix(arg.name) + "%s -> [%s]".format(riu, originModuleIds.map(_.moduleId.copy(extraAttributes = Map())).mkString(",")))
                 Some(riu.getId() % entry.getId() % riu.getVersion().getOriginal()
                   from entry.getLocation.getAbsoluteFile.toURI.toURL.toString)
               } else {
                 arg.log.info(logPrefix(arg.name) + "Collect P2 IU %s with source code".format(riu))
-                arg.log.debug("%s -> [%s]".format(riu, originModuleIds.map(_.moduleId.copy(extraAttributes = Map())).mkString(",")))
+                arg.log.debug(logPrefix(arg.name) + "%s -> [%s]".format(riu, originModuleIds.map(_.moduleId.copy(extraAttributes = Map())).mkString(",")))
                 val moduleId = riu.getId() % entry.getId() % riu.getVersion().getOriginal() from
                   entry.getLocation.getAbsoluteFile.toURI.toURL.toString
                 val artifactsWithSourceCode = sources.map(file =>
@@ -263,7 +263,7 @@ object Resolve extends Support.Resolve {
               }
             } else {
               arg.log.info(logPrefix(arg.name) + "Collect P2 IU %s".format(riu))
-              arg.log.debug("%s -> [%s]".format(riu, originModuleIds.map(_.moduleId.copy(extraAttributes = Map())).mkString(",")))
+              arg.log.debug(logPrefix(arg.name) + "%s -> [%s]".format(riu, originModuleIds.map(_.moduleId.copy(extraAttributes = Map())).mkString(",")))
               Some(riu.getId() % entry.getId() % riu.getVersion().getOriginal()
                 from entry.getLocation.getAbsoluteFile.toURI.toURL.toString)
             }
@@ -285,11 +285,12 @@ object Resolve extends Support.Resolve {
     // Check if we already processed our dependencies with same values
     val cached = for (id <- build.defined.keys) yield {
       implicit val projectRef = ProjectRef(uri, id)
-      isCached(Support.CacheP2Key(id), getDependencies(Dependency.P2, arg.thisOSGiScope),
-        getResolvers(Dependency.P2, arg.thisOSGiScope))(arg.copy(thisProjectRef = projectRef))
+      val localArg = arg.copy(thisProjectRef = projectRef)
+      isCached(Support.CacheP2Key(id), getDependencies(Dependency.P2, localArg.thisOSGiScope)(localArg),
+        getResolvers(Dependency.P2, localArg.thisOSGiScope)(localArg))(localArg)
     }
     if (cached.forall(_ == true)) {
-      arg.log.info("Pass P2 resolution: already resolved")
+      arg.log.info(logPrefix(arg.name) + "Pass P2 resolution: already resolved")
       immutable.HashMap((for (id <- build.defined.keys) yield {
         val projectRef = ProjectRef(uri, id)
         (projectRef, Seq())
