@@ -151,6 +151,7 @@ object Plugin {
     else
       Seq[Project.Setting[_]]()
     val dependencySettings = dependencySettingsP2.flatten ++ dependencySettingsOBR.flatten
+    arg.log.debug(logPrefix("*") + "Add  settings: " + dependencySettings)
     if (dependencySettings.nonEmpty) {
       arg.log.info(logPrefix(arg.name) + "Update library dependencies")
       val newStructure = {

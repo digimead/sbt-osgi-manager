@@ -27,7 +27,7 @@ object Keys {
 
   lazy val osgiDirectory = SettingKey[java.io.File]("directory", "Root directory with temporary OSGi data")
   lazy val osgiFetchPath = SettingKey[Option[java.io.File]]("fetch-path", "Location for 'fetch' task bundles")
-  lazy val osgiFetchInfo = SettingKey[(Option[ModuleID], String, Analyzer) => Unit]("fetch-info", "Add infromation about bundle to analyzer.")
+  lazy val osgiFetchInfo = SettingKey[(Option[ModuleID], String, Analyzer, Plugin.TaskArgument) => Unit]("fetch-info", "Add infromation about bundle to analyzer.")
 
   // Tasks
 

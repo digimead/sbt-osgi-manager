@@ -25,6 +25,9 @@ import scala.collection.JavaConversions._
 import scala.collection.mutable
 
 import org.codehaus.plexus.util.Os
+import org.eclipse.equinox.internal.p2.metadata.VersionParser
+import org.eclipse.equinox.p2.metadata.Version
+
 import sbt._
 import sbt.Keys._
 
@@ -98,6 +101,60 @@ object Support {
     } finally {
       thread.setContextClassLoader(oldContext)
     }
+  }
+  // Some bright ideas on https://github.com/inventage/version-tiger/blob/master/com.inventage.tools.versiontiger/
+  //   .../src/main/java/com/inventage/tools/versiontiger/internal/impl/OsgiVersionImpl.java
+  /**
+   * Convert string to valid OSGi version
+   */
+  def toOSGiVersion(version: String)(implicit arg: Plugin.TaskArgument): Version = {
+    def filter(s: String) = s.trim match {
+      case s if s.nonEmpty => Some(s)
+      case s => None
+    }
+    val qualiferPattern = """(\d*)(.+)""".r.pattern
+    val parts = version.split("""[.-]""")
+    val (major, minor, micro, qualifier) = if (parts.length > 1) {
+      val qualifier = parts.lastOption.flatMap { string =>
+        val m = qualiferPattern.matcher(string)
+        if (string.forall(_.isDigit) && parts.length < 3) {
+          None // It is minor or micro
+        } else {
+          if (m.matches()) Some(m.group(1)) else None
+        }
+      }
+      val major = parts.headOption.flatMap(string => """\d+""".r.findFirstIn(string))
+      val minor = parts.drop(1).headOption.flatMap(string => """^\d+""".r.findFirstIn(string))
+      val micro = parts.drop(2).headOption.flatMap(string => """^\d+""".r.findFirstIn(string))
+      (major, minor, micro, qualifier)
+    } else if (parts.length > 0) {
+      val qualifier = parts.lastOption.flatMap { string =>
+        val m = qualiferPattern.matcher(string)
+        if (string.forall(_.isDigit)) {
+          None // It is major
+        } else {
+          if (m.matches()) Some(m.group(1)) else None
+        }
+      }
+      val major = parts.headOption.flatMap(string => """\d+""".r.findFirstIn(string))
+      (major, None, None, qualifier)
+    } else
+      (None, None, None, None)
+    val majorVersion = major.flatMap(filter) getOrElse "0"
+    val minorVersion = minor.flatMap(filter) getOrElse "0"
+    val microVersion = micro.flatMap(filter) getOrElse "0"
+    val qualifierVersion = qualifier.flatMap(filter).map { string =>
+      // add leading 0- if qualifier not beginning from digit
+      if (string.head.isDigit) string else "0-" + string
+    } getOrElse ""
+    val converted = if (majorVersion == "0" && minorVersion == "0" && microVersion == "0" && qualifierVersion.isEmpty)
+      "0.0.1"
+    else if (qualifierVersion.nonEmpty)
+      Seq(majorVersion, minorVersion, microVersion, qualifierVersion).mkString(".")
+    else
+      Seq(majorVersion, minorVersion, microVersion).mkString(".")
+    arg.log.debug(logPrefix(arg.name) + "Convert version %s -> %s".format(version, converted))
+    VersionParser.parse(converted, 0, converted.length())
   }
 
   class RichOption[T](option: Option[T]) {

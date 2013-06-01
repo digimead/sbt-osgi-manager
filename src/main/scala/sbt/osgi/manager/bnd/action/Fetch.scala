@@ -42,13 +42,13 @@ object Fetch {
    *   analyzer.setBundleVersion("1.0.0")
    */
   /** Default Fn that adds information about bundle to analyzer */
-  def defaultFetchInfo(module: Option[ModuleID], name: String, analyzer: Analyzer) {
+  def defaultFetchInfo(module: Option[ModuleID], name: String, analyzer: Analyzer, arg: Plugin.TaskArgument) {
     analyzer.setImportPackage("*;resolution:=optional")
     analyzer.setExportPackage("*")
     module match {
       case Some(module) =>
         analyzer.setBundleSymbolicName(module.organization + "." + module.name)
-        analyzer.setBundleVersion("0.0.1.0-SNAPSHOT")
+        analyzer.setBundleVersion(toOSGiVersion(module.revision)(arg).toString)
       case None =>
         analyzer.setBundleSymbolicName(name.replaceAll("[^a-zA-Z0-9]", "-"))
         analyzer.setBundleVersion("0.0.1.0-SNAPSHOT")
@@ -89,14 +89,15 @@ object Fetch {
     }
   }
   /** Convert jar to bundle */
-  protected def convert(moduleId: Option[ModuleID], from: Jar, to: File, fetchInfo: (Option[ModuleID], String, Analyzer) => Unit)(implicit arg: Plugin.TaskArgument) {
+  protected def convert(moduleId: Option[ModuleID], from: Jar, to: File,
+    fetchInfo: (Option[ModuleID], String, Analyzer, Plugin.TaskArgument) => Unit)(implicit arg: Plugin.TaskArgument) {
     var analyzer: Analyzer = null
     try {
       analyzer = new Analyzer()
       // analyzer.use(null) // WTF? Processor? Not today.
       analyzer.setJar(from)
       // add information about bundle via fetchInfo
-      fetchInfo(moduleId, to.getName, analyzer)
+      fetchInfo(moduleId, to.getName, analyzer, arg)
       val newManifest = analyzer.calcManifest()
       if (analyzer.isOk()) {
         analyzer.getJar().setManifest(newManifest)
