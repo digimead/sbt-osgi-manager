@@ -16,6 +16,8 @@ It is provide an ability:
 
 Resolved bundles added to project 'library-dependencies'.
 
+You may fetch all bundle dependencies and their source code (if any) with [sbt-dependency-manager](https://github.com/digimead/sbt-dependency-manager).
+
 If you want to improve it, please send mail to sbt-android-mill at digimead.org. You will be granted write access. Please, feel free to add yourself to authors.
 
 SBT source code is really simple to read and simple to extend :-)
@@ -38,7 +40,7 @@ Table of contents
     - [Tasks](#tasks)
 - [Demonstration](#demonstration)
 - [FAQ](#faq)
-- [Participate in the development][#participate-in-the-development]
+- [Participate in the development](#participate-in-the-development)
 - [Authors](#authors)
 - [License](#license)
 - [Copyright](#copyright)
