@@ -7,11 +7,11 @@ TODO demo
 
 What is it? You may use OSGi infrastructure via [SBT](https://github.com/sbt/sbt "Simple Build Tool") project and your favorite IDE.
 
-It is provide an ability:
+Plugin can provide such abilities as:
 
-* resolve OSGi dependencies and dependencies source code via Eclipse P2 update site / with Tycho API
-* resolve OSGi dependencies via OSGi R5 repositories / with Bnd API, only local repository tested, but remote maybe worked too
-* generate bundle manifest with Bnd API
+* resolving OSGi dependencies and dependencies source code via Eclipse P2 update site / with Tycho API
+* resolving OSGi dependencies via OSGi R5 repositories / with Bnd API, only local repository tested, but remote maybe worked too
+* generating bundle manifest with Bnd API
 
 Resolved bundles added to project 'library-dependencies'. Then you may fetch all bundle dependencies and their source code (if any) with [sbt-dependency-manager](https://github.com/digimead/sbt-dependency-manager) or with your favorite tool that uses SBT dependencies information.
 
