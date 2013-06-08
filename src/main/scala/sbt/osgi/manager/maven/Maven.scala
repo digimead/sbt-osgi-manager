@@ -229,7 +229,7 @@ class Maven(val plexus: DefaultPlexusContainer, val information: Maven.Informati
 object Maven {
   private val POM_PROPERTIES_PATH = "META-INF/maven/org.apache.maven/maven-core/pom.properties"
   @volatile private var singleton: Option[Maven] = None
-  lazy val settings = inConfig(OSGiConf)(Seq[Project.Setting[_]](
+  lazy val settings = inConfig(OSGiConf)(Seq(
     osgiMavenDirectory <<= (osgiDirectory) { _ / "maven" },
     osgiMavenIsOffline := false,
     osgiMavenIsUpdateSnapshots := false,
@@ -252,7 +252,8 @@ object Maven {
     val realm = buildClassRealm(mavenHome, Some(world))
     Maven.getMavenVersion(mavenHome, Some(realm)) match {
       case Some(information) =>
-        sbt.osgi.manager.maven.plexus.Logger.info("Initialize Maven core. Maven version: " + information.version, null)
+        sbt.osgi.manager.maven.plexus.Logger.
+          info("Initialize Maven core. Maven version: " + information.version, null)
         val plexus = buildPlexusContainer(realm, getPlexusOverridingComponentsXml)
         val instance = new Maven(plexus, information)
         singleton = Some(instance)

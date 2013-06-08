@@ -130,6 +130,8 @@ object Model {
 
   def getSettingsDirectory(implicit arg: Plugin.TaskArgument) =
     osgiDirectory in arg.thisOSGiScope get arg.extracted.structure.data
+  def getSettingsFetchInfo(implicit arg: Plugin.TaskArgument) =
+    osgiFetchInfo in arg.thisOSGiScope get arg.extracted.structure.data
 
   /////////////////////////////////////
   // Maven

@@ -101,7 +101,7 @@ object GenerateManifest {
     val manifest = new Manifest
     val main = manifest.getMainAttributes
     products.foreach { product =>
-      arg.log.debug(logPrefix("Calculate manifest for " + product))
+      arg.log.debug(logPrefix(arg.name) + "Calculate manifest for " + product)
       Package.mergeManifests(manifest, generate(product, classpath))
     }
     // sort option by name if possible

@@ -2,9 +2,9 @@ import sbt.dependency.manager._
 
 import sbt.osgi.manager._
 
-activateDependencyManager
+DependencyManager
 
-activateOSGiManagerWithDebug()
+OSGiManagerWithDebug()
 
 name := "Simple"
 
