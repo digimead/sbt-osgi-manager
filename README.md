@@ -110,6 +110,8 @@ If you want to enable extra run-time debugging use `OSGiManagerWithDebug(Equinox
 
 ## Usage ##
 
+*You may find plugin usage examples at [here](https://github.com/ezh/). Look at `build.sbt` of Digi- libraries.*
+
 Please note, that OSGi infrastructure has no dependency `organization` field as Ivy or Maven has. The bundle symbolic name and bundle version identify a unique artifact.
 
 TODO Keys
@@ -125,8 +127,6 @@ To generate bundle manifest:
 1. Add necessary information. Look at [Modify bundle properties](#modify-bundle-properties)
 2. Check bundle settings. Look at [List actual properties per project](#list-actual-properties-per-project)
 3. Create your artifact as usual. The plugin will intercept `packageOptions in (Compile, packageBin)` and will inject OSGi headers to the generated manifest.
-
-*You may find more example [here](https://github.com/ezh/). Look at `build.sbt` of Digi- libraries.*
 
 #### Modify bundle properties
 
