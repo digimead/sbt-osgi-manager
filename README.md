@@ -1,6 +1,5 @@
-sbt-osgi-manager
+sbt-osgi-manager [![Build Status](https://travis-ci.org/digimead/sbt-osgi-manager.png)](https://travis-ci.org/digimead/sbt-osgi-manager)
 ================
-[![Build Status](https://travis-ci.org/digimead/sbt-osgi-manager.png)](https://travis-ci.org/digimead/sbt-osgi-manager)
 
 OSGi development bridge based on Bnd and Tycho.
 
