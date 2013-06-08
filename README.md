@@ -124,7 +124,7 @@ TODO doc
 
 To generate bundle manifest:
 
-1. Add necessary information. Look at [Modify bundle properties](#modify-bundle-properties)
+1. Add necessary information your project. Look at [Modify bundle properties](#modify-bundle-properties)
 2. Check bundle settings. Look at [List actual properties per project](#list-actual-properties-per-project)
 3. Create your artifact as usual. The plugin will intercept `packageOptions in (Compile, packageBin)` and will inject OSGi headers to the generated manifest.
 
