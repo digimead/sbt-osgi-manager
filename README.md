@@ -14,7 +14,7 @@ It is provide an ability:
 * resolve OSGi dependencies via OSGi R5 repositories / with Bnd API, only local repository tested, but remote maybe worked too
 * generate bundle manifest with Bnd API
 
-Resolved bundles added to project 'library-dependencies'.
+Resolved bundles added to project 'library-dependencies'. Then you may fetch all bundle dependencies and their source code (if any) with [sbt-dependency-manager](https://github.com/digimead/sbt-dependency-manager).
 
 If you want to improve it, please send mail to sbt-android-mill at digimead.org. You will be granted write access. Please, feel free to add yourself to authors.
 
@@ -38,7 +38,7 @@ Table of contents
     - [Tasks](#tasks)
 - [Demonstration](#demonstration)
 - [FAQ](#faq)
-- [Participate in the development][#participate-in-the-development]
+- [Participate in the development](#participate-in-the-development)
 - [Authors](#authors)
 - [License](#license)
 - [Copyright](#copyright)
@@ -110,7 +110,7 @@ For _Build.scala_:
 
 If you want to enable extra run-time debugging use `OSGiManagerWithDebug(Equinox TCP port)` instead of `OSGiManager`. Also put [.options](src/sbt-test/osgi-manager/simple/.options.no) file to your project directory.
 
-[Imported package](https://github.com/digimead/sbt-dependency-manager/tree/master/src/main/scala/sbt/dependency/manager/package.scala) contains public declarations.
+[Imported package](src/main/scala/sbt/osgi/manager/package.scala) contains public declarations.
 
 ## Usage ##
 
