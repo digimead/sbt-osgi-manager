@@ -14,14 +14,109 @@ It is provide an ability:
 * resolve OSGi dependencies via OSGi R5 repositories / with Bnd API, only local repository tested, but remote maybe worked too
 * generate bundle manifest with Bnd API
 
-Resolved bundles added to project 'library-dependencies' property.
+Resolved bundles added to project 'library-dependencies'.
 
-TODO index
+If you want to improve it, please send mail to sbt-android-mill at digimead.org. You will be granted write access. Please, feel free to add yourself to authors.
+
+SBT source code is really simple to read and simple to extend :-)
+
+This readme cover all plugin functionality, even if it is written in broken english (would you have preferred well written russian :-) Please, correct it, if you find something inappropriate.
+
+Table of contents
+-----------------
+
+- [Adding to your project](#adding-to-your-project)
+    - [Via interactive build](#via-interactive-build)
+    - [As published jar artifact](#as-published-jar-artifact)
+    - [As local build](#as-local-build)
+    - [Activate in your project](#activate-in-your-project)
+- [Usage](#usage)
+    - [Generate bundle manifest](#generate-bundle-manifest)
+    - [Resolve OSGi dependencies](#resolve-osgi-dependencies)
+- [Internals](#internals)
+    - [Options](#options)
+    - [Tasks](#tasks)
+- [Demonstration](#demonstration)
+- [FAQ](#faq)
+- [Participate in the development][#participate-in-the-development]
+- [Authors](#authors)
+- [License](#license)
+- [Copyright](#copyright)
 
 DOCUMENTATION
 -------------
 
+## Adding to your project
+
+You may find sample project at [src/sbt-test/osgi-manager/simple](src/sbt-test/osgi-manager/simple)
+
+### Via interactive build
+
+Supported SBT versions: 0.11.x, 0.12.x.
+
+Create a
+
+ * _project/plugins/project/Build.scala_ - for older simple-build-tool
+ * _project/project/Build.scala_ - for newer simple-build-tool
+
+file that looks like the following:
+
+``` scala
+    import sbt._
+    object PluginDef extends Build {
+      override def projects = Seq(root)
+      lazy val root = Project("plugins", file(".")) dependsOn(osgi)
+      lazy val dm = uri("git://github.com/digimead/sbt-osgi-manager.git#0.0.1.2")
+    }
+```
+
+You may find sample project at [src/sbt-test/osgi-manager/simple](src/sbt-test/osgi-manager/simple)
+
+### As published jar artifact
+
+Supported SBT versions: 0.11.3, 0.12.x. Add to your _project/plugins.sbt_
+
+    addSbtPlugin("org.digimead" % "sbt-osgi-manager" % "0.0.1.2")
+
+Maven repository:
+
+    resolvers += "digimead-maven" at "http://storage.googleapis.com/maven.repository.digimead.org/"
+
+Ivy repository:
+
+    resolvers += Resolver.url("digimead-ivy", url("http://storage.googleapis.com/ivy.repository.digimead.org/"))(Resolver.defaultIvyPatterns)
+
+### As local build
+
+Clone this repository to your development system then do `sbt publish-local`
+
+### Activate in your project
+
+For _build.sbt_, simply add:
+
+``` scala
+    import sbt.osgi.manager._
+
+    OSGiManager
+```
+
+For _Build.scala_:
+
+``` scala
+    import sbt.dependency.manager._
+
+    ... yourProjectSettings ++ OSGiManager
+```
+
+If you want to enable extra run-time debugging use `OSGiManagerWithDebug(Equinox TCP port)` instead of `OSGiManager`. Also put [.options](src/sbt-test/osgi-manager/simple/.options.no) file to your project directory.
+
+[Imported package](https://github.com/digimead/sbt-dependency-manager/tree/master/src/main/scala/sbt/dependency/manager/package.scala) contains public declarations.
+
+## Usage ##
+
 Please note, that OSGi infrastructure has no dependency `organization` field as Ivy or Maven has. The bundle symbolic name and bundle version identify a unique artifact.
+
+TODO Keys
 
 TODO doc
 
@@ -29,17 +124,44 @@ TODO doc
 
 ### Generate bundle manifest
 
-TODO doc
+To generate bundle manifest:
+
+1. Add necessary information. Look at (Modify bundle properties)#modify-bundle-properties]
+2. Check bundle settings.Look at (List actual properties per project)[#List-actual-properties-per-project]
+3. Create your artifact as usual. The plugin will intercept `packageOptions in (Compile, packageBin)` and will inject OSGi headers to the generated manifest.
+
+*You may find more example [here](https://github.com/ezh/). Look at `build.sbt` of Digi- libraries.*
 
 #### Modify bundle properties
 
-TODO doc
+You may alter bundle properties via complex block
+
+```scala
+inConfig(OSGiConf)({
+  import OSGiKey._
+  Seq[Project.Setting[_]](
+    osgiBndBundleActivator := "org.example.Activator",
+    osgiBndBundleSymbolicName := "org.example",
+    osgiBndBundleCopyright := "Copyright © 19xx-23xx N. All rights reserved.",
+    osgiBndExportPackage := List("org.example.*"),
+    osgiBndImportPackage := List("!org.aspectj.*", "*"),
+    osgiBndBundleLicense := Seq("http://www.gnu.org/licenses/agpl.html;description=GNU Affero General Public License",
+      "http://example.org/CommercialLicense.txt;description=Commercial License").mkString(","),
+    resolvers += typeP2("Eclipse P2 update site" at "http://eclipse.nn.nn"),
+    resolvers += typeOBR("Local OBR repository" at sys.env("OBR_REPOSITORY"))
+  )
+})
+```
+
+You may alter bundle properties as single line SBT settings.
+
+```scala
+OSGiKey.osgiBndBundleActivator in OSGiConf := "org.example.Activator"
+```
 
 #### List actual properties per project
 
-TODO doc
-
-`osgi-show`
+You may ispect OSGi properties with SBT `show` command or to use `osgi-show` report.
 
 ### Resolve OSGi dependencies
 
@@ -71,10 +193,6 @@ TODO doc
     })
 
 > `osgi-resolve`
-
-### How to install
-
-TODO doc
 
 ## Participate in the development ##
 

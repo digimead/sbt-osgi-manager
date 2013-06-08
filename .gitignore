@@ -8,11 +8,7 @@ lib_managed/
 src_managed/
 project/boot/
 project/plugins/project/
-project-dev/
-project-0.11/
-project-0.12/
-project-0.13/
-project-0.14/
+project-*/
 _*
 
 # Scala-IDE specific

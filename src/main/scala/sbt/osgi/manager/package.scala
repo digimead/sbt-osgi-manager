@@ -32,10 +32,10 @@ import sbt.osgi.manager.Plugin
 
 package object manager {
   /** Entry point for the plugin in user's project */
-  def activateOSGiManager = Plugin.defaultSettings ++ Seq( // modify global SBT tasks
+  def OSGiManager = Plugin.defaultSettings ++ Seq( // modify global SBT tasks
     packageOptions in (Compile, packageBin) in This <<= Plugin.packageOptionsTask)
   /** Entry point for the plugin in user's project */
-  def activateOSGiManagerWithDebug(tcpPortForEquinoxConsole: Int = 12345) = {
+  def OSGiManagerWithDebug(tcpPortForEquinoxConsole: Int = 12345) = {
     debug(true)
     Plugin.debug = Some(tcpPortForEquinoxConsole)
     Plugin.defaultSettings
