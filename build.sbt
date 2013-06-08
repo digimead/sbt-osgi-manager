@@ -64,6 +64,7 @@ libraryDependencies ++= {
 scriptedBufferLog := false
 
 resolvers ++= Seq(
+  "osgi-mananger-digimead-maven" at "http://storage.googleapis.com/maven.repository.digimead.org/",
   Resolver.url("osgi-manager-typesafe-ivy-releases-for-online-crossbuild", url("http://repo.typesafe.com/typesafe/ivy-releases/"))(Resolver.defaultIvyPatterns),
   Resolver.url("osgi-manager-typesafe-ivy-snapshots-for-online-crossbuild", url("http://repo.typesafe.com/typesafe/ivy-snapshots/"))(Resolver.defaultIvyPatterns),
   Resolver.url("osgi-manager-typesafe-repository-for-online-crossbuild", url("http://typesafe.artifactoryonline.com/typesafe/ivy-releases/"))(Resolver.defaultIvyPatterns),
