@@ -110,7 +110,7 @@ For _Build.scala_:
 
 If you want to enable extra run-time debugging use `OSGiManagerWithDebug(Equinox TCP port)` instead of `OSGiManager`. Also put [.options](src/sbt-test/osgi-manager/simple/.options.no) file to your project directory.
 
-[Imported package](https://github.com/digimead/sbt-dependency-manager/tree/master/src/main/scala/sbt/dependency/manager/package.scala) contains public declarations.
+[Imported package](src/main/scala/sbt/osgi/manager/package.scala) contains public declarations.
 
 ## Usage ##
 
