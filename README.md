@@ -13,7 +13,7 @@ Plugin can provide such abilities as:
 * resolving OSGi dependencies via OSGi R5 repositories
 * generating bundle manifest
 
-Resolved bundles added to project 'library-dependencies'. Resolved bundles and their source code (if any) may be fetched with [sbt-dependency-manager](https://github.com/digimead/sbt-dependency-manager) or with your favorite tool that uses SBT dependencies information.
+Resolved bundles added to project 'library-dependencies'. Resolved bundles and their source code (if any) may be fetched with [sbt-dependency-manager](https://github.com/digimead/sbt-dependency-manager) or with your favorite tool that uses SBT dependency information.
 
 If you want to improve it, please send mail to sbt-android-mill at digimead.org. You will be granted write access. Please, feel free to add yourself to authors.
 
