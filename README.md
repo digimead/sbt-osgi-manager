@@ -13,7 +13,7 @@ It is provide an ability:
 * resolve OSGi dependencies via OSGi R5 repositories / with Bnd API, only local repository tested, but remote maybe worked too
 * generate bundle manifest with Bnd API
 
-Resolved bundles added to project 'library-dependencies'. Then you may fetch all bundle dependencies and their source code (if any) with [sbt-dependency-manager](https://github.com/digimead/sbt-dependency-manager).
+Resolved bundles added to project 'library-dependencies'. Then you may fetch all bundle dependencies and their source code (if any) with [sbt-dependency-manager](https://github.com/digimead/sbt-dependency-manager) or with your favorite tool that uses SBT dependencies information.
 
 If you want to improve it, please send mail to sbt-android-mill at digimead.org. You will be granted write access. Please, feel free to add yourself to authors.
 
