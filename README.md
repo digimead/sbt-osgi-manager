@@ -157,7 +157,7 @@ OSGiKey.osgiBndBundleActivator in OSGiConf := "org.example.Activator"
 
 #### List actual properties per project
 
-You may ispect OSGi properties with SBT `show` command or to use `osgi-show` report.
+You may inspect OSGi properties with SBT `show` command or to use `osgi-show` report.
 
 ### Resolve OSGi dependencies
 
