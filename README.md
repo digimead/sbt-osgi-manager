@@ -110,7 +110,7 @@ If you want to enable extra run-time debugging use `OSGiManagerWithDebug(Equinox
 
 ## Usage ##
 
-*You may find plugin usage examples at [here](https://github.com/ezh/). Look at `build.sbt` of Digi- libraries.*
+*You may find plugin usage examples at [https://github.com/ezh/](https://github.com/ezh/). Look at `build.sbt` of Digi- libraries.*
 
 Please note, that OSGi infrastructure has no dependency `organization` field as Ivy or Maven has. The bundle symbolic name and bundle version identify a unique artifact.
 
