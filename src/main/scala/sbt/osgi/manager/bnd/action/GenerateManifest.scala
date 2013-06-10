@@ -74,18 +74,23 @@ object GenerateManifest {
       Model.getPropertyVersion.foreach(value =>
         if (value.nonEmpty) properties.put(BndConstant.BUNDLE_VERSION, value))
 
+      Model.getPropertyExportPackages match {
+        case Some(exportPackages) if exportPackages.nonEmpty =>
+          properties.put(BndConstant.EXPORT_PACKAGE, exportPackages.mkString(","))
+        case _ =>
+          properties.put(BndConstant.EXPORT_PACKAGE, "*")
+      }
+      Model.getPropertyIgnorePackages.foreach(value =>
+        if (value.nonEmpty) properties.put(BndConstant.IGNORE_PACKAGE, value.mkString(",")))
       Model.getPropertyImportPackages match {
         case Some(importPackages) if importPackages.nonEmpty =>
           properties.put(BndConstant.IMPORT_PACKAGE, importPackages.mkString(","))
         case _ =>
           properties.put(BndConstant.IMPORT_PACKAGE, "*")
       }
-      Model.getPropertyExportPackages match {
-        case Some(exportPackages) if exportPackages.nonEmpty =>
-          properties.put(BndConstant.EXPORT_PACKAGE, exportPackages.mkString(","))
-        case _ =>
-          properties.put(BndConstant.IMPORT_PACKAGE, "*")
-      }
+      Model.getPropertyPrivatePackages.foreach(value =>
+        if (value.nonEmpty) properties.put(BndConstant.PRIVATE_PACKAGE, value.mkString(",")))
+
       analyzer.setProperties(properties)
       analyzer.addClasspath(dependencyClasspath)
       analyzer.calcManifest()

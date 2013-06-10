@@ -1,6 +1,5 @@
-sbt-osgi-manager
+sbt-osgi-manager [![Build Status](https://travis-ci.org/digimead/sbt-osgi-manager.png)](https://travis-ci.org/digimead/sbt-osgi-manager)
 ================
-[![Build Status](https://travis-ci.org/digimead/sbt-osgi-manager.png)](https://travis-ci.org/digimead/sbt-osgi-manager)
 
 OSGi development bridge based on Bnd and Tycho.
 
@@ -8,15 +7,15 @@ TODO demo
 
 What is it? You may use OSGi infrastructure via [SBT](https://github.com/sbt/sbt "Simple Build Tool") project and your favorite IDE.
 
-It is provide an ability:
+Plugin can provide such abilities as:
 
-* resolve OSGi dependencies and dependencies source code via Eclipse P2 update site / with Tycho API
-* resolve OSGi dependencies via OSGi R5 repositories / with Bnd API, only local repository tested, but remote maybe worked too
-* generate bundle manifest with Bnd API
+* resolving OSGi dependencies and dependencies source code via Eclipse P2 update site
+* resolving OSGi dependencies via OSGi R5 repositories
+* generating bundle manifest
 
-Resolved bundles added to project 'library-dependencies'. Then you may fetch all bundle dependencies and their source code (if any) with [sbt-dependency-manager](https://github.com/digimead/sbt-dependency-manager).
+Resolved bundles added to project 'library-dependencies'. Resolved bundles and their source code (if any) may be fetched with [sbt-dependency-manager](https://github.com/digimead/sbt-dependency-manager) or processed with your favorite tool that uses SBT dependency information - for example, SBT command `deliver-local`.
 
-If you want to improve it, please send mail to sbt-android-mill at digimead.org. You will be granted write access. Please, feel free to add yourself to authors.
+If you want to improve plugin, please send mail to sbt-android-mill at digimead.org. You will be granted write access. Please, feel free to add yourself to authors.
 
 SBT source code is really simple to read and simple to extend :-)
 
@@ -42,9 +41,6 @@ Table of contents
 - [Authors](#authors)
 - [License](#license)
 - [Copyright](#copyright)
-
-DOCUMENTATION
--------------
 
 ## Adding to your project
 
@@ -114,6 +110,8 @@ If you want to enable extra run-time debugging use `OSGiManagerWithDebug(Equinox
 
 ## Usage ##
 
+*You may find plugin usage examples at [https://github.com/ezh/](https://github.com/ezh/). Look at `build.sbt` of Digi- libraries.*
+
 Please note, that OSGi infrastructure has no dependency `organization` field as Ivy or Maven has. The bundle symbolic name and bundle version identify a unique artifact.
 
 TODO Keys
@@ -126,11 +124,9 @@ TODO doc
 
 To generate bundle manifest:
 
-1. Add necessary information. Look at (Modify bundle properties)#modify-bundle-properties]
-2. Check bundle settings.Look at (List actual properties per project)[#List-actual-properties-per-project]
+1. Add necessary information your project. Look at [Modify bundle properties](#modify-bundle-properties)
+2. Check bundle settings. Look at [List actual properties per project](#list-actual-properties-per-project)
 3. Create your artifact as usual. The plugin will intercept `packageOptions in (Compile, packageBin)` and will inject OSGi headers to the generated manifest.
-
-*You may find more example [here](https://github.com/ezh/). Look at `build.sbt` of Digi- libraries.*
 
 #### Modify bundle properties
 
@@ -161,7 +157,7 @@ OSGiKey.osgiBndBundleActivator in OSGiConf := "org.example.Activator"
 
 #### List actual properties per project
 
-You may ispect OSGi properties with SBT `show` command or to use `osgi-show` report.
+You may inspect OSGi properties with SBT `show` command or to use `osgi-show` report.
 
 ### Resolve OSGi dependencies
 

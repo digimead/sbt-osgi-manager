@@ -39,11 +39,19 @@ if (sys.env.contains("XBOOTCLASSPATH")) Seq(javacOptions += "-Xbootclasspath:" +
 
 sbtPlugin := true
 
+resourceGenerators in Compile <+=
+  (resourceManaged in Compile, name, version) map { (dir, n, v) =>
+    val file = dir / "version-%s.properties".format(n)
+    val contents = "name=%s\nversion=%s\nbuild=%s\n".format(n, v, ((System.currentTimeMillis / 1000).toInt).toString)
+    IO.write(file, contents)
+    Seq(file)
+  }
+
 libraryDependencies ++= {
   val mavenVersion = "3.0.5"
   val mavenWagonVersion = "2.4"
   Seq(
-    "biz.aQute" % "bndlib" % "2.1.0.20130426-122213" from "https://raw.github.com/bndtools/releases/master/bnd/2.1.0.REL/biz.aQute.bndlib/biz.aQute.bndlib-2.1.0.jar",
+    "biz.aQute.bnd" % "bndlib" % "2.1.0",
     "org.apache.felix" % "org.apache.felix.resolver" % "1.0.0",
     "org.apache.maven" % "maven-aether-provider" % mavenVersion,
     "org.apache.maven" % "maven-artifact" % mavenVersion,
@@ -64,6 +72,7 @@ libraryDependencies ++= {
 scriptedBufferLog := false
 
 resolvers ++= Seq(
+  "osgi-mananger-digimead-maven" at "http://storage.googleapis.com/maven.repository.digimead.org/",
   Resolver.url("osgi-manager-typesafe-ivy-releases-for-online-crossbuild", url("http://repo.typesafe.com/typesafe/ivy-releases/"))(Resolver.defaultIvyPatterns),
   Resolver.url("osgi-manager-typesafe-ivy-snapshots-for-online-crossbuild", url("http://repo.typesafe.com/typesafe/ivy-snapshots/"))(Resolver.defaultIvyPatterns),
   Resolver.url("osgi-manager-typesafe-repository-for-online-crossbuild", url("http://typesafe.artifactoryonline.com/typesafe/ivy-releases/"))(Resolver.defaultIvyPatterns),

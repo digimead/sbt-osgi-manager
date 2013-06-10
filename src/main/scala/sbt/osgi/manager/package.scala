@@ -45,6 +45,7 @@ package object manager {
   // export declarations for end user
   lazy val OSGiKey = Keys
   lazy val OSGiConf = Keys.OSGiConf
+  lazy val OSGiTestConf = Keys.OSGiTestConf
 
   implicit def moduleId2Dependency(dependencies: Seq[ModuleID]): Seq[Dependency] =
     Dependency.moduleId2Dependency(dependencies)
