@@ -23,7 +23,8 @@ import sbt._
 import aQute.bnd.osgi.Analyzer
 
 object Keys {
-  def OSGiConf = config("osgi-manager") hide
+  def OSGiConf = config("osgi") hide
+  def OSGiTestConf = config("osgi-test") hide
 
   lazy val osgiDirectory = SettingKey[java.io.File]("osgi-directory", "Root directory with temporary OSGi data")
   lazy val osgiFetchPath = SettingKey[Option[java.io.File]]("osgi-fetch-path", "Location for 'fetch' task bundles")
@@ -35,6 +36,7 @@ object Keys {
   lazy val osgiShow = TaskKey[Unit]("osgi-show", "Show the bundle properties") // global
   lazy val osgiBndPrepareHome = TaskKey[java.io.File]("osgi-prepare-bnd-home", "Prepare Bnd home directory")
   lazy val osgiMavenPrepareHome = TaskKey[java.io.File]("osgi-prepare-maven-home", "Prepare Maven home directory")
+  lazy val osgiPluginInfo = TaskKey[Unit]("osgi-plugin-info", "Show plugin information.")
   lazy val osgiResetCache = TaskKey[Unit]("osgi-reset-cache", "Reset plugin cache(s)")
 
   /////////////////////////////////////
@@ -81,6 +83,8 @@ object Keys {
     "Bnd CLASSPATH parameter. The BUNDLE_CLASSPATH header defines a comma-separated list of JAR file path names or directories (inside the bundle) containing classes and resources. The period (’.’) specifies the root directory of the bundle’s JAR. The period is also the default.")
   lazy val osgiBndExportPackage = SettingKey[List[String]]("osgi-bnd-export-package",
     "Bnd EXPORT_PACKAGE parameter. Bundles may export zero or more packages from the JAR to be consumable by other bundles.")
+  lazy val osgiBndIgnorePackage = SettingKey[List[String]]("osgi-bnd-ignore-package",
+    "Bnd IGNORE_PACKAGE parameter. Tells which Java packages will ignored. To ignore packages you should use the negated syntax i.e. !com.foo, com.*. The negated package must come before its wildcard.")
   lazy val osgiBndImportPackage = SettingKey[List[String]]("osgi-bnd-import-package",
     "Bnd IMPORT_PACKAGE parameter. The Import-Package header is used to declare dependencies at a package level from the bundle.")
   lazy val osgiBndPlugin = SettingKey[List[String]]("osgi-bnd-plugin",

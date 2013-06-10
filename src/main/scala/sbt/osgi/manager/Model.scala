@@ -96,6 +96,9 @@ object Model {
   /** aQute.bnd.osgi.Constants.EXPORT_PACKAGE */
   def getPropertyExportPackages(implicit arg: Plugin.TaskArgument) =
     osgiBndExportPackage in arg.thisOSGiScope get arg.extracted.structure.data
+  /** aQute.bnd.osgi.Constants.IGNORE_PACKAGE */
+  def getPropertyIgnorePackages(implicit arg: Plugin.TaskArgument) =
+    osgiBndIgnorePackage in arg.thisOSGiScope get arg.extracted.structure.data
   /** aQute.bnd.osgi.Constants.IMPORT_PACKAGE */
   def getPropertyImportPackages(implicit arg: Plugin.TaskArgument) =
     osgiBndImportPackage in arg.thisOSGiScope get arg.extracted.structure.data

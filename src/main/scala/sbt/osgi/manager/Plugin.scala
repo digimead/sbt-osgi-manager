@@ -18,24 +18,17 @@
 
 package sbt.osgi.manager
 
-import java.util.jar.JarFile
+import java.util.Date
+import java.util.Properties
 
+import scala.Option.option2Iterable
 import scala.collection.immutable
 
-import aQute.bnd.osgi.Analyzer
-import aQute.bnd.osgi.Jar
-import aQute.bnd.osgi.{ Constants => BndConstant }
-import biz.aQute.resolve.internal.BndrunResolveContext
-import org.apache.felix.resolver.ResolverImpl
-import org.apache.ivy.plugins.resolver.DependencyResolver
-import org.eclipse.tycho.ArtifactKey
-import sbt.Keys._
 import sbt._
-import sbt.osgi.manager.Dependency._
+import sbt.Keys._
 import sbt.osgi.manager.Keys._
-import sbt.osgi.manager.Support.logPrefix
+import sbt.osgi.manager.Support._
 import sbt.osgi.manager.bnd.Bnd
-import sbt.osgi.manager.maven.Maven
 import sbt.std.TaskStreams
 
 object Plugin {
@@ -52,22 +45,25 @@ object Plugin {
   /** Entry point for plugin in user's project */
   lazy val defaultSettings =
     // base settings
-    inConfig(Keys.OSGiConf)(Seq(
-      osgiDirectory <<= (target) { _ / "osgi" },
-      osgiFetchPath := None)) ++
+    test.Test.settings ++
+      inConfig(Keys.OSGiConf)(Seq(
+        osgiDirectory <<= (target) { _ / "osgi" },
+        osgiFetchPath := None)) ++
       // plugin settings
-      Bnd.settings ++
-      Maven.settings ++
+      bnd.Bnd.settings ++
+      maven.Maven.settings ++
       // and all tasks & commands
       inConfig(Keys.OSGiConf)(Seq(
         osgiBndPrepareHome <<= Plugin.prepareBndHomeTask,
         osgiMavenPrepareHome <<= Plugin.prepareMavenHomeTask,
+        osgiPluginInfo <<= osgiPluginInfoTask,
         osgiResetCache := osgiResetCacheTask)) ++
       // and global settings
       Seq(
         commands += Command.command("osgi-resolve", osgiResolveCommandHelp)(osgiResolveCommand),
         osgiFetch <<= osgiFetchTask,
-        osgiShow <<= osgiShowTask)
+        osgiShow <<= osgiShowTask,
+        ivyConfigurations ++= Seq(OSGiTestConf))
 
   /** Returns last known State. It is a complex helper for Simple Build Tool simple architecture. lol */
   def getLastKnownState(): Option[TaskArgument] = lastKnownState
@@ -108,7 +104,21 @@ object Plugin {
       }
       () // Project/Def.Initialize[Task[Unit]]
   }
-
+  /** Show plugin information */
+  def osgiPluginInfoTask = (state, streams, thisProjectRef) map { (state, streams, thisProjectRef) =>
+    implicit val arg = TaskArgument(state, thisProjectRef, Some(streams))
+    Option(getClass().getClassLoader().getResourceAsStream("version-sbt-osgi-manager.properties")) match {
+      case Some(stream) =>
+        val properties = new Properties()
+        properties.load(stream)
+        val date = new Date(properties.getProperty("build").toLong * 1000)
+        streams.log.info(logPrefix(arg.name) + "Name: " + properties.getProperty("name"))
+        streams.log.info(logPrefix(arg.name) + "Version: " + properties.getProperty("version"))
+        streams.log.info(logPrefix(arg.name) + "Build: " + date + " (" + properties.getProperty("build") + ")")
+      case None =>
+        streams.log.error(logPrefix(arg.name) + "OSGi Mananger plugin information not found.")
+    }
+  }
   /** Command that populates libraryDependencies with required bundles */
   def osgiResolveCommand(state: State): State = {
     val extracted = Project.extract(state)
