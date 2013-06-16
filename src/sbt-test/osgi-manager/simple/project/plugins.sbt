@@ -1,1 +1,1 @@
-addSbtPlugin("org.digimead" % "sbt-osgi-manager" % "0.0.1.4")
+addSbtPlugin("org.digimead" % "sbt-osgi-manager" % "0.0.1.5-SNAPSHOT")
