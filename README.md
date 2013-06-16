@@ -62,7 +62,7 @@ file that looks like the following:
     object PluginDef extends Build {
       override def projects = Seq(root)
       lazy val root = Project("plugins", file(".")) dependsOn(osgi)
-      lazy val dm = uri("git://github.com/digimead/sbt-osgi-manager.git#0.0.1.2")
+      lazy val dm = uri("git://github.com/digimead/sbt-osgi-manager.git#0.0.1.4")
     }
 ```
 
@@ -72,7 +72,7 @@ You may find sample project at [src/sbt-test/osgi-manager/simple](src/sbt-test/o
 
 Supported SBT versions: 0.11.3, 0.12.x. Add to your _project/plugins.sbt_
 
-    addSbtPlugin("org.digimead" % "sbt-osgi-manager" % "0.0.1.2")
+    addSbtPlugin("org.digimead" % "sbt-osgi-manager" % "0.0.1.4")
 
 Maven repository:
 
