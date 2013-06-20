@@ -61,6 +61,7 @@ object Plugin {
       // and global settings
       Seq(
         commands += Command.command("osgi-resolve", osgiResolveCommandHelp)(osgiResolveCommand),
+        osgiCompile <<= osgiCompileTask,
         osgiFetch <<= osgiFetchTask,
         osgiShow <<= osgiShowTask,
         ivyConfigurations ++= Seq(OSGiTestConf))
@@ -90,7 +91,20 @@ object Plugin {
     case unsupported =>
       throw new UnsupportedOperationException("Unknown resolver type %s for %s".format(resolver.getClass(), resolver))
   }
-
+  /** Generate bundle manifest for compiled code. */
+  def osgiCompileTask = (dependencyClasspath in Compile, packageOptions in (Compile, packageBin), products in Compile, state, streams, thisProjectRef) map {
+    (dependencyClasspath, packageOptions, products, state, streams, thisProjectRef) =>
+      implicit val arg = TaskArgument(state, thisProjectRef, Some(streams))
+      val manifest = bnd.action.GenerateManifest.generateManifestTask(dependencyClasspath, packageOptions, products)
+      products.foreach { p =>
+        val manifestPath = p / "META-INF"
+        if (!manifestPath.exists())
+          manifestPath.mkdirs()
+        val manifestFile = manifestPath / "MANIFEST.MF"
+        streams.log.debug(logPrefix(arg.name) + "Write manifest to " + manifestFile.getAbsolutePath())
+        Using.fileOutputStream()(manifestFile) { outputStream => manifest.write(outputStream) }
+      }
+  }
   /** Fetch all project dependencies as bundles */
   def osgiFetchTask = (dependencyClasspath in Compile, osgiFetchPath in Keys.OSGiConf, state, streams, thisProjectRef) map {
     (dependencyClasspath, osgiFetchPath, state, streams, thisProjectRef) =>
@@ -195,7 +209,7 @@ object Plugin {
     (dependencyClasspath in Compile, state, streams, thisProjectRef, packageOptions in (Compile, packageBin), products in Compile) map {
       (dependencyClasspath, state, streams, thisProjectRef, packageOptions, products) =>
         implicit val arg = TaskArgument(state, thisProjectRef, Some(streams))
-        bnd.action.GenerateManifest.generateTask(dependencyClasspath, packageOptions, products)
+        bnd.action.GenerateManifest.generatePackageOptionsTask(dependencyClasspath, packageOptions, products)
     }
   /** Prepare Bnd home directory. Returns the home location. */
   def prepareBndHomeTask =

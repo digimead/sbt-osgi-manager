@@ -247,6 +247,10 @@ object Maven {
 
   /** Create new Maven singleton */
   def apply()(implicit arg: Plugin.TaskArgument): Maven = singleton getOrElse {
+    // Prevents DefaultEquinoxEmbedder to throw IllegalStateException if project is reloaded
+    // If Mark Harrah do everything right then Maven infrastructure must be unloaded with project class loader.
+    System.setProperty("org.osgi.framework.vendor", "")
+    // Create Maven infrastructure
     val mavenHome = getHome
     val world = new ClassWorld()
     val realm = buildClassRealm(mavenHome, Some(world))

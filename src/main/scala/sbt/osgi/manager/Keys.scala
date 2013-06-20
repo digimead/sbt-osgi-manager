@@ -32,6 +32,7 @@ object Keys {
 
   // Tasks
 
+  lazy val osgiCompile = TaskKey[Unit]("osgi-compile", "Compile source code and generate bundle manifest.") // global
   lazy val osgiFetch = TaskKey[Unit]("osgi-fetch", "Fetch all depencencies as bundles to the specific directory.") // global
   lazy val osgiShow = TaskKey[Unit]("osgi-show", "Show the bundle properties") // global
   lazy val osgiBndPrepareHome = TaskKey[java.io.File]("osgi-prepare-bnd-home", "Prepare Bnd home directory")

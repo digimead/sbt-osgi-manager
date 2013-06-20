@@ -99,8 +99,26 @@ object GenerateManifest {
     }
   }
   /** Calculate manifest's content of the artifact */
-  def generateTask(dependencyClasspath: Seq[Attributed[File]], options: Seq[PackageOption], products: Seq[File])(implicit arg: Plugin.TaskArgument): Seq[PackageOption] = {
+  def generateManifestTask(dependencyClasspath: Seq[Attributed[File]], options: Seq[PackageOption], products: Seq[File])(implicit arg: Plugin.TaskArgument): Manifest = {
     arg.log.info(logPrefix(arg.name) + "Calculate bundle manifest.")
+    val classpath = dependencyClasspath.map(_.data)
+    val unprocessedOptions = Seq[PackageOption]()
+    val manifest = new Manifest
+    val main = manifest.getMainAttributes
+    products.foreach { product =>
+      arg.log.debug(logPrefix(arg.name) + "Calculate manifest for " + product)
+      Package.mergeManifests(manifest, generate(product, classpath))
+    }
+    // sort option by name if possible
+    for (option <- options) option match {
+      case Package.JarManifest(mergeManifest) => Package.mergeManifests(manifest, mergeManifest)
+      case Package.ManifestAttributes(attributes @ _*) => main ++= attributes
+      case _ =>
+    }
+    manifest
+  }
+  def generatePackageOptionsTask(dependencyClasspath: Seq[Attributed[File]], options: Seq[PackageOption], products: Seq[File])(implicit arg: Plugin.TaskArgument): Seq[PackageOption] = {
+    arg.log.info(logPrefix(arg.name) + "Calculate bundle package options.")
     val classpath = dependencyClasspath.map(_.data)
     val unprocessedOptions = Seq[PackageOption]()
     val manifest = new Manifest
