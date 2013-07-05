@@ -323,8 +323,18 @@ object Resolve extends Support.Resolve {
   }
   /** Download source code for P2 installable unit */
   protected def aquireP2SourceCodeArtifacts(entry: P2ResolutionResult.Entry, iu: IInstallableUnit, repository: IArtifactRepository)(implicit arg: Plugin.TaskArgument): Seq[java.io.File] = try {
-    // Assume that we have SimpleArtifactRepository
     val clazz = repository.getClass()
+    clazz.getName() match {
+      case "org.eclipse.equinox.internal.p2.artifact.repository.CompositeArtifactRepository" =>
+        // process CompositeArtifactRepository children
+        val methodGetLoadedChildren = clazz.getDeclaredMethod("getLoadedChildren")
+        val result = methodGetLoadedChildren.invoke(repository).asInstanceOf[java.util.List[IArtifactRepository]].
+          map(aquireP2SourceCodeArtifacts(entry, iu, _))
+        return result.flatten.toSeq.distinct
+      case "org.eclipse.equinox.internal.p2.artifact.repository.simple.SimpleArtifactRepository" => // accept silently
+      case unknown =>
+        arg.log.debug(logPrefix(arg.name) + "Unknown repository type " + unknown)
+    }
     val methodGetDescriptors = clazz.getDeclaredMethod("getDescriptors")
     val methodGetRawArtifact = clazz.getDeclaredMethod("getRawArtifact", classOf[IArtifactDescriptor], classOf[OutputStream], classOf[IProgressMonitor])
     val allAvaiableDescriptors = methodGetDescriptors.invoke(repository).asInstanceOf[java.util.HashSet[IArtifactDescriptor]]

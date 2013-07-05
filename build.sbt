@@ -30,7 +30,7 @@ homepage := Some(url("https://github.com/digimead/sbt-osgi-manager"))
 version <<= (baseDirectory) { (b) => scala.io.Source.fromFile(b / "version").mkString.trim }
 
 // There is no "-Xfatal-warnings" because we have cross compilation against different Scala versions
-scalacOptions ++= Seq("-unchecked", "-deprecation", "-Xcheckinit")
+scalacOptions ++= Seq("-encoding", "UTF-8", "-unchecked", "-deprecation", "-Xcheckinit")
 
 // http://vanillajava.blogspot.ru/2012/02/using-java-7-to-target-much-older-jvms.html
 javacOptions ++= Seq("-Xlint:unchecked", "-Xlint:deprecation", "-source", "1.6", "-target", "1.6")
@@ -48,8 +48,10 @@ resourceGenerators in Compile <+=
   }
 
 libraryDependencies ++= {
-  val mavenVersion = "3.0.5"
+  val mavenVersion = "3.0" // based on Tycho, MUST be the same
   val mavenWagonVersion = "2.4"
+  val tychoVersion = "0.18.0"
+  val aetherAPIVersion = "1.7" // based on Tycho, MUST be the same
   Seq(
     "biz.aQute.bnd" % "bndlib" % "2.1.0",
     "org.apache.felix" % "org.apache.felix.resolver" % "1.0.0",
@@ -61,11 +63,11 @@ libraryDependencies ++= {
     "org.apache.maven" % "maven-embedder" % mavenVersion, // provide org.apache.maven.cli.MavenCli
     "org.apache.maven.wagon" % "wagon-http" % mavenWagonVersion, // HTTP connector for remore repositories
     "org.apache.maven.wagon" % "wagon-file" % mavenWagonVersion, // File connector for local repositories
-    "org.eclipse.tycho" % "tycho-core" % "0.17.0",
-    "org.eclipse.tycho" % "tycho-p2-facade" % "0.17.0", // Tycho p2 Resolver Component
+    "org.eclipse.tycho" % "tycho-core" % tychoVersion,
+    "org.eclipse.tycho" % "tycho-p2-facade" % tychoVersion,
     "org.osgi" % "org.osgi.core" % "5.0.0",
     "org.osgi" % "org.osgi.enterprise" % "5.0.0",
-    "org.sonatype.aether" % "aether-connector-wagon" % "1.13.1"
+    "org.sonatype.aether" % "aether-connector-wagon" % aetherAPIVersion
   )
 }
 
