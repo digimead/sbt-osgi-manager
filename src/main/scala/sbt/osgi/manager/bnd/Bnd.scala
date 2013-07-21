@@ -135,6 +135,7 @@ object Bnd {
     osgiBndPlugin := List[String](),
     osgiBndPluginPath := List[String](),
     osgiBndPrivatePackage := List[String](),
+    osgiBndRequireBundle := List[String](),
     osgiBndRunBundles := List[String](),
     osgiBndRunEE := "JavaSE-1.6",
     osgiBndRunFramework := "",
@@ -256,6 +257,7 @@ are currently running Bndtools on, use the ${native_capability} macro:
     show("PLUGIN", Model.getPropertyPlugin map (_.mkString(",")) getOrElse "")
     show("PLUGINPATH", Model.getPropertyPluginPath map (_.mkString(",")) getOrElse "")
     show("PRIVATE_PACKAGE", Model.getPropertyPrivatePackages map (_.mkString(",")) getOrElse "")
+    show("REQUIRE_BUNDLE", Model.getPropertyRequireBundle map (_.mkString(",")) getOrElse "")
     show("RUNBUNDLES", Model.getPropertyRunBundles map (_.mkString(",")) getOrElse "")
     show("RUNEE", Model.getPropertyRunEE getOrElse "", "UNKNOWN", scala.Console.RED)
     show("RUNFRAMEWORK", Model.getPropertyRunFramework getOrElse "")

@@ -90,6 +90,8 @@ object GenerateManifest {
       }
       Model.getPropertyPrivatePackages.foreach(value =>
         if (value.nonEmpty) properties.put(BndConstant.PRIVATE_PACKAGE, value.mkString(",")))
+      Model.getPropertyRequireBundle.foreach(value =>
+        if (value.nonEmpty) properties.put(BndConstant.REQUIRE_BUNDLE, value.mkString(",")))
 
       analyzer.setProperties(properties)
       analyzer.addClasspath(dependencyClasspath)

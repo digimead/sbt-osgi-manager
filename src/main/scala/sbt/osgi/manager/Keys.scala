@@ -94,6 +94,8 @@ object Keys {
     "Bnd PLUGINPATH parameter. Path to plugins jar.")
   lazy val osgiBndPrivatePackage = SettingKey[List[String]]("osgi-bnd-private-package",
     "Bnd PRIVATE_PACKAGE parameter. Private-Package defines Java packages to be included in the bundle but not exported.")
+  lazy val osgiBndRequireBundle = SettingKey[List[String]]("osgi-bnd-require-bundle",
+    "Bnd REQUIRE_BUNDLE parameter. The Require-Bundle header is used to express a dependency on a bundle's exports by reference to its symbolic name instead of via specific packages.")
   lazy val osgiBndRunBundles = SettingKey[List[String]]("osgi-bnd-runbundles",
     "Bnd RUNBUNDLES parameter. Add additional bundles, specified with their bsn and version like in BUILDPATH, that are started before the project is run.")
   lazy val osgiBndRunEE = SettingKey[String]("osgi-bnd-runee",
