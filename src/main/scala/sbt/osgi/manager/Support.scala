@@ -28,8 +28,9 @@ import org.codehaus.plexus.util.Os
 import org.eclipse.equinox.internal.p2.metadata.VersionParser
 import org.eclipse.equinox.p2.metadata.Version
 
+import sbt.{ Keys ⇒ skey }
+
 import sbt._
-import sbt.Keys._
 
 object Support {
   implicit def option2rich[T](option: Option[T]): RichOption[T] = new RichOption(option)
@@ -38,7 +39,7 @@ object Support {
   def getEnvVars(): Properties = {
     val envVars = new Properties()
     val caseSensitive = !Os.isFamily(Os.FAMILY_WINDOWS)
-    for (entry <- System.getenv().entrySet()) {
+    for (entry ← System.getenv().entrySet()) {
       val key = "env." + (if (caseSensitive) entry.getKey() else entry.getKey().toUpperCase(Locale.ENGLISH))
       envVars.setProperty(key, entry.getValue())
     }
@@ -46,30 +47,30 @@ object Support {
   }
   /** Returns dependencies */
   def getDependencies(dependencyType: Dependency.Type, scope: Scope)(implicit arg: Plugin.TaskArgument): Seq[ModuleID] = {
-    ((libraryDependencies in scope get arg.extracted.structure.data): Option[Seq[ModuleID]]).
+    ((skey.libraryDependencies in scope get arg.extracted.structure.data): Option[Seq[ModuleID]]).
       getOrElse(Seq[ModuleID]()).filter(_ match {
-        case dependency if dependency.extraAttributes.get(dependencyType.key) == Some(dependencyType.name) =>
+        case dependency if dependency.extraAttributes.get(dependencyType.key) == Some(dependencyType.name) ⇒
           arg.log.debug(logPrefix(arg.name) + "Add %s dependency \"%s\"".format(dependencyType.name, dependency.copy(extraAttributes = Map())))
           true
-        case otherDependency =>
+        case otherDependency ⇒
           //arg.log.debug(logPrefix(name) + "Skip dependency " + otherDependency)
           false
       })
   }
   /** Returns resolvers as Seq[(id, url)] */
   def getResolvers(dependencyType: Dependency.Type, scope: Scope)(implicit arg: Plugin.TaskArgument): Seq[(String, String)] = {
-    ((sbt.Keys.resolvers in scope get arg.extracted.structure.data): Option[Seq[Resolver]]).
+    ((skey.resolvers in scope get arg.extracted.structure.data): Option[Seq[Resolver]]).
       getOrElse(Seq[Resolver]()).filter(_ match {
-        case resolver: URLRepository if resolver.patterns.artifactPatterns == Seq(dependencyType.name) =>
+        case resolver: URLRepository if resolver.patterns.artifactPatterns == Seq(dependencyType.name) ⇒
           val repo = resolver.patterns.ivyPatterns.head // always one element, look at markResolverAsP2
           arg.log.debug(logPrefix(arg.name) + "Add %s resolver \"%s\" at %s".format(dependencyType.name, resolver.name, repo))
           true
-        case otherResolver =>
+        case otherResolver ⇒
           //arg.log.debug(logPrefix(name) + "Skip resolver " + otherResolver)
           false
       }).map {
-        case resolver: URLRepository => (resolver.name, resolver.patterns.ivyPatterns.head)
-        case resolver => throw new OSGiManagerException("Unknown resolver " + resolver)
+        case resolver: URLRepository ⇒ (resolver.name, resolver.patterns.ivyPatterns.head)
+        case resolver ⇒ throw new OSGiManagerException("Unknown resolver " + resolver)
       }
   }
   /** Default sbt-osgi-manager log prefix */
@@ -78,7 +79,7 @@ object Support {
    * Executes the function f within the ContextClassLoader of 'classOf'.
    * After execution the original ClassLoader will be restored.
    */
-  def withClassLoaderOf[T](classOf: Class[_])(f: => T): T = {
+  def withClassLoaderOf[T](classOf: Class[_])(f: ⇒ T): T = {
     val thread = Thread.currentThread
     val oldContext = thread.getContextClassLoader
     try {
@@ -92,7 +93,7 @@ object Support {
    * Executes the function f within the ClassLoader.
    * After execution the original ClassLoader will be restored.
    */
-  def withClassLoaderOf[T](loader: ClassLoader)(f: => T): T = {
+  def withClassLoaderOf[T](loader: ClassLoader)(f: ⇒ T): T = {
     val thread = Thread.currentThread
     val oldContext = thread.getContextClassLoader
     try {
@@ -109,13 +110,13 @@ object Support {
    */
   def toOSGiVersion(version: String)(implicit arg: Plugin.TaskArgument): Version = {
     def filter(s: String) = s.trim match {
-      case s if s.nonEmpty => Some(s)
-      case s => None
+      case s if s.nonEmpty ⇒ Some(s)
+      case s ⇒ None
     }
     val qualiferPattern = """(\d*)(.+)""".r.pattern
     val parts = version.split("""[.-]""")
     val (major, minor, micro, qualifier) = if (parts.length > 1) {
-      val qualifier = parts.lastOption.flatMap { string =>
+      val qualifier = parts.lastOption.flatMap { string ⇒
         val m = qualiferPattern.matcher(string)
         if (string.forall(_.isDigit) && parts.length < 3) {
           None // It is minor or micro
@@ -123,12 +124,12 @@ object Support {
           if (m.matches()) Some(m.group(1)) else None
         }
       }
-      val major = parts.headOption.flatMap(string => """\d+""".r.findFirstIn(string))
-      val minor = parts.drop(1).headOption.flatMap(string => """^\d+""".r.findFirstIn(string))
-      val micro = parts.drop(2).headOption.flatMap(string => """^\d+""".r.findFirstIn(string))
+      val major = parts.headOption.flatMap(string ⇒ """\d+""".r.findFirstIn(string))
+      val minor = parts.drop(1).headOption.flatMap(string ⇒ """^\d+""".r.findFirstIn(string))
+      val micro = parts.drop(2).headOption.flatMap(string ⇒ """^\d+""".r.findFirstIn(string))
       (major, minor, micro, qualifier)
     } else if (parts.length > 0) {
-      val qualifier = parts.lastOption.flatMap { string =>
+      val qualifier = parts.lastOption.flatMap { string ⇒
         val m = qualiferPattern.matcher(string)
         if (string.forall(_.isDigit)) {
           None // It is major
@@ -136,14 +137,14 @@ object Support {
           if (m.matches()) Some(m.group(1)) else None
         }
       }
-      val major = parts.headOption.flatMap(string => """\d+""".r.findFirstIn(string))
+      val major = parts.headOption.flatMap(string ⇒ """\d+""".r.findFirstIn(string))
       (major, None, None, qualifier)
     } else
       (None, None, None, None)
     val majorVersion = major.flatMap(filter) getOrElse "0"
     val minorVersion = minor.flatMap(filter) getOrElse "0"
     val microVersion = micro.flatMap(filter) getOrElse "0"
-    val qualifierVersion = qualifier.flatMap(filter).map { string =>
+    val qualifierVersion = qualifier.flatMap(filter).map { string ⇒
       // add leading 0- if qualifier not beginning from digit
       if (string.head.isDigit) string else "0-" + string
     } getOrElse ""
@@ -172,7 +173,7 @@ object Support {
     /** Check if there are settings which is already cached for the cacheKey */
     def isCached(cacheKey: CacheKey, dependencies: Seq[ModuleID], resolvers: Seq[(String, String)])(implicit arg: Plugin.TaskArgument): Boolean = synchronized {
       cache.get(cacheKey) match {
-        case Some(cached) =>
+        case Some(cached) ⇒
           val value = (dependencies.map(_.hashCode) ++ resolvers.map(_.hashCode)).sorted
           arg.log.debug(logPrefix(arg.name) + "Check cache for " + cacheKey + " with value " + cached + " against value: " + value)
           val result = cached.sameElements(value)
@@ -181,7 +182,7 @@ object Support {
           else
             arg.log.debug(logPrefix(arg.name) + "Cache MISS.")
           result
-        case None =>
+        case None ⇒
           arg.log.debug(logPrefix(arg.name) + "Cache is empty.")
           false
       }

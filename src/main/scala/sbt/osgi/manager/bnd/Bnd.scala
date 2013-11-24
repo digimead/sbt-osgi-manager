@@ -33,13 +33,15 @@ import aQute.bnd.build.model.conversions.HeaderClauseListConverter
 import aQute.bnd.build.model.conversions.VersionedClauseConverter
 import aQute.bnd.header.Attrs
 import aQute.bnd.service.{ Plugin => BndPlugin }
-import sbt._
+
 import sbt.Keys._
 import sbt.osgi.manager.Keys._
 import sbt.osgi.manager.Model
 import sbt.osgi.manager.OSGiManagerException
 import sbt.osgi.manager.Plugin
 import sbt.osgi.manager.Support._
+
+import sbt._
 
 class Bnd(home: File) {
   def createModel()(implicit arg: Plugin.TaskArgument): BndEditModel = {
@@ -124,7 +126,7 @@ object Bnd {
     osgiBndBundleUpdateLocation := "",
     osgiBndBundleSymbolicName := "",
     osgiBndBundleSymbolicNameSingleton := false,
-    osgiBndBundleName <<= sbt.Keys.name in This,
+    osgiBndBundleName <<= name in This,
     osgiBndBundleLicense := "",
     osgiBndBundleVendor <<= organizationName in This,
     osgiBndBundleVersion <<= version in This,

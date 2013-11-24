@@ -26,30 +26,26 @@ import java.io.OutputStream
 import java.net.MalformedURLException
 import java.net.URI
 
-import scala.Option.option2Iterable
 import scala.collection.JavaConversions._
 import scala.collection.immutable
 
+import org.apache.felix.resolver.ResolverImpl
+import org.eclipse.equinox.internal.p2.metadata.VersionParser
+import org.osgi.framework.namespace.IdentityNamespace
+import org.osgi.service.resolver.ResolutionException
+
 import aQute.bnd.build.Workspace
 import aQute.bnd.deployer.repository.AbstractIndexedRepo
-import aQute.bnd.deployer.repository.CachingUriResourceHandle
 import aQute.bnd.deployer.repository.FixedIndexedRepo
 import aQute.bnd.deployer.repository.api.IRepositoryContentProvider
 import aQute.bnd.deployer.repository.providers.R5RepoContentProvider
 import aQute.bnd.osgi.resource.CapReqBuilder
 import aQute.bnd.service.ResourceHandle
 import aQute.bnd.service.Strategy
-import aQute.bnd.version.Version
+
 import biz.aQute.resolve.internal.BndrunResolveContext
-import org.apache.felix.resolver.ResolverImpl
-import org.eclipse.equinox.internal.p2.metadata.VersionParser
-import org.osgi.framework.namespace.IdentityNamespace
-import org.osgi.framework.namespace.PackageNamespace
-import org.osgi.resource.Namespace
-import org.osgi.resource.Requirement
-import org.osgi.resource.Resource
-import org.osgi.service.resolver.ResolutionException
-import sbt._
+
+import sbt.{ Keys ⇒ skey }
 import sbt.osgi.manager.Dependency
 import sbt.osgi.manager.Dependency._
 import sbt.osgi.manager.Plugin
@@ -57,6 +53,10 @@ import sbt.osgi.manager.Support
 import sbt.osgi.manager.Support._
 import sbt.osgi.manager.bnd.Bnd
 import sbt.osgi.manager.bnd.Logger
+import sbt.osgi.manager.Support
+import sbt.osgi.manager.bnd.Bnd
+
+import sbt._
 
 // This is consolidated thoughts about Bnd that was located across first version of my code.
 // It may save a bit of time for someone who will choose the same way.
@@ -107,7 +107,7 @@ object Resolve extends Support.Resolve {
       arg.log.info(logPrefix(arg.name) + "Resolve OBR dependencies")
       val bridge = Bnd.get()
       val modules = resolveOBR(dependencies, resolvers, bridge, resolvedDependencies)
-      val resolved = sbt.Keys.libraryDependencies in arg.thisScope get arg.extracted.structure.data getOrElse Seq()
+      val resolved = skey.libraryDependencies in arg.thisScope get arg.extracted.structure.data getOrElse Seq()
       updateCache(CacheOBRKey(arg.thisProjectRef.project), dependencies, resolvers)
       modules.filterNot { m =>
         val alreadyInLibraryDependencies = resolved.exists(_ == m)

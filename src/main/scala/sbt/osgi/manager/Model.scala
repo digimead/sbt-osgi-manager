@@ -18,23 +18,9 @@
 
 package sbt.osgi.manager
 
-import scala.collection.JavaConversions._
-
-import org.apache.maven.project.MavenProject
-
-import aQute.bnd.build.model.BndEditModel
-import aQute.bnd.build.model.EE
-import aQute.bnd.build.model.clauses.ExportedPackage
-import aQute.bnd.build.model.clauses.ImportPattern
-import aQute.bnd.build.model.clauses.VersionedClause
-import aQute.bnd.build.model.conversions.ClauseListConverter
-import aQute.bnd.build.model.conversions.Converter
-import aQute.bnd.build.model.conversions.HeaderClauseListConverter
-import aQute.bnd.build.model.conversions.VersionedClauseConverter
-import aQute.bnd.header.Attrs
-import sbt._
 import sbt.osgi.manager.Keys._
-import sbt.osgi.manager.Support._
+
+import sbt._
 
 object Model {
   /////////////////////////////////////

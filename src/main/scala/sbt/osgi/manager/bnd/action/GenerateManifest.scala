@@ -26,10 +26,12 @@ import scala.collection.JavaConversions._
 
 import aQute.bnd.osgi.Analyzer
 import aQute.bnd.osgi.{ Constants => BndConstant }
-import sbt._
+
 import sbt.osgi.manager.Model
 import sbt.osgi.manager.Plugin
 import sbt.osgi.manager.Support._
+
+import sbt._
 
 object GenerateManifest {
   def generate(product: File, dependencyClasspath: Seq[File])(implicit arg: Plugin.TaskArgument): Manifest = {

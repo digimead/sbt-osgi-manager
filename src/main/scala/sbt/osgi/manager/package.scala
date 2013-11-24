@@ -24,11 +24,12 @@ import java.net.URL
 import org.apache.maven.model.Dependency
 import org.eclipse.equinox.p2.metadata.Version
 
-import sbt._
 import sbt.Keys._
 import sbt.osgi.manager.Dependency
 import sbt.osgi.manager.Keys
 import sbt.osgi.manager.Plugin
+
+import sbt._
 
 package object manager {
   /** Entry point for the plugin in user's project */

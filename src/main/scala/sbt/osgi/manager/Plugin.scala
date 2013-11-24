@@ -24,12 +24,13 @@ import java.util.Properties
 import scala.Option.option2Iterable
 import scala.collection.immutable
 
-import sbt._
 import sbt.Keys._
 import sbt.osgi.manager.Keys._
 import sbt.osgi.manager.Support._
 import sbt.osgi.manager.bnd.Bnd
 import sbt.std.TaskStreams
+
+import sbt._
 
 object Plugin {
   // Please, use SBT logLevel and .options file if needed
@@ -60,7 +61,7 @@ object Plugin {
         osgiResetCache := osgiResetCacheTask)) ++
       // and global settings
       Seq(
-        commands += Command.command("osgi-resolve", osgiResolveCommandHelp)(osgiResolveCommand),
+        commands += Command.command("osgiResolve", osgiResolveCommandHelp)(osgiResolveCommand),
         osgiCompile <<= osgiCompileTask,
         osgiFetch <<= osgiFetchTask,
         osgiShow <<= osgiShowTask,
@@ -270,14 +271,7 @@ object Plugin {
       // Heh, another feature not bug? SBT 0.12.3
       // MultiLogger and project level is debug, but ConsoleLogger is still info...
       // Don't care about CPU time
-      val globalLoggin = (state.getClass().getDeclaredMethods().find(_.getName() == "globalLogging")) match {
-        case Some(method) =>
-          // SBT 0.12+
-          method.invoke(state).asInstanceOf[GlobalLogging]
-        case None =>
-          // SBT 0.11.x
-          CommandSupport.asInstanceOf[{ def globalLogging(s: State): GlobalLogging }].globalLogging(state)
-      }
+      val globalLoggin = _root_.sbt.osgi.manager.patch.Patch.getGlobalLogging(state)
       import globalLoggin._
       full match {
         case logger: AbstractLogger =>
@@ -289,7 +283,7 @@ object Plugin {
       }
     }
     /** Current project name */
-    val name: String = (sbt.Keys.name in thisScope get extracted.structure.data) getOrElse thisProjectRef.project.toString()
+    val name: String = (_root_.sbt.Keys.name in thisScope get extracted.structure.data) getOrElse thisProjectRef.project.toString()
     /** Scope of current project */
     lazy val thisScope = Load.projectScope(thisProjectRef)
     /** Scope of current project withing plugin configuration */
@@ -299,7 +293,7 @@ object Plugin {
 
     /** Update last known state */
     def updateLastKnownState() = synchronized {
-      if (!lastKnownState.exists(_.eq(state)))
+      if (!lastKnownState.exists(_.eq(this)))
         lastKnownState = Some(this)
     }
   }

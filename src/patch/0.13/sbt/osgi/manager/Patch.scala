@@ -16,15 +16,13 @@
  * limitations under the License.
  */
 
-package sbt.osgi.manager.test
-
-import sbt.Keys._
-import sbt.osgi.manager.Keys._
+package sbt.osgi.manager.patch
 
 import sbt._
 
-object Test {
-  lazy val settings = inConfig(OSGiTestConf)(Defaults.testSettings ++ Seq(
-    externalDependencyClasspath <<= Classpaths.concatDistinct(externalDependencyClasspath, externalDependencyClasspath in Compile),
-    internalDependencyClasspath <<= Classpaths.concatDistinct(internalDependencyClasspath, internalDependencyClasspath in _root_.sbt.Test)))
+/**
+ * SBT 0.13 specific code
+ */
+object Patch {
+  def getGlobalLogging(state: State): GlobalLogging = state.globalLogging
 }

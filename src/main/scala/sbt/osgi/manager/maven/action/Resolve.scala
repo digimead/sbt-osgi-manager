@@ -27,7 +27,6 @@ import java.util.Properties
 import java.util.jar.JarOutputStream
 import java.util.jar.Pack200
 
-import scala.Option.option2Iterable
 import scala.annotation.tailrec
 import scala.collection.JavaConversions._
 import scala.collection.immutable
@@ -50,15 +49,17 @@ import org.eclipse.tycho.core.resolver.shared.MavenRepositoryLocation
 import org.eclipse.tycho.core.resolver.shared.PlatformPropertiesUtils
 import org.eclipse.tycho.osgi.adapters.MavenLoggerAdapter
 import org.eclipse.tycho.p2.resolver.facade.P2ResolutionResult
-import sbt._
+
 import sbt.Keys._
 import sbt.osgi.manager.Dependency
 import sbt.osgi.manager.Dependency._
-import sbt.osgi.manager.OSGiManagerException
 import sbt.osgi.manager.Plugin
+import sbt.osgi.manager.Support
 import sbt.osgi.manager.Support
 import sbt.osgi.manager.Support._
 import sbt.osgi.manager.maven.Maven
+import sbt.{ Keys ⇒ skey }
+import sbt._
 
 // Unfortunately:
 //   - from the one side SBT is too simple for handle mixed ModuleID with explicit artifacts,
@@ -155,7 +156,7 @@ object Resolve extends Support.Resolve {
       arg.log.info(logPrefix(arg.name) + "Resolve P2 dependencies")
       val bridge = Maven()
       val modules = resolveP2(dependencies, resolvers, bridge)
-      val resolved = sbt.Keys.libraryDependencies in arg.thisScope get arg.extracted.structure.data getOrElse Seq()
+      val resolved = skey.libraryDependencies in arg.thisScope get arg.extracted.structure.data getOrElse Seq()
       updateCache(CacheP2Key(arg.thisProjectRef.project), dependencies, resolvers)
       modules.filterNot { m =>
         val alreadyInLibraryDependencies = resolved.exists(_ == m)
@@ -257,7 +258,7 @@ object Resolve extends Support.Resolve {
                 val moduleId = riu.getId() % entry.getId() % riu.getVersion().getOriginal() from
                   entry.getLocation.getAbsoluteFile.toURI.toURL.toString
                 val artifactsWithSourceCode = sources.map(file =>
-                  sbt.Artifact.classified(moduleId.name, sbt.Artifact.SourceClassifier).copy(url = Some(file.toURI.toURL())))
+                  _root_.sbt.Artifact.classified(moduleId.name, _root_.sbt.Artifact.SourceClassifier).copy(url = Some(file.toURI.toURL())))
                 val moduleIdWithSourceCode = moduleId.copy(explicitArtifacts = moduleId.explicitArtifacts ++ artifactsWithSourceCode)
                 Some(moduleIdWithSourceCode)
               }
@@ -447,13 +448,15 @@ object Resolve extends Support.Resolve {
         }
     }
 
-    @tailrec def getIUParents(iu: Seq[IInstallableUnit], acc: Seq[IInstallableUnit] = Seq()): Seq[IInstallableUnit] = {
+    @tailrec
+    def getIUParents(iu: Seq[IInstallableUnit], acc: Seq[IInstallableUnit] = Seq()): Seq[IInstallableUnit] = {
       val parents = iu.flatMap(iuContainers.get).flatten
       val filtered = parents.filterNot(parent =>
         acc.exists(_.getId() == parent.getId()) || iu.exists(_.getId() == parent.getId()))
       if (filtered.isEmpty) return acc
       getIUParents(filtered, acc ++ filtered)
     }
+
     immutable.HashMap(artifacts.map { artifact =>
       val mavenDependencies = artifact.getInstallableUnits().map {
         case iu: IInstallableUnit =>

@@ -74,10 +74,18 @@ libraryDependencies ++= {
 scriptedBufferLog := false
 
 resolvers ++= Seq(
-  "osgi-mananger-digimead-maven" at "http://storage.googleapis.com/maven.repository.digimead.org/",
-  Resolver.url("osgi-manager-typesafe-ivy-releases-for-online-crossbuild", url("http://repo.typesafe.com/typesafe/ivy-releases/"))(Resolver.defaultIvyPatterns),
-  Resolver.url("osgi-manager-typesafe-ivy-snapshots-for-online-crossbuild", url("http://repo.typesafe.com/typesafe/ivy-snapshots/"))(Resolver.defaultIvyPatterns),
-  Resolver.url("osgi-manager-typesafe-repository-for-online-crossbuild", url("http://typesafe.artifactoryonline.com/typesafe/ivy-releases/"))(Resolver.defaultIvyPatterns),
-  Resolver.url("osgi-manager-typesafe-shapshots-for-online-crossbuild", url("http://typesafe.artifactoryonline.com/typesafe/ivy-snapshots/"))(Resolver.defaultIvyPatterns))
+  "sbt-osgi-mananger-digimead-maven" at "http://storage.googleapis.com/maven.repository.digimead.org/",
+  Resolver.url("sbt-osgi-manager-typesafe-ivy-releases", url("http://repo.typesafe.com/typesafe/ivy-releases/"))(Resolver.defaultIvyPatterns),
+  Resolver.url("sbt-osgi-manager-typesafe-ivy-snapshots", url("http://repo.typesafe.com/typesafe/ivy-snapshots/"))(Resolver.defaultIvyPatterns),
+  Resolver.url("sbt-osgi-manager-typesafe-repository", url("http://typesafe.artifactoryonline.com/typesafe/ivy-releases/"))(Resolver.defaultIvyPatterns),
+  Resolver.url("sbt-osgi-manager-typesafe-shapshots", url("http://typesafe.artifactoryonline.com/typesafe/ivy-snapshots/"))(Resolver.defaultIvyPatterns))
+
+sourceGenerators in Compile <+= (sbtVersion, sourceDirectory in Compile, sourceManaged in Compile) map { (v, sourceDirectory, sourceManaged) =>
+  val interface = v.split("""\.""").take(2).mkString(".")
+  val source = sourceDirectory / ".." / "patch" / interface
+  val generated = (PathFinder(source) ***) x Path.rebase(source, sourceManaged)
+  IO.copy(generated, true, false)
+  generated.map(_._2).filter(_.getName endsWith ".scala")
+}
 
 //logLevel := Level.Debug

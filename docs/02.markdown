@@ -1,0 +1,77 @@
+## Usage ##
+
+If you want to enable extra run-time debugging use `OSGiManagerWithDebug(Equinox TCP port)` instead of `OSGiManager`. Also put [.options](src/sbt-test/osgi-manager/simple/.options.no) file to your project directory.
+
+*You may find the plugin usage examples at [https://github.com/ezh/](https://github.com/ezh/). Look at `build.sbt` of Digi- libraries.*
+
+Please note, that OSGi infrastructure has no dependency `organization` field as Ivy or Maven has. The bundle symbolic name and the bundle version identify a unique artifact.
+
+### Generate bundle manifest
+
+To generate bundle manifest:
+
+1. Add necessary information your project. Look at [Modify bundle properties](#modify-bundle-properties)
+2. Check bundle settings. Look at [List actual properties per project](#list-actual-properties-per-project)
+3. Create your artifact as usual. The plugin will intercept `packageOptions in (Compile, packageBin)` and will inject OSGi headers to the generated manifest.
+
+#### Modify bundle properties
+
+You may alter bundle properties with complex block
+
+``` scala
+inConfig(OSGiConf)({
+  import OSGiKey._
+  Seq[Project.Setting[_]](
+    osgiBndBundleActivator := "org.example.Activator",
+    osgiBndBundleSymbolicName := "org.example",
+    osgiBndBundleCopyright := "Copyright © 19xx-23xx N. All rights reserved.",
+    osgiBndExportPackage := List("org.example.*"),
+    osgiBndImportPackage := List("!org.aspectj.*", "*"),
+    osgiBndBundleLicense := Seq("http://www.gnu.org/licenses/agpl.html;description=GNU Affero General Public License",
+      "http://example.org/CommercialLicense.txt;description=Commercial License").mkString(","),
+    resolvers += typeP2("Eclipse P2 update site" at "http://eclipse.nn.nn"),
+    resolvers += typeOBR("Local OBR repository" at sys.env("OBR_REPOSITORY"))
+  )
+})
+```
+
+You may alter bundle properties as single line from SBT settings.
+
+``` scala
+OSGiKey.osgiBndBundleActivator in OSGiConf := "org.example.Activator"
+```
+
+#### List actual properties per project
+
+You may inspect OSGi properties with SBT `show` command or to use `osgi-show` report.
+
+### Resolve OSGi dependencies
+
+TODO doc
+
+#### Resolve OSGi dependencies against P2 update site
+
+TODO doc
+
+    inConfig(OSGiConf)({
+    import OSGiKey._
+      Seq[Project.Setting[_]](
+        resolvers += typeP2("Eclipse P2 update site" at "http://eclipse.ialto.com/eclipse/updates/4.2/R-4.2.1-201209141800/"),
+        libraryDependencies += typeP2((OSGi.ECLIPSE_PLUGIN % "org.eclipse.ui" % OSGi.ANY_VERSION).withSources),
+        libraryDependencies += typeP2((OSGi.ECLIPSE_PLUGIN % "org.eclipse.core.runtime" % OSGi.ANY_VERSION).withSources))
+    })
+
+> `osgi-resolve`
+
+#### Resolver OSGi dependencies against OBR R5 repository
+
+TODO doc
+
+    inConfig(OSGiConf)({
+      import OSGiKey._
+      Seq[Project.Setting[_]](
+        resolvers += typeOBR("Local OBR repository" at "file:/path/to/obr"),
+        libraryDependencies += typeOBR((OSGi.ANY_ORGANIZATION % "org.digimead.digi.lib" % OSGi.ANY_VERSION).withSources))
+    })
+
+> `osgi-resolve`

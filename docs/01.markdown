@@ -1,0 +1,67 @@
+## Adding to your project
+
+### Via interactive build
+
+Create a
+
+ * _project/plugins/project/Build.scala_ - for older simple-build-tool
+ * _project/project/Build.scala_ - for newer simple-build-tool
+
+file that looks like the following:
+
+``` scala
+import sbt._
+object PluginDef extends Build {
+  override def projects = Seq(root)
+  lazy val root = Project("plugins", file(".")) dependsOn(osgi)
+  lazy val dm = uri("git://github.com/digimead/sbt-osgi-manager.git#TagOrCommit")
+}
+```
+
+You may find more information about Build.scala in [SBT documentation](http://www.scala-sbt.org/release/docs/Extending/Plugins)
+
+### As published jar artifact
+
+Supported SBT versions: 0.11.3, 0.12.x. Add to your _project/plugins.sbt_
+
+``` scala
+addSbtPlugin("org.digimead" % "sbt-osgi-manager" % "VERSION")
+```
+
+Maven repository:
+
+``` scala
+resolvers += "digimead-maven" at "http://storage.googleapis.com/maven.repository.digimead.org/"
+```
+
+Ivy repository:
+
+``` scala
+resolvers += Resolver.url("digimead-ivy", url("http://storage.googleapis.com/ivy.repository.digimead.org/"))(Resolver.defaultIvyPatterns)
+```
+
+### As local build
+
+Clone this repository to your development system then do `sbt publish-local`.
+
+### Activate in your project
+
+For _build.sbt_, simply add:
+
+``` scala
+import sbt.osgi.manager._
+
+OSGiManager
+```
+
+For _Build.scala_:
+
+``` scala
+import sbt.dependency.manager._
+
+... yourProjectSettings ++ OSGiManager
+```
+
+[Imported package][ip] contains public declarations.
+
+[ip]: https://github.com/digimead/sbt-osgi-manager/blob/master/src/main/scala/sbt/osgi/manager/package.scala

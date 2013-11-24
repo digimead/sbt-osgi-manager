@@ -1,4 +1,8 @@
-SBT OSGi Manager [![Build Status](https://travis-ci.org/digimead/sbt-osgi-manager.png)](https://travis-ci.org/digimead/sbt-osgi-manager)
+---
+out: index.html
+---
+
+SBT OSGi Manager
 ================
 
 OSGi development bridge based on Bnd and Tycho.
@@ -7,7 +11,7 @@ There is a [sample project][sp]. Please, overview `test` file which contains int
 
 What is it? [SBT][sbt] Plugin for solid integration OSGi infrastructure with your favorite IDE.
 
-Plugin provides such abilities as:
+It provides such abilities as:
 
 * resolving OSGi dependencies and dependencies with source code at Eclipse P2 update site
 * resolving OSGi dependencies via OSGi R5 repositories
@@ -15,27 +19,13 @@ Plugin provides such abilities as:
 
 Resolved bundles are added to project to 'library-dependencies' settings key. Resolved bundles and their source code (if any) may be fetched with [sbt-dependency-manager][dm] or may be processed with your favorite tool that uses SBT dependency information (for example, SBT command `deliver-local`).
 
-[See SBT OSGi Manager documentation](http://digimead.github.io/sbt-osgi-manager/).
+<hr/>
 
-AUTHORS
--------
+> [Latest stable version $version$]($stable$)
 
-* Alexey Aksenov
-
-LICENSE
--------
-
-SBT OSGi Manager project is licensed to you under the terms of
-the Apache License, version 2.0, a copy of which has been
-included in the LICENSE file.
-Please check the individual source files for details.
-
-Copyright
----------
-
-Copyright © 2013 Alexey B. Aksenov/Ezh. All rights reserved.
+> [Latest development version $version$]($development$)
 
 [dm]: https://github.com/digimead/sbt-dependency-manager
-[sbt]: https://github.com/sbt/sbt
+[sbt]: http://www.scala-sbt.org/
 [sc]: http://eed3si9n.com/testing-sbt-plugins
 [sp]: https://github.com/digimead/sbt-osgi-manager/tree/master/src/sbt-test/osgi-manager/simple

@@ -64,12 +64,14 @@ import org.eclipse.tycho.p2.resolver.facade.P2ResolverFactory
 import org.osgi.framework.Bundle
 import org.osgi.framework.BundleContext
 import org.osgi.framework.BundleException
-import sbt._
+
 import sbt.osgi.manager.Keys._
 import sbt.osgi.manager.Model
 import sbt.osgi.manager.OSGiManagerException
 import sbt.osgi.manager.Plugin
 import sbt.osgi.manager.Support._
+
+import sbt._
 
 class Maven(val plexus: DefaultPlexusContainer, val information: Maven.Information)(implicit arg: Plugin.TaskArgument) {
   val home = Maven.getHome()
@@ -256,7 +258,7 @@ object Maven {
     val realm = buildClassRealm(mavenHome, Some(world))
     Maven.getMavenVersion(mavenHome, Some(realm)) match {
       case Some(information) =>
-        sbt.osgi.manager.maven.plexus.Logger.
+        _root_.sbt.osgi.manager.maven.plexus.Logger.
           info("Initialize Maven core. Maven version: " + information.version, null)
         val plexus = buildPlexusContainer(realm, getPlexusOverridingComponentsXml)
         val instance = new Maven(plexus, information)

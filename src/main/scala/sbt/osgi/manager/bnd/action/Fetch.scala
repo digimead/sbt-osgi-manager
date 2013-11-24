@@ -28,8 +28,8 @@ import sbt.osgi.manager.Support._
 
 import aQute.bnd.osgi.Analyzer
 import aQute.bnd.osgi.Jar
-import sbt.IO
-import sbt.ModuleID
+
+import sbt._
 
 /** Fetch project dependencies as bundles */
 object Fetch {
