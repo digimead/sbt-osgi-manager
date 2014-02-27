@@ -1,7 +1,7 @@
 /**
  * sbt-osgi-manager - OSGi development bridge based on Bnd and Tycho.
  *
- * Copyright (c) 2013 Alexey Aksenov ezh@ezh.msk.ru
+ * Copyright (c) 2013-2014 Alexey Aksenov ezh@ezh.msk.ru
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ import aQute.bnd.build.model.conversions.Converter
 import aQute.bnd.build.model.conversions.HeaderClauseListConverter
 import aQute.bnd.build.model.conversions.VersionedClauseConverter
 import aQute.bnd.header.Attrs
-import aQute.bnd.service.{ Plugin => BndPlugin }
+import aQute.bnd.service.{ Plugin ⇒ BndPlugin }
 
 import sbt.Keys._
 import sbt.osgi.manager.Keys._
@@ -53,7 +53,7 @@ class Bnd(home: File) {
     //bndEditModel.setBuildPath(List< ? extends VersionedClause> paths)
     //bndEditModel.setDSAnnotationPatterns(List< ? extends String> patterns)
     Model.getPropertyActivator foreach (model.setBundleActivator)
-    Model.getPropertyCategory foreach (list => model.setBundleCategory(list.mkString(",")))
+    Model.getPropertyCategory foreach (list ⇒ model.setBundleCategory(list.mkString(",")))
     Model.getPropertyContactAddress foreach (model.setBundleContactAddress)
     Model.getPropertyCopyright foreach (model.setBundleCopyright)
     Model.getPropertyDescription foreach (model.setBundleDescription)
@@ -64,15 +64,15 @@ class Bnd(home: File) {
     Model.getPropertyUpdateLocation foreach (model.setBundleUpdateLocation)
     Model.getPropertyVendor foreach (model.setBundleVendor)
     Model.getPropertyVersion foreach (model.setBundleVersion)
-    Model.getPropertyClassPath foreach (list => model.setClassPath(list))
-    Model.getPropertyExportPackages foreach (list => model.setExportedPackages(Bnd.Converter.exportPackageConverter.convert(list.mkString(","))))
-    Model.getPropertyImportPackages foreach (list => model.setImportPatterns(Bnd.Converter.importPatternConverter.convert(list.mkString(","))))
-    Model.getPropertyPlugin foreach (list => model.setPlugins(Bnd.Converter.headerClauseListConverter.convert(list.mkString(","))))
-    Model.getPropertyPluginPath foreach (list => model.setPluginPath(list))
-    Model.getPropertyPrivatePackages foreach (list => model.setPrivatePackages(list))
+    Model.getPropertyClassPath foreach (list ⇒ model.setClassPath(list))
+    Model.getPropertyExportPackages foreach (list ⇒ model.setExportedPackages(Bnd.Converter.exportPackageConverter.convert(list.mkString(","))))
+    Model.getPropertyImportPackages foreach (list ⇒ model.setImportPatterns(Bnd.Converter.importPatternConverter.convert(list.mkString(","))))
+    Model.getPropertyPlugin foreach (list ⇒ model.setPlugins(Bnd.Converter.headerClauseListConverter.convert(list.mkString(","))))
+    Model.getPropertyPluginPath foreach (list ⇒ model.setPluginPath(list))
+    Model.getPropertyPrivatePackages foreach (list ⇒ model.setPrivatePackages(list))
     // BUG in origin, used headerClauseListConverter instead of clauseListConverter
-    Model.getPropertyRunBundles foreach (list => model.setRunBundles(Bnd.Converter.clauseListConverter.convert(list.mkString(","))))
-    Model.getPropertyRunEE foreach (ee => model.setEE(EE.parse(ee)))
+    Model.getPropertyRunBundles foreach (list ⇒ model.setRunBundles(Bnd.Converter.clauseListConverter.convert(list.mkString(","))))
+    Model.getPropertyRunEE foreach (ee ⇒ model.setEE(EE.parse(ee)))
     Model.getPropertyRunFramework foreach (model.setRunFramework)
     Model.getPropertyRunFW foreach (model.setRunFw)
     //bndEditModel.setRunProperties(Map<String,String> props)
@@ -86,19 +86,19 @@ class Bnd(home: File) {
     //osgiBndSources in thisScope get extracted.structure.data foreach (b => model.setIncludeSources(Boolean.box(b)))
     //bndEditModel.setOutputFile(String name)
     //bndEditModel.setServiceComponents(List< ? extends ServiceComponent> components)
-    osgiBndSub in arg.thisOSGiScope get arg.extracted.structure.data foreach (list => model.setSubBndFiles(list))
+    osgiBndSub in arg.thisOSGiScope get arg.extracted.structure.data foreach (list ⇒ model.setSubBndFiles(list))
     // bndEditModel.setSystemPackages(List< ? extends ExportedPackage> packages)
-    osgiBndTestCases in arg.thisOSGiScope get arg.extracted.structure.data foreach (list => model.setTestSuites(list))
+    osgiBndTestCases in arg.thisOSGiScope get arg.extracted.structure.data foreach (list ⇒ model.setTestSuites(list))
     model
   }
   /** Create Bnd workspace */
-  def createWorkspace(plugins: Seq[Workspace => BndPlugin]): Workspace = { // getWorkspace
+  def createWorkspace(plugins: Seq[Workspace ⇒ BndPlugin]): Workspace = { // getWorkspace
     val workspace = new Workspace(home)
     val project = workspace.getProject(Bnd.defaultProjectName)
     if (project == null)
       throw new OSGiManagerException("Unable to create Bnd project")
     // add plugins
-    plugins.foreach(f => workspace.addBasicPlugin(f(workspace)))
+    plugins.foreach(f ⇒ workspace.addBasicPlugin(f(workspace)))
     // Initialize projects in synchronized block
     workspace.getBuildOrder()
     workspace
@@ -135,6 +135,7 @@ object Bnd {
     osgiBndExportPackage := List[String](),
     osgiBndImportPackage := List[String](),
     osgiBndPlugin := List[String](),
+    osgiBndNoUses := false,
     osgiBndPluginPath := List[String](),
     osgiBndPrivatePackage := List[String](),
     osgiBndRequireBundle := List[String](),
@@ -149,18 +150,17 @@ object Bnd {
     osgiBndSources := false,
     osgiBndTestCases := List[String]()))
   /*
- *  For
-example to resolve for Win32/x86 set the following in your bndrun:
-
-    -runsystemcapabilities: osgi.native; osgi.native.osname=Win32;
-osgi.native.processor=x86
-
-Alternatively if you want to resolve for the same platform that you
-are currently running Bndtools on, use the ${native_capability} macro:
-
-    -runsystemcapabilities: ${native_capability}
- *
- */
+   *  For example to resolve for Win32/x86 set the following in your bndrun:
+   *
+   * -runsystemcapabilities: osgi.native; osgi.native.osname=Win32;
+   * osgi.native.processor=x86
+   *
+   * Alternatively if you want to resolve for the same platform that you
+   * are currently running Bndtools on, use the ${native_capability} macro:
+   *
+   * -runsystemcapabilities: ${native_capability}
+   *
+   */
 
   /** Get an exists or create a new instance for the cnf project */
   def get(cnf: File = null)(implicit arg: Plugin.TaskArgument): Bnd = {
@@ -256,6 +256,7 @@ are currently running Bndtools on, use the ${native_capability} macro:
     show("DYNAMICIMPORT_PACKAGE", Model.getPropertyDynamicImport getOrElse "")
     show("EXPORT_PACKAGE", Model.getPropertyExportPackages map (_.mkString(",")) getOrElse "")
     show("IMPORT_PACKAGE", Model.getPropertyImportPackages map (_.mkString(",")) getOrElse "")
+    show("NOUSES", Model.getPropertyNoUses.map(_.toString) getOrElse "false", "false")
     show("PLUGIN", Model.getPropertyPlugin map (_.mkString(",")) getOrElse "")
     show("PLUGINPATH", Model.getPropertyPluginPath map (_.mkString(",")) getOrElse "")
     show("PRIVATE_PACKAGE", Model.getPropertyPrivatePackages map (_.mkString(",")) getOrElse "")
@@ -281,7 +282,7 @@ are currently running Bndtools on, use the ${native_capability} macro:
   protected def show(parameter: String, value: AnyRef, onEmpty: Option[(String, String)])(implicit arg: Plugin.TaskArgument) {
     val key = if (arg.log.ansiCodesSupported) scala.Console.GREEN + parameter + scala.Console.RESET else parameter
     val message = onEmpty match {
-      case Some(onEmpty) =>
+      case Some(onEmpty) ⇒
         if (Option(value).isEmpty || value.toString.trim.isEmpty) {
           if (arg.log.ansiCodesSupported)
             key + ": " + onEmpty._1 + onEmpty._2 + scala.Console.RESET
@@ -289,7 +290,7 @@ are currently running Bndtools on, use the ${native_capability} macro:
             key + ": " + onEmpty._2
         } else
           key + ": " + value.toString()
-      case None =>
+      case None ⇒
         if (Option(value).isEmpty || value.toString.trim.isEmpty) return
         key + ": " + value.toString()
     }

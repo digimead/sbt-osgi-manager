@@ -1,7 +1,7 @@
 /**
  * sbt-osgi-manager - OSGi development bridge based on Bnd and Tycho.
  *
- * Copyright (c) 2013 Alexey Aksenov ezh@ezh.msk.ru
+ * Copyright (c) 2013-2014 Alexey Aksenov ezh@ezh.msk.ru
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -112,6 +112,9 @@ object Model {
   /** aQute.bnd.osgi.Constants.RUNFW */
   def getPropertyRunFW(implicit arg: Plugin.TaskArgument) =
     osgiBndRunFW in arg.thisOSGiScope get arg.extracted.structure.data
+  /** aQute.bnd.osgi.Constants.NOUSES */
+  def getPropertyNoUses(implicit arg: Plugin.TaskArgument) =
+    osgiBndNoUses in arg.thisOSGiScope get arg.extracted.structure.data
 
   def getSettingsBndDirectory(implicit arg: Plugin.TaskArgument) =
     osgiBndDirectory in arg.thisOSGiScope get arg.extracted.structure.data

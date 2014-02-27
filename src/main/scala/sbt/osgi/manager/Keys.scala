@@ -1,7 +1,7 @@
 /**
  * sbt-osgi-manager - OSGi development bridge based on Bnd and Tycho.
  *
- * Copyright (c) 2013 Alexey Aksenov ezh@ezh.msk.ru
+ * Copyright (c) 2013-2014 Alexey Aksenov ezh@ezh.msk.ru
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ object Keys {
 
   lazy val osgiDirectory = SettingKey[java.io.File]("osgiDirectory", "Root directory with temporary OSGi data")
   lazy val osgiFetchPath = SettingKey[Option[java.io.File]]("osgiFetchPath", "Location for 'fetch' task bundles")
-  lazy val osgiFetchInfo = SettingKey[(Option[ModuleID], String, Analyzer, Plugin.TaskArgument) => Unit]("osgiFetchInfo", "Fn(x) that passes infromation about the bundle to the analyzer.")
+  lazy val osgiFetchInfo = SettingKey[(Option[ModuleID], String, Analyzer, Plugin.TaskArgument) ⇒ Unit]("osgiFetchInfo", "Fn(x) that passes infromation about the bundle to the analyzer.")
 
   // Tasks
 
@@ -90,6 +90,8 @@ object Keys {
     "Bnd IGNORE_PACKAGE parameter. Tells which Java packages will ignored. To ignore packages you should use the negated syntax i.e. !com.foo, com.*. The negated package must come before its wildcard.")
   lazy val osgiBndImportPackage = SettingKey[List[String]]("osgiBndImportPackage",
     "Bnd IMPORT_PACKAGE parameter. The Import-Package header is used to declare dependencies at a package level from the bundle.")
+  lazy val osgiBndNoUses = SettingKey[Boolean]("osgiBndNoUses",
+    "Bnd NOUSES parameter extension. Do not calculate the uses: directive.")
   lazy val osgiBndPlugin = SettingKey[List[String]]("osgiBndPlugin",
     "Bnd PLUGIN parameter. Define the plugins.")
   lazy val osgiBndPluginPath = SettingKey[List[String]]("osgiBndPluginPath",
