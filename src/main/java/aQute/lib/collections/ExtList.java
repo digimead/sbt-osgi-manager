@@ -32,12 +32,12 @@ public class ExtList<T> extends ArrayList<T> {
 		super(size);
 	}
 
-	public ExtList(Collection<T> _) {
-		super(_);
+	public ExtList(Collection<T> arg) {
+		super(arg);
 	}
 
-	public ExtList(Iterable<T> _) {
-		for ( T t : _)
+	public ExtList(Iterable<T> arg) {
+		for ( T t : arg)
 			add(t);
 	}
 

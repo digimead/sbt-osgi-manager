@@ -452,6 +452,7 @@ public class BndrunResolveContext extends ResolveContext {
 
 	@Override
 	// <Capability>
+	@SuppressWarnings("unchecked")
 	public int insertHostedCapability(List capsX, HostedCapability hc) {
 		List<Capability> caps = (List<Capability>) capsX;
 		Integer prioObj = resourcePriorities.get(hc.getResource());

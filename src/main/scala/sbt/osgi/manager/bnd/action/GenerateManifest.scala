@@ -152,7 +152,8 @@ object GenerateManifest {
     for (option ← options) option match {
       case Package.JarManifest(mergeManifest) ⇒ Package.mergeManifests(manifest, mergeManifest)
       case Package.ManifestAttributes(attributes @ _*) ⇒ main ++= attributes
-      case _ ⇒
+      case Package.MainClass(mainClassName) ⇒ main.put(Attributes.Name.MAIN_CLASS, mainClassName)
+      case _ ⇒ arg.log.warn("Ignored unknown package option " + option)
     }
     val attributes = main.entrySet().map(entry ⇒ (entry.getKey().toString, entry.getValue().toString)).filter {
       case ("Export-Package", _) ⇒

@@ -76,7 +76,7 @@ object Plugin {
   def markResolverAsOBR(resolver: Resolver): Resolver = resolver match {
     case mavenResolver: MavenRepository ⇒
       import mavenResolver._
-      new URLRepository(name, new Patterns(Seq[String](root), Seq[String](Dependency.OBR.name), false))
+      new URLRepository(name, Patterns(Seq[String](root), Seq[String](Dependency.OBR.name), false))
     case unsupported ⇒
       throw new UnsupportedOperationException("Unknown resolver type %s for %s".format(resolver.getClass(), resolver))
   }
@@ -84,7 +84,7 @@ object Plugin {
   def markResolverAsP2(resolver: Resolver): Resolver = resolver match {
     case mavenResolver: MavenRepository ⇒
       import mavenResolver._
-      new URLRepository(name, new Patterns(Seq[String](root), Seq[String](Dependency.P2.name), false))
+      new URLRepository(name, Patterns(Seq[String](root), Seq[String](Dependency.P2.name), false))
     case unsupported ⇒
       throw new UnsupportedOperationException("Unknown resolver type %s for %s".format(resolver.getClass(), resolver))
   }
@@ -161,16 +161,16 @@ object Plugin {
     // resolve P2
     val dependencyP2 = maven.action.Resolve.resolveP2Command()
     val dependencySettingsP2 = for (projectRef ← dependencyP2.keys) yield if (dependencyP2(projectRef).nonEmpty)
-      Seq[Project.Setting[_]](libraryDependencies in projectRef ++= dependencyP2(projectRef))
+      Seq(libraryDependencies in projectRef ++= dependencyP2(projectRef))
     else
-      Seq[Project.Setting[_]]()
+      Seq()
     // resolve OBR
     val resolvedDependencies = collectResolvedDependencies(dependencyP2)
     val dependencyOBR = bnd.action.Resolve.resolveOBRCommand(resolvedDependencies)
     val dependencySettingsOBR = for (projectRef ← dependencyOBR.keys) yield if (dependencyOBR(projectRef).nonEmpty)
-      Seq[Project.Setting[_]](libraryDependencies in projectRef ++= dependencyOBR(projectRef))
+      Seq(libraryDependencies in projectRef ++= dependencyOBR(projectRef))
     else
-      Seq[Project.Setting[_]]()
+      Seq()
     val dependencySettings = dependencySettingsP2.flatten ++ dependencySettingsOBR.flatten
     arg.log.debug(logPrefix("*") + "Add  settings: " + dependencySettings)
     if (dependencySettings.nonEmpty) {
