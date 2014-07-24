@@ -1,7 +1,7 @@
 /**
  * sbt-osgi-manager - OSGi development bridge based on Bnd and Tycho.
  *
- * Copyright (c) 2013 Alexey Aksenov ezh@ezh.msk.ru
+ * Copyright (c) 2013-2014 Alexey Aksenov ezh@ezh.msk.ru
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,19 +18,14 @@
 
 package sbt.osgi.manager
 
-import java.util.Locale
-import java.util.Properties
-
-import scala.collection.JavaConversions._
-import scala.collection.mutable
-
+import java.util.{ Locale, Properties }
 import org.codehaus.plexus.util.Os
 import org.eclipse.equinox.internal.p2.metadata.VersionParser
 import org.eclipse.equinox.p2.metadata.Version
-
-import sbt.{ Keys ⇒ skey }
-
-import sbt._
+import sbt.{ Keys ⇒ skey, ModuleID, Resolver, Scope, URLRepository }
+import scala.collection.JavaConversions.asScalaSet
+import scala.collection.mutable
+import scala.language.implicitConversions
 
 object Support {
   implicit def option2rich[T](option: Option[T]): RichOption[T] = new RichOption(option)

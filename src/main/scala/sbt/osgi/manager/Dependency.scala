@@ -1,7 +1,7 @@
 /**
  * sbt-osgi-manager - OSGi development bridge based on Bnd and Tycho.
  *
- * Copyright (c) 2013 Alexey Aksenov ezh@ezh.msk.ru
+ * Copyright (c) 2013-2014 Alexey Aksenov ezh@ezh.msk.ru
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,18 +18,14 @@
 
 package sbt.osgi.manager
 
-import java.net.URI
-import java.net.URL
-
-import scala.collection.mutable
-
-import org.apache.maven.model.{ Dependency => MavenDependency }
-import org.eclipse.equinox.internal.p2.metadata.OSGiVersion
-import org.eclipse.equinox.internal.p2.metadata.VersionParser
+import java.net.{ URI, URL }
+import org.apache.maven.model.{ Dependency ⇒ MavenDependency }
+import org.eclipse.equinox.internal.p2.metadata.{ OSGiVersion, VersionParser }
 import org.eclipse.equinox.p2.metadata.Version
+import scala.collection.mutable
+import scala.language.implicitConversions
 
-import sbt.Artifact
-import sbt.ModuleID
+import sbt._
 
 /**
  * Dependency concentrator that interacts with SBT and OSGi dependencies
@@ -39,9 +35,9 @@ object Dependency {
   implicit def moduleId2Dependency(dependencies: Seq[ModuleID]): Seq[MavenDependency] =
     dependencies.map(convertDependency)
   implicit def tuplesWithString2repositories(repositories: Seq[(String, String)]): Seq[(String, URI)] =
-    repositories.map { case (id, url) => (id, new URL(url).toURI) }
+    repositories.map { case (id, url) ⇒ (id, new URL(url).toURI) }
   implicit def tuplesWithURL2repositories(repositories: Seq[(String, URL)]): Seq[(String, URI)] =
-    repositories.map { case (id, url) => (id, url.toURI) }
+    repositories.map { case (id, url) ⇒ (id, url.toURI) }
   implicit def version2string(version: Version): String = version.getOriginal
   private val dependencyOrigin = mutable.WeakHashMap[MavenDependency, Origin]()
   /** Predefined value that represents any organization in SBT ModuleID */

@@ -18,29 +18,19 @@
 
 package sbt.osgi.manager.bnd
 
-import scala.collection.JavaConversions._
-import scala.ref.WeakReference
-
 import aQute.bnd.build.Workspace
-import aQute.bnd.build.model.BndEditModel
-import aQute.bnd.build.model.EE
-import aQute.bnd.build.model.clauses.ExportedPackage
-import aQute.bnd.build.model.clauses.ImportPattern
-import aQute.bnd.build.model.clauses.VersionedClause
-import aQute.bnd.build.model.conversions.ClauseListConverter
-import aQute.bnd.build.model.conversions.Converter
-import aQute.bnd.build.model.conversions.HeaderClauseListConverter
-import aQute.bnd.build.model.conversions.VersionedClauseConverter
+import aQute.bnd.build.model.{ BndEditModel, EE }
+import aQute.bnd.build.model.clauses.{ ExportedPackage, ImportPattern, VersionedClause }
+import aQute.bnd.build.model.conversions.{ ClauseListConverter, Converter, HeaderClauseListConverter, VersionedClauseConverter }
 import aQute.bnd.header.Attrs
 import aQute.bnd.service.{ Plugin ⇒ BndPlugin }
+import sbt.osgi.manager.{ Model, OSGiManagerException, Plugin }
+import sbt.osgi.manager.Keys._
+import sbt.osgi.manager.Support.{ logPrefix, option2rich }
+import scala.collection.JavaConversions.seqAsJavaList
+import scala.ref.WeakReference
 
 import sbt.Keys._
-import sbt.osgi.manager.Keys._
-import sbt.osgi.manager.Model
-import sbt.osgi.manager.OSGiManagerException
-import sbt.osgi.manager.Plugin
-import sbt.osgi.manager.Support._
-
 import sbt._
 
 class Bnd(home: File) {

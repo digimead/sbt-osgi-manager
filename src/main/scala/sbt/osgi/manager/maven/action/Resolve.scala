@@ -1,7 +1,7 @@
 /**
  * sbt-osgi-manager - OSGi development bridge based on Bnd and Tycho.
  *
- * Copyright (c) 2013 Alexey Aksenov ezh@ezh.msk.ru
+ * Copyright (c) 2013-2014 Alexey Aksenov ezh@ezh.msk.ru
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,48 +18,35 @@
 
 package sbt.osgi.manager.maven.action
 
-import java.io.BufferedOutputStream
-import java.io.FileOutputStream
-import java.io.OutputStream
-import java.net.URI
-import java.net.URISyntaxException
+import java.io.{ BufferedOutputStream, FileOutputStream, OutputStream }
+import java.net.{ URI, URISyntaxException }
 import java.util.Properties
-import java.util.jar.JarOutputStream
-import java.util.jar.Pack200
-
-import scala.annotation.tailrec
-import scala.collection.JavaConversions._
-import scala.collection.immutable
-import scala.collection.mutable
-
+import java.util.jar.{ JarOutputStream, Pack200 }
 import org.apache.maven.artifact.Artifact
 import org.apache.maven.artifact.resolver.ArtifactResolutionRequest
-import org.apache.maven.model.{ Dependency => MavenDependency }
+import org.apache.maven.model.{ Dependency ⇒ MavenDependency }
 import org.apache.maven.repository.RepositorySystem
-import org.eclipse.core.runtime.IProgressMonitor
-import org.eclipse.core.runtime.IStatus
+import org.eclipse.core.runtime.{ IProgressMonitor, IStatus }
 import org.eclipse.equinox.p2.core.ProvisionException
 import org.eclipse.equinox.p2.metadata.IInstallableUnit
-import org.eclipse.equinox.p2.repository.artifact.IArtifactDescriptor
-import org.eclipse.equinox.p2.repository.artifact.IArtifactRepository
-import org.eclipse.equinox.p2.repository.artifact.IArtifactRepositoryManager
+import org.eclipse.equinox.p2.repository.artifact.{ IArtifactDescriptor, IArtifactRepository, IArtifactRepositoryManager }
 import org.eclipse.tycho.core.ee.shared.ExecutionEnvironmentConfigurationStub
 import org.eclipse.tycho.core.facade.TargetEnvironment
-import org.eclipse.tycho.core.resolver.shared.MavenRepositoryLocation
-import org.eclipse.tycho.core.resolver.shared.PlatformPropertiesUtils
+import org.eclipse.tycho.core.resolver.shared.{ MavenRepositoryLocation, PlatformPropertiesUtils }
 import org.eclipse.tycho.osgi.adapters.MavenLoggerAdapter
 import org.eclipse.tycho.p2.resolver.facade.P2ResolutionResult
-
-import sbt.Keys._
+import sbt.osgi.manager.{ Plugin, Support }
 import sbt.osgi.manager.Dependency
-import sbt.osgi.manager.Dependency._
-import sbt.osgi.manager.Plugin
-import sbt.osgi.manager.Support
-import sbt.osgi.manager.Support
-import sbt.osgi.manager.Support._
+import sbt.osgi.manager.Dependency.{ getOrigin, moduleId2Dependency, tuplesWithString2repositories }
+import sbt.osgi.manager.Support.{ CacheP2Key, getDependencies, getResolvers, logPrefix }
 import sbt.osgi.manager.maven.Maven
-import sbt.{ Keys ⇒ skey }
+import scala.annotation.tailrec
+import scala.collection.{ immutable, mutable }
+import scala.collection.JavaConversions.{ asScalaBuffer, asScalaSet, collectionAsScalaIterable, seqAsJavaList }
+import scala.language.reflectiveCalls
+
 import sbt._
+import sbt.{ Keys ⇒ skey }
 
 // Unfortunately:
 //   - from the one side SBT is too simple for handle mixed ModuleID with explicit artifacts,
@@ -106,13 +93,13 @@ object Resolve extends Support.Resolve {
     //  request.setCollectionFilter(new ScopeArtifactFilter(scope));
     //}
 
-    for (rr <- request.getRemoteRepositories())
+    for (rr ← request.getRemoteRepositories())
       arg.log.debug(logPrefix(arg.name) + "Add remote repository:\n" + rr)
     arg.log.info(logPrefix(arg.name) + "Resolve artifact: " + artifact)
     val result = repositorySystem.resolve(request)
-    for (exception <- result.getErrorArtifactExceptions())
+    for (exception ← result.getErrorArtifactExceptions())
       arg.log.error(logPrefix(arg.name) + exception.toString())
-    for (exception <- result.getCircularDependencyExceptions())
+    for (exception ← result.getCircularDependencyExceptions())
       arg.log.error(logPrefix(arg.name) + exception.toString())
     if (result.getMissingArtifacts().nonEmpty)
       arg.log.warn(logPrefix(arg.name) + "Unable to locate " + result.getMissingArtifacts().mkString(","))
@@ -158,7 +145,7 @@ object Resolve extends Support.Resolve {
       val modules = resolveP2(dependencies, resolvers, bridge)
       val resolved = skey.libraryDependencies in arg.thisScope get arg.extracted.structure.data getOrElse Seq()
       updateCache(CacheP2Key(arg.thisProjectRef.project), dependencies, resolvers)
-      modules.filterNot { m =>
+      modules.filterNot { m ⇒
         val alreadyInLibraryDependencies = resolved.exists(_ == m)
         if (alreadyInLibraryDependencies)
           arg.log.debug(logPrefix(arg.name) + "Skip, already in libraryDependencies: " + m)
@@ -184,20 +171,20 @@ object Resolve extends Support.Resolve {
       new ExecutionEnvironmentConfigurationStub("JavaSE-1.6"))
     targetPlatformBuilder.setIncludeLocalMavenRepo(includeLocalMavenRepo)
     val loadedPepositories = {
-      for (repo <- p2Pepositories) yield {
+      for (repo ← p2Pepositories) yield {
         val id = repo._1
         val location = repo._2
         try {
           targetPlatformBuilder.addP2Repository(new MavenRepositoryLocation(id, location))
           Some(location)
         } catch {
-          case e: URISyntaxException =>
+          case e: URISyntaxException ⇒
             arg.log.warn(logPrefix(arg.name) + "Unable to resolve repository URI : " + location)
             None
-          case e: ProvisionException =>
+          case e: ProvisionException ⇒
             arg.log.warn(logPrefix(arg.name) + e.getMessage())
             None
-          case e: Throwable =>
+          case e: Throwable ⇒
             arg.log.warn(logPrefix(arg.name) + e.getMessage())
             None
         }
@@ -209,11 +196,11 @@ object Resolve extends Support.Resolve {
     }
     val targetPlatform = targetPlatformBuilder.buildTargetPlatform()
     val resolver = maven.p2ResolverFactory.createResolver(new MavenLoggerAdapter(maven.plexus.getLogger, true))
-    dependencies.foreach(d => resolver.addDependency(d.getType(), d.getArtifactId(), d.getVersion()))
+    dependencies.foreach(d ⇒ resolver.addDependency(d.getType(), d.getArtifactId(), d.getVersion()))
 
     val resolutionResult = resolver.resolveDependencies(targetPlatform, null) // set reactor project location to null
-    val nonReactorUnits = (for (r <- resolutionResult) yield r.getNonReactorUnits().toArray()).flatten
-    val artifacts = (for (r <- resolutionResult) yield r.getArtifacts()).flatten
+    val nonReactorUnits = (for (r ← resolutionResult) yield r.getNonReactorUnits().toArray()).flatten
+    val artifacts = (for (r ← resolutionResult) yield r.getArtifacts()).flatten
     if (nonReactorUnits.isEmpty && artifacts.isEmpty) {
       arg.log.info(logPrefix(arg.name) + "There are no any resolved entries")
       return Seq()
@@ -222,27 +209,27 @@ object Resolve extends Support.Resolve {
     if (artifacts.isEmpty)
       return Seq() // nothing found
 
-    val actualRepositories = loadedPepositories.map(uri => Option(remoteArtifactRepositoryManager.loadRepository(uri, null))).flatten // set monitors to null
+    val actualRepositories = loadedPepositories.map(uri ⇒ Option(remoteArtifactRepositoryManager.loadRepository(uri, null))).flatten // set monitors to null
 
     val rePerDependencyMap = collectArtifactsPerDependency(dependencies, artifacts)
     // associate results with repository records
     // nonReactorUnits is most probably a p2 internal InstallableUnit (type not accessible from Tycho).
     nonReactorUnits.foreach(_ match {
-      case nriu: IInstallableUnit =>
+      case nriu: IInstallableUnit ⇒
         // check if IInstallableUnit not exists in artifacts
         if (!artifacts.exists(_.getInstallableUnits().exists(_ == nriu)))
           arg.log.info(logPrefix(arg.name) + "Skip non reactor installable unit: " + nriu)
-      case nru =>
+      case nru ⇒
         arg.log.info(logPrefix(arg.name) + "Skip non reactor unit: " + nru)
     })
 
     // FYI:
     //   single P2ResolutionResult.Entry may have any number of InstallableUnits that point to the same artifact
     //   single InstallableUnit may be bound to multiple originModuleIds. Some of ModuleIDs may require source code, some not
-    artifacts.map { entry =>
-      val originModuleIds = rePerDependencyMap.get(entry).map(dependencies => dependencies.flatMap(getOrigin)) getOrElse Seq()
+    artifacts.map { entry ⇒
+      val originModuleIds = rePerDependencyMap.get(entry).map(dependencies ⇒ dependencies.flatMap(getOrigin)) getOrElse Seq()
       entry.getInstallableUnits().map(_ match {
-        case riu: IInstallableUnit =>
+        case riu: IInstallableUnit ⇒
           if (originModuleIds.nonEmpty) {
             if (originModuleIds.exists(_.withSources)) {
               val sources = actualRepositories.map(aquireP2SourceCodeArtifacts(entry, riu, _)).flatten.distinct
@@ -257,7 +244,7 @@ object Resolve extends Support.Resolve {
                 arg.log.debug(logPrefix(arg.name) + "%s -> [%s]".format(riu, originModuleIds.map(_.moduleId.copy(extraAttributes = Map())).mkString(",")))
                 val moduleId = riu.getId() % entry.getId() % riu.getVersion().getOriginal() from
                   entry.getLocation.getAbsoluteFile.toURI.toURL.toString
-                val artifactsWithSourceCode = sources.map(file =>
+                val artifactsWithSourceCode = sources.map(file ⇒
                   _root_.sbt.Artifact.classified(moduleId.name, _root_.sbt.Artifact.SourceClassifier).copy(url = Some(file.toURI.toURL())))
                 val moduleIdWithSourceCode = moduleId.copy(explicitArtifacts = moduleId.explicitArtifacts ++ artifactsWithSourceCode)
                 Some(moduleIdWithSourceCode)
@@ -273,7 +260,7 @@ object Resolve extends Support.Resolve {
             Some(riu.getId() % entry.getId() % riu.getVersion().getOriginal()
               from entry.getLocation.getAbsoluteFile.toURI.toURL.toString)
           }
-        case ru =>
+        case ru ⇒
           arg.log.warn(logPrefix(arg.name) + "Skip an unknown reactor unit: " + ru)
           None
       }).flatten
@@ -284,7 +271,7 @@ object Resolve extends Support.Resolve {
     val uri = arg.extracted.currentRef.build
     val build = arg.extracted.structure.units(uri)
     // Check if we already processed our dependencies with same values
-    val cached = for (id <- build.defined.keys) yield {
+    val cached = for (id ← build.defined.keys) yield {
       implicit val projectRef = ProjectRef(uri, id)
       val localArg = arg.copy(thisProjectRef = projectRef)
       isCached(Support.CacheP2Key(id), getDependencies(Dependency.P2, localArg.thisOSGiScope)(localArg),
@@ -292,12 +279,12 @@ object Resolve extends Support.Resolve {
     }
     if (cached.forall(_ == true)) {
       arg.log.info(logPrefix(arg.name) + "Pass P2 resolution: already resolved")
-      immutable.HashMap((for (id <- build.defined.keys) yield {
+      immutable.HashMap((for (id ← build.defined.keys) yield {
         val projectRef = ProjectRef(uri, id)
         (projectRef, Seq())
       }).toSeq: _*)
     } else {
-      immutable.HashMap((for (id <- build.defined.keys) yield {
+      immutable.HashMap((for (id ← build.defined.keys) yield {
         implicit val projectRef = ProjectRef(uri, id)
         (projectRef, resolveP2()(arg.copy(thisProjectRef = projectRef)))
       }).toSeq: _*)
@@ -314,34 +301,34 @@ object Resolve extends Support.Resolve {
       unpacker.unpack(tmpFile, out)
       None
     } catch {
-      case e: Throwable =>
+      case e: Throwable ⇒
         arg.log.error(logPrefix(arg.name) + "Unable to unpack artifact: " + e)
         Some(e)
     } finally {
-      try { out.close() } catch { case _: Throwable => }
-      try { tmpFile.delete() } catch { case _: Throwable => }
+      try { out.close() } catch { case _: Throwable ⇒ }
+      try { tmpFile.delete() } catch { case _: Throwable ⇒ }
     }
   }
   /** Download source code for P2 installable unit */
   protected def aquireP2SourceCodeArtifacts(entry: P2ResolutionResult.Entry, iu: IInstallableUnit, repository: IArtifactRepository)(implicit arg: Plugin.TaskArgument): Seq[java.io.File] = try {
     val clazz = repository.getClass()
     clazz.getName() match {
-      case "org.eclipse.equinox.internal.p2.artifact.repository.CompositeArtifactRepository" =>
+      case "org.eclipse.equinox.internal.p2.artifact.repository.CompositeArtifactRepository" ⇒
         // process CompositeArtifactRepository children
         val methodGetLoadedChildren = clazz.getDeclaredMethod("getLoadedChildren")
         val result = methodGetLoadedChildren.invoke(repository).asInstanceOf[java.util.List[IArtifactRepository]].
           map(aquireP2SourceCodeArtifacts(entry, iu, _))
         return result.flatten.toSeq.distinct
-      case "org.eclipse.equinox.internal.p2.artifact.repository.simple.SimpleArtifactRepository" => // accept silently
-      case unknown =>
+      case "org.eclipse.equinox.internal.p2.artifact.repository.simple.SimpleArtifactRepository" ⇒ // accept silently
+      case unknown ⇒
         arg.log.debug(logPrefix(arg.name) + "Unknown repository type " + unknown)
     }
     val methodGetDescriptors = clazz.getDeclaredMethod("getDescriptors")
     val methodGetRawArtifact = clazz.getDeclaredMethod("getRawArtifact", classOf[IArtifactDescriptor], classOf[OutputStream], classOf[IProgressMonitor])
     val allAvaiableDescriptors = methodGetDescriptors.invoke(repository).asInstanceOf[java.util.HashSet[IArtifactDescriptor]]
     // Get descriptors with source code
-    val sourceCodeDescriptors = (iu.getArtifacts() map { artifact =>
-      allAvaiableDescriptors.find { descriptor =>
+    val sourceCodeDescriptors = (iu.getArtifacts() map { artifact ⇒
+      allAvaiableDescriptors.find { descriptor ⇒
         val key = descriptor.getArtifactKey()
         key.getClassifier() == artifact.getClassifier() &&
           key.getId() == artifact.getId() + ".source" &&
@@ -360,7 +347,7 @@ object Resolve extends Support.Resolve {
       def subTask(name: String) {}
       def worked(work: Int) {}
     }
-    val files = sourceCodeDescriptors.map { descriptor =>
+    val files = sourceCodeDescriptors.map { descriptor ⇒
       val properties = descriptor.getProperties()
       val repository = descriptor.getRepository()
       val key = descriptor.getArtifactKey()
@@ -373,9 +360,9 @@ object Resolve extends Support.Resolve {
           tmpFile.deleteOnExit()
           val out = new BufferedOutputStream(new FileOutputStream(tmpFile))
           val downloadStatus = methodGetRawArtifact.invoke(repository, descriptor, out, monitor).asInstanceOf[IStatus]
-          try { out.close() } catch { case _: Throwable => }
+          try { out.close() } catch { case _: Throwable ⇒ }
           val status = if (downloadStatus.getCode() == IStatus.OK)
-            aquireGzippedPack200Artifact(tmpFile, targetFile) map (throwable =>
+            aquireGzippedPack200Artifact(tmpFile, targetFile) map (throwable ⇒
               new IStatus {
                 def getChildren(): Array[org.eclipse.core.runtime.IStatus] = downloadStatus.getChildren()
                 def getCode(): Int = IStatus.ERROR
@@ -389,12 +376,12 @@ object Resolve extends Support.Resolve {
               }) getOrElse downloadStatus
           else
             downloadStatus
-          try { tmpFile.delete() } catch { case _: Throwable => }
+          try { tmpFile.delete() } catch { case _: Throwable ⇒ }
           status
         } else {
           val out = new BufferedOutputStream(new FileOutputStream(targetFile))
           val status = methodGetRawArtifact.invoke(repository, descriptor, out, monitor).asInstanceOf[IStatus]
-          try { out.close() } catch { case _: Throwable => }
+          try { out.close() } catch { case _: Throwable ⇒ }
           status
         }
         if (status.getCode() == IStatus.OK) {
@@ -402,7 +389,7 @@ object Resolve extends Support.Resolve {
           Some(targetFile)
         } else {
           arg.log.warn(logPrefix(arg.name) + "Unable to download source code artifact %s: %s".format(key, status))
-          try { targetFile.delete() } catch { case _: Throwable => }
+          try { targetFile.delete() } catch { case _: Throwable ⇒ }
           None
         }
       } else {
@@ -412,7 +399,7 @@ object Resolve extends Support.Resolve {
     }.flatten
     files.toSeq
   } catch {
-    case e: Throwable =>
+    case e: Throwable ⇒
       arg.log.debug(logPrefix(arg.name) + "Unable to get source code dependency: " + e)
       Seq()
   }
@@ -420,12 +407,12 @@ object Resolve extends Support.Resolve {
   protected def collectArtifactsPerDependency(dependencies: Seq[MavenDependency],
     artifacts: Seq[P2ResolutionResult.Entry])(implicit arg: Plugin.TaskArgument): immutable.HashMap[P2ResolutionResult.Entry, Seq[MavenDependency]] = {
     // map id -> dependency
-    val dependencyMap = immutable.HashMap(dependencies.map(d => d.getArtifactId() -> d): _*)
+    val dependencyMap = immutable.HashMap(dependencies.map(d ⇒ d.getArtifactId() -> d): _*)
     // map parent IU -requires-> Seq(child IU) which represents the IU requirements
     val iuRequirements = mutable.HashMap(artifacts.map(_.getInstallableUnits().map {
-      case iu: IInstallableUnit =>
+      case iu: IInstallableUnit ⇒
         Some(iu -> Seq[IInstallableUnit]())
-      case iu =>
+      case iu ⇒
         arg.log.error(logPrefix(arg.name) + "Unknown type %s of installable unit '%s'".format(iu.getClass(), iu))
         None
     }.flatten.toSeq).flatten: _*)
@@ -433,15 +420,15 @@ object Resolve extends Support.Resolve {
     val iuContainers = mutable.HashMap[IInstallableUnit, Seq[IInstallableUnit]]()
 
     // populate iuRequirements
-    iuRequirements.keys.foreach(iu =>
-      iuRequirements(iu) = iu.getRequirements().map { requirement =>
+    iuRequirements.keys.foreach(iu ⇒
+      iuRequirements(iu) = iu.getRequirements().map { requirement ⇒
         iuRequirements.keys.filter(requirement.isMatch)
       }.toSeq.flatten)
 
     // populate iuContainers
     iuRequirements.foreach {
-      case (parent, children) =>
-        children.foreach { child =>
+      case (parent, children) ⇒
+        children.foreach { child ⇒
           val saved = iuContainers.get(child) getOrElse Seq()
           if (!saved.contains(parent) && child != parent)
             iuContainers(child) = saved :+ parent
@@ -451,21 +438,21 @@ object Resolve extends Support.Resolve {
     @tailrec
     def getIUParents(iu: Seq[IInstallableUnit], acc: Seq[IInstallableUnit] = Seq()): Seq[IInstallableUnit] = {
       val parents = iu.flatMap(iuContainers.get).flatten
-      val filtered = parents.filterNot(parent =>
+      val filtered = parents.filterNot(parent ⇒
         acc.exists(_.getId() == parent.getId()) || iu.exists(_.getId() == parent.getId()))
       if (filtered.isEmpty) return acc
       getIUParents(filtered, acc ++ filtered)
     }
 
-    immutable.HashMap(artifacts.map { artifact =>
+    immutable.HashMap(artifacts.map { artifact ⇒
       val mavenDependencies = artifact.getInstallableUnits().map {
-        case iu: IInstallableUnit =>
+        case iu: IInstallableUnit ⇒
           Some(iu)
-        case iu =>
+        case iu ⇒
           None // we already notify a user
-      }.flatten.map { iu =>
+      }.flatten.map { iu ⇒
         // search for all SBT dependencies against the IU
-        dependencyMap.get(iu.getId()).toSeq ++ getIUParents(Seq(iu)).map(iu => dependencyMap.get(iu.getId())).flatten
+        dependencyMap.get(iu.getId()).toSeq ++ getIUParents(Seq(iu)).map(iu ⇒ dependencyMap.get(iu.getId())).flatten
       }.toSeq.flatten
       (artifact -> mavenDependencies)
     }: _*)

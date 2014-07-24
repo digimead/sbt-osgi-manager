@@ -1,7 +1,7 @@
 /**
  * sbt-osgi-manager - OSGi development bridge based on Bnd and Tycho.
  *
- * Copyright (c) 2013 Alexey Aksenov ezh@ezh.msk.ru
+ * Copyright (c) 2013-2014 Alexey Aksenov ezh@ezh.msk.ru
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,45 +18,28 @@
 
 package sbt.osgi.manager.bnd.action
 
-import java.io.BufferedOutputStream
-import java.io.File
-import java.io.FileFilter
-import java.io.FileOutputStream
-import java.io.OutputStream
-import java.net.MalformedURLException
-import java.net.URI
-
-import scala.collection.JavaConversions._
-import scala.collection.immutable
-
+import aQute.bnd.build.Workspace
+import aQute.bnd.deployer.repository.{ AbstractIndexedRepo, FixedIndexedRepo }
+import aQute.bnd.deployer.repository.api.IRepositoryContentProvider
+import aQute.bnd.deployer.repository.providers.R5RepoContentProvider
+import aQute.bnd.osgi.resource.CapReqBuilder
+import aQute.bnd.service.{ ResourceHandle, Strategy }
+import biz.aQute.resolve.internal.BndrunResolveContext
+import java.io.{ BufferedOutputStream, File, FileFilter, FileOutputStream, OutputStream }
+import java.net.{ MalformedURLException, URI }
 import org.apache.felix.resolver.ResolverImpl
 import org.eclipse.equinox.internal.p2.metadata.VersionParser
 import org.osgi.framework.namespace.IdentityNamespace
 import org.osgi.service.resolver.ResolutionException
-
-import aQute.bnd.build.Workspace
-import aQute.bnd.deployer.repository.AbstractIndexedRepo
-import aQute.bnd.deployer.repository.FixedIndexedRepo
-import aQute.bnd.deployer.repository.api.IRepositoryContentProvider
-import aQute.bnd.deployer.repository.providers.R5RepoContentProvider
-import aQute.bnd.osgi.resource.CapReqBuilder
-import aQute.bnd.service.ResourceHandle
-import aQute.bnd.service.Strategy
-
-import biz.aQute.resolve.internal.BndrunResolveContext
-
-import sbt.{ Keys ⇒ skey }
+import sbt.osgi.manager.{ Plugin, Support }
 import sbt.osgi.manager.Dependency
-import sbt.osgi.manager.Dependency._
-import sbt.osgi.manager.Plugin
-import sbt.osgi.manager.Support
-import sbt.osgi.manager.Support._
-import sbt.osgi.manager.bnd.Bnd
-import sbt.osgi.manager.bnd.Logger
-import sbt.osgi.manager.Support
-import sbt.osgi.manager.bnd.Bnd
+import sbt.osgi.manager.Dependency.{ ANY_VERSION, tuplesWithString2repositories, version2string }
+import sbt.osgi.manager.Support.{ CacheOBRKey, getDependencies, getResolvers, logPrefix }
+import sbt.osgi.manager.bnd.{ Bnd, Logger }
+import scala.collection.JavaConversions.{ asScalaBuffer, asScalaSet, collectionAsScalaIterable, seqAsJavaList, setAsJavaSet }
+import scala.collection.immutable
 
-import sbt._
+import sbt.{ Keys ⇒ skey, _ }
 
 // This is consolidated thoughts about Bnd that was located across first version of my code.
 // It may save a bit of time for someone who will choose the same way.
@@ -109,7 +92,7 @@ object Resolve extends Support.Resolve {
       val modules = resolveOBR(dependencies, resolvers, bridge, resolvedDependencies)
       val resolved = skey.libraryDependencies in arg.thisScope get arg.extracted.structure.data getOrElse Seq()
       updateCache(CacheOBRKey(arg.thisProjectRef.project), dependencies, resolvers)
-      modules.filterNot { m =>
+      modules.filterNot { m ⇒
         val alreadyInLibraryDependencies = resolved.exists(_ == m)
         if (alreadyInLibraryDependencies)
           arg.log.debug(logPrefix(arg.name) + "Skip, already in libraryDependencies: " + m)
@@ -135,7 +118,7 @@ object Resolve extends Support.Resolve {
       arg.log.error(logPrefix(arg.name) + "The OSGi Framework and Execution Environment must be specified for resolution.")
       return Seq()
     }
-    val requirements = dependencies.map { moduleId =>
+    val requirements = dependencies.map { moduleId ⇒
       val version = VersionParser.parse(moduleId.revision, 0, moduleId.revision.length())
       CapReqBuilder.createPackageRequirement(moduleId.name, if (version.compareTo(ANY_VERSION) != 0) version else null).
         buildSyntheticRequirement()
@@ -143,16 +126,16 @@ object Resolve extends Support.Resolve {
     model.setRunRequires(requirements)
     try {
       val workspace = bnd.createWorkspace(Seq())
-      val workspaceRepositories = (repositories.map { case (id, location) => aquireRepositoryIndex(id, location, workspace) } :+
+      val workspaceRepositories = (repositories.map { case (id, location) ⇒ aquireRepositoryIndex(id, location, workspace) } :+
         getResolvedDependenciesIndex(resolvedDependencies, workspace)).flatten
-      val plugins = workspaceRepositories.foreach(repo => workspace.addBasicPlugin(repo))
+      val plugins = workspaceRepositories.foreach(repo ⇒ workspace.addBasicPlugin(repo))
       val resolver = new ResolverImpl(log)
       val context = new BndrunResolveContext(model, workspace, log)
       try {
         // Get required bundles
         val resolved = resolver.resolve(context)
         val required = immutable.HashSet({
-          for (resource <- resolved.keySet) yield {
+          for (resource ← resolved.keySet) yield {
             if (!context.isInputRequirementsResource(resource) && !context.isFrameworkResource(resource))
               Some(resource)
             else
@@ -160,25 +143,25 @@ object Resolve extends Support.Resolve {
           }
         }.toSeq.flatten: _*)
         // Iterate over repositories and looking for matches, collect resources Tuple3(Bundle-SymbolicName, Bundle-Version, File, Repository)
-        val resources = for (resource <- required.toSeq) yield workspaceRepositories.flatMap(repository => try {
+        val resources = for (resource ← required.toSeq) yield workspaceRepositories.flatMap(repository ⇒ try {
           Option(resource.getCapabilities(IdentityNamespace.IDENTITY_NAMESPACE)).map(_.toList) match {
-            case Some(List(identityCapability)) =>
+            case Some(List(identityCapability)) ⇒
               val bsn = identityCapability.getAttributes().get(IdentityNamespace.IDENTITY_NAMESPACE).toString
               val version = identityCapability.getAttributes().get(IdentityNamespace.CAPABILITY_VERSION_ATTRIBUTE).toString
               // Bundle-SymbolicName and Bundle-Version allow us to find required bundle
               // getHandle method implemented at AbstractIndexedRepo (abstraction level) and don't use properties argument at all.
               // +1 to other Bnd garbage :-/ Brrrr... Slopwork.
               val properties = null
-              val handle = try { Option(repository.getHandle(bsn, version, Strategy.EXACT, properties)) } catch { case _: Throwable => None }
-              val file = handle.flatMap(handle => try {
+              val handle = try { Option(repository.getHandle(bsn, version, Strategy.EXACT, properties)) } catch { case _: Throwable ⇒ None }
+              val file = handle.flatMap(handle ⇒ try {
                 Option(handle.request()) match {
                   // Bnd is required that you set rootURI at index creation and... and...
                   // after that this broken thing set the root to parent directory of the index!!!??? hahaha. fucking developers
                   // There are billion reasons why we need to create an index in different location than original bundles.
-                  case Some(file) if file.exists() && file.isFile() =>
+                  case Some(file) if file.exists() && file.isFile() ⇒
                     Option(file)
-                  case Some(file) =>
-                    repository.getIndexLocations().toList.headOption.flatMap(index => {
+                  case Some(file) ⇒
+                    repository.getIndexLocations().toList.headOption.flatMap(index ⇒ {
                       val artifactFile = file.getCanonicalPath()
                       val indexFile = new File(index).getParentFile().getCanonicalPath()
                       if (artifactFile.startsWith(indexFile)) {
@@ -187,39 +170,39 @@ object Resolve extends Support.Resolve {
                       } else
                         None
                     }) orElse findFileViaResourceHandle(handle)
-                  case _ =>
+                  case _ ⇒
                     findFileViaResourceHandle(handle)
                 }
               } catch {
-                case e: Throwable =>
+                case e: Throwable ⇒
                   arg.log.warn(logPrefix(arg.name) + "Unable create ModuleID for %s %s at %s: %s".format(bsn, version, handle.getName(), e))
                   None
               })
               file.map((bsn, version, _, repository))
-            case _ =>
+            case _ ⇒
               None
           }
         } catch {
-          case _: Throwable =>
+          case _: Throwable ⇒
             arg.log.error(logPrefix(arg.name) + "Unable to process OBR resource %s from repository %s".format(resource, repository.getName()))
             None
         })
         resources.flatten.filter {
           // save only resources which isn't located on our file system previously
-          case (bsn, version, file, repository) => !resolvedDependencies.exists(_.getAbsolutePath() == file.getAbsolutePath())
+          case (bsn, version, file, repository) ⇒ !resolvedDependencies.exists(_.getAbsolutePath() == file.getAbsolutePath())
         }.map {
-          case (bsn, version, file, repository) =>
+          case (bsn, version, file, repository) ⇒
             arg.log.info(logPrefix(arg.name) + "Collect OBR bundle %s %s".format(bsn, version))
             arg.log.debug(logPrefix(arg.name) + "%s %s -> [%s] from %s".format(bsn, version, "?", repository.getName()))
             Some(bsn % bsn % version from file.getAbsoluteFile.toURI.toURL.toString)
         }.flatten
       } catch {
-        case e: ResolutionException =>
+        case e: ResolutionException ⇒
           arg.log.warn(logPrefix(arg.name) + "Unable to resolve: " + e)
           Seq()
       }
     } catch {
-      case e: Throwable =>
+      case e: Throwable ⇒
         arg.log.error(logPrefix(arg.name) + "Exception during resolution. " + e)
         Seq()
     }
@@ -229,7 +212,7 @@ object Resolve extends Support.Resolve {
     val uri = arg.extracted.currentRef.build
     val build = arg.extracted.structure.units(uri)
     // Check if we already processed our dependencies with same values
-    val cached = for (id <- build.defined.keys) yield {
+    val cached = for (id ← build.defined.keys) yield {
       implicit val projectRef = ProjectRef(uri, id)
       val localArg = arg.copy(thisProjectRef = projectRef)
       isCached(CacheOBRKey(id), getDependencies(Dependency.OBR, localArg.thisOSGiScope)(localArg),
@@ -237,12 +220,12 @@ object Resolve extends Support.Resolve {
     }
     if (cached.forall(_ == true)) {
       arg.log.info(logPrefix(arg.name) + "Pass OBR resolution: already resolved")
-      immutable.HashMap((for (id <- build.defined.keys) yield {
+      immutable.HashMap((for (id ← build.defined.keys) yield {
         val projectRef = ProjectRef(uri, id)
         (projectRef, Seq())
       }).toSeq: _*)
     } else {
-      immutable.HashMap((for (id <- build.defined.keys) yield {
+      immutable.HashMap((for (id ← build.defined.keys) yield {
         implicit val projectRef = ProjectRef(uri, id)
         (projectRef, resolveOBR(resolvedDependencies.get(projectRef) getOrElse Seq())(arg.copy(thisProjectRef = projectRef)))
       }).toSeq: _*)
@@ -264,9 +247,9 @@ object Resolve extends Support.Resolve {
         val repository = createR5FixedIndexedRepository(id, index.toURI)
         if (!index.exists() || index.length() == 0)
           repository.getGeneratingProviders.find(_.getName() == R5RepoContentProvider.NAME) match {
-            case Some(generatingProviderR5) if generatingProviderR5.supportsGeneration() =>
+            case Some(generatingProviderR5) if generatingProviderR5.supportsGeneration() ⇒
               generateR5Index(jars.toSet, id, localRepositoryLocation, index, generatingProviderR5, workspace)
-            case _ =>
+            case _ ⇒
               arg.log.error(logPrefix(arg.name) + "Unable to find R5 generating provider for '%s' with URI %s".format(id, location))
               return None
           }
@@ -286,7 +269,7 @@ object Resolve extends Support.Resolve {
       repository.getIndexLocations()
       Some(repository)
     } catch {
-      case e: Throwable =>
+      case e: Throwable ⇒
         arg.log.error(logPrefix(arg.name) + e.getMessage)
         None
     }
@@ -306,10 +289,10 @@ object Resolve extends Support.Resolve {
     try {
       findFileViaURL(new URL(url))
     } catch {
-      case e: MalformedURLException if e.getMessage() == "no protocol" =>
-        (try { findFileViaURL(new URL("file:" + url)) } catch { case _: Throwable => None }) orElse
-          (try { findFileViaURL(new URL("file:/" + url)) } catch { case _: Throwable => None })
-      case _: Throwable =>
+      case e: MalformedURLException if e.getMessage() == "no protocol" ⇒
+        (try { findFileViaURL(new URL("file:" + url)) } catch { case _: Throwable ⇒ None }) orElse
+          (try { findFileViaURL(new URL("file:/" + url)) } catch { case _: Throwable ⇒ None })
+      case _: Throwable ⇒
         return None
     }
   }
@@ -341,11 +324,11 @@ object Resolve extends Support.Resolve {
       generatingProviderR5.generateIndex(jarFiles, output, repoName, rootUri, pretty, workspace, new Logger(arg.log))
       Some(index)
     } catch {
-      case e: Throwable =>
+      case e: Throwable ⇒
         arg.log.error(logPrefix(arg.name) + "Unable to generate repository index: " + e)
         None
     } finally {
-      try { Option(output).foreach(_.close) } catch { case _: Throwable => }
+      try { Option(output).foreach(_.close) } catch { case _: Throwable ⇒ }
     }
   }
   /** Return R5 repository index for resolved dependencies */
@@ -353,7 +336,7 @@ object Resolve extends Support.Resolve {
     if (resolvedDependencies.isEmpty)
       None
     else {
-      val jars = resolvedDependencies.filter(f => f.exists() && !f.isDirectory() && f.getName().endsWith(".jar")).toList
+      val jars = resolvedDependencies.filter(f ⇒ f.exists() && !f.isDirectory() && f.getName().endsWith(".jar")).toList
       if (jars.isEmpty) {
         arg.log.warn(logPrefix(arg.name) + "Resolved dependencies has no artifacts on local file system")
         return None
@@ -364,10 +347,10 @@ object Resolve extends Support.Resolve {
       val repository = createR5FixedIndexedRepository(internalRepositoryName, index.toURI)
       if (!index.exists() || index.length() == 0)
         repository.getGeneratingProviders.find(_.getName() == R5RepoContentProvider.NAME) match {
-          case Some(generatingProviderR5) if generatingProviderR5.supportsGeneration() =>
+          case Some(generatingProviderR5) if generatingProviderR5.supportsGeneration() ⇒
             generateR5Index(jars.toSet, internalRepositoryName, localRepositoryLocation,
               index, generatingProviderR5, workspace)
-          case _ =>
+          case _ ⇒
             arg.log.error(logPrefix(arg.name) + "Unable to find R5 generating provider for resolved dependencies repository.")
             return None
         }

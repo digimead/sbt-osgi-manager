@@ -1,7 +1,7 @@
 /**
  * sbt-osgi-manager - OSGi development bridge based on Bnd and Tycho.
  *
- * Copyright (c) 2013 Alexey Aksenov ezh@ezh.msk.ru
+ * Copyright (c) 2013-2014 Alexey Aksenov ezh@ezh.msk.ru
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,17 +18,13 @@
 
 package sbt.osgi
 
-import java.net.URI
-import java.net.URL
-
+import java.net.{ URI, URL }
 import org.apache.maven.model.Dependency
 import org.eclipse.equinox.p2.metadata.Version
+import sbt.osgi.manager.{ Dependency, Keys, OSGi, Plugin }
+import scala.language.implicitConversions
 
 import sbt.Keys._
-import sbt.osgi.manager.Dependency
-import sbt.osgi.manager.Keys
-import sbt.osgi.manager.Plugin
-
 import sbt._
 
 package object manager {
@@ -68,9 +64,9 @@ package object manager {
   def typeP2(moduleId: String): ModuleID =
     typeP2(OSGi.ECLIPSE_PLUGIN % moduleId % OSGi.ANY_VERSION)
   def typeP2WithSources(module1: String, module2: String, modulen: String*): Seq[ModuleID] =
-    (module1 +: module2 +: modulen).map(name => typeP2((OSGi.ECLIPSE_PLUGIN % name % OSGi.ANY_VERSION).withSources))
+    (module1 +: module2 +: modulen).map(name ⇒ typeP2((OSGi.ECLIPSE_PLUGIN % name % OSGi.ANY_VERSION).withSources))
   def typeP2(module1: String, module2: String, modulen: String*): Seq[ModuleID] =
-    (module1 +: module2 +: modulen).map(name => typeP2(OSGi.ECLIPSE_PLUGIN % name % OSGi.ANY_VERSION))
+    (module1 +: module2 +: modulen).map(name ⇒ typeP2(OSGi.ECLIPSE_PLUGIN % name % OSGi.ANY_VERSION))
 
   protected def debug(enable: Boolean) {
     System.setProperty("org.sonatype.inject.debug", enable.toString)

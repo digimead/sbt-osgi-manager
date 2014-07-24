@@ -18,15 +18,14 @@
 
 package sbt.osgi.manager
 
-import java.util.Properties
-
 import aQute.bnd.osgi.Analyzer
+import java.util.Properties
 
 import sbt._
 
 object Keys {
-  def OSGiConf = config("osgi") hide
-  def OSGiTestConf = config("osgiTest") hide
+  def OSGiConf = config("osgi").hide
+  def OSGiTestConf = config("osgiTest").hide
 
   lazy val osgiDirectory = SettingKey[java.io.File]("osgiDirectory", "Root directory with temporary OSGi data")
   lazy val osgiFetchPath = SettingKey[Option[java.io.File]]("osgiFetchPath", "Location for 'fetch' task bundles")

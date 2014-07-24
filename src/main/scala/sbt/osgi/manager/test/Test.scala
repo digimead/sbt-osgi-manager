@@ -18,9 +18,9 @@
 
 package sbt.osgi.manager.test
 
-import sbt.Keys._
 import sbt.osgi.manager.Keys._
 
+import sbt.Keys._
 import sbt._
 
 object Test {

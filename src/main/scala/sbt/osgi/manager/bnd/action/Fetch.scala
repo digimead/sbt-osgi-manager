@@ -1,7 +1,7 @@
 /**
  * sbt-osgi-manager - OSGi development bridge based on Bnd and Tycho.
  *
- * Copyright (c) 2013 Alexey Aksenov ezh@ezh.msk.ru
+ * Copyright (c) 2013-2014 Alexey Aksenov ezh@ezh.msk.ru
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,16 +18,11 @@
 
 package sbt.osgi.manager.bnd.action
 
+import aQute.bnd.osgi.{ Analyzer, Jar }
 import java.io.File
-
-import scala.collection.JavaConversions._
-
-import sbt.osgi.manager.Model
-import sbt.osgi.manager.Plugin
-import sbt.osgi.manager.Support._
-
-import aQute.bnd.osgi.Analyzer
-import aQute.bnd.osgi.Jar
+import sbt.osgi.manager.{ Model, Plugin }
+import sbt.osgi.manager.Support.{ logPrefix, option2rich, toOSGiVersion }
+import scala.collection.JavaConversions.{ asScalaBuffer, asScalaSet }
 
 import sbt._
 
@@ -46,10 +41,10 @@ object Fetch {
     analyzer.setImportPackage("*;resolution:=optional")
     analyzer.setExportPackage("*")
     module match {
-      case Some(module) =>
+      case Some(module) ⇒
         analyzer.setBundleSymbolicName(module.organization + "." + module.name)
         analyzer.setBundleVersion(toOSGiVersion(module.revision)(arg).toString)
-      case None =>
+      case None ⇒
         analyzer.setBundleSymbolicName(name.replaceAll("[^a-zA-Z0-9]", "-"))
         analyzer.setBundleVersion("0.0.1.0-SNAPSHOT")
     }
@@ -58,7 +53,7 @@ object Fetch {
   def fetchTask(output: File, classpath: Set[Item])(implicit arg: Plugin.TaskArgument) {
     arg.log.info(logPrefix(arg.name) + "Fetch bundles to " + output)
     classpath.foreach {
-      case Item(moduleId, artifact) if artifact.isFile =>
+      case Item(moduleId, artifact) if artifact.isFile ⇒
         arg.log.debug(logPrefix(arg.name) + "Process " + artifact.getCanonicalPath)
         var jar: Jar = null
         try {
@@ -67,30 +62,30 @@ object Fetch {
           val manifest = jar.getManifest()
           val entries = manifest.getMainAttributes().entrySet()
           entries.find { _.getKey().toString == "Bundle-SymbolicName" } match {
-            case Some(e) =>
+            case Some(e) ⇒
               val bundleName = e.getValue().toString.split(";").head
               arg.log.info(logPrefix(arg.name) + "Fetch bundle %s: %s".format(bundleName, artifact.getName))
               try {
                 IO.copyFile(artifact, target)
               } catch {
-                case e: Throwable =>
+                case e: Throwable ⇒
                   arg.log.error(logPrefix(arg.name) + "Unable to fetch bundle %s: %s".format(bundleName, e))
               }
-            case None =>
+            case None ⇒
               arg.log.info(logPrefix(arg.name) + "Convert plain jar %s to bundle".format(artifact.getName))
               val fetchInfo = Model.getSettingsFetchInfo getOrThrow "osgiFetchInfo not defined"
               convert(moduleId, jar, target, fetchInfo)
           }
         } finally {
-          try { if (jar != null) jar.close } catch { case _: Throwable => }
+          try { if (jar != null) jar.close } catch { case _: Throwable ⇒ }
         }
-      case Item(module, artifact) =>
+      case Item(module, artifact) ⇒
         arg.log.warn(logPrefix(arg.name) + "Skip " + artifact.getCanonicalPath)
     }
   }
   /** Convert jar to bundle */
   protected def convert(moduleId: Option[ModuleID], from: Jar, to: File,
-    fetchInfo: (Option[ModuleID], String, Analyzer, Plugin.TaskArgument) => Unit)(implicit arg: Plugin.TaskArgument) {
+    fetchInfo: (Option[ModuleID], String, Analyzer, Plugin.TaskArgument) ⇒ Unit)(implicit arg: Plugin.TaskArgument) {
     var analyzer: Analyzer = null
     try {
       analyzer = new Analyzer()
@@ -104,13 +99,13 @@ object Fetch {
         analyzer.save(to, true)
       } else {
         arg.log.error(logPrefix(arg.name) + "Unable to process " + to.getName)
-        analyzer.getErrors.foreach(error => arg.log.error(logPrefix(arg.name) + error))
+        analyzer.getErrors.foreach(error ⇒ arg.log.error(logPrefix(arg.name) + error))
       }
     } catch {
-      case e: Throwable =>
+      case e: Throwable ⇒
         arg.log.error(logPrefix(arg.name) + "Unable to convert %s to bundle: %s".format(to.getName, e))
     } finally {
-      try { if (analyzer != null) analyzer.close() } catch { case _: Throwable => }
+      try { if (analyzer != null) analyzer.close() } catch { case _: Throwable ⇒ }
     }
   }
   case class Item(module: Option[ModuleID], jar: File)

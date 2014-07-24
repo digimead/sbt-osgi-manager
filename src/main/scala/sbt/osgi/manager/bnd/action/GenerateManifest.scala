@@ -18,17 +18,15 @@
 
 package sbt.osgi.manager.bnd.action
 
+import aQute.bnd.osgi.{ Analyzer, Constants ⇒ BndConstant }
 import java.io.File
 import java.util.Properties
-import java.util.jar.Manifest
-import scala.collection.JavaConversions._
-import aQute.bnd.osgi.Analyzer
-import aQute.bnd.osgi.{ Constants ⇒ BndConstant }
-import sbt.osgi.manager.Model
-import sbt.osgi.manager.Plugin
-import sbt.osgi.manager.Support._
+import java.util.jar.{ Attributes, Manifest }
+import sbt.osgi.manager.{ Model, Plugin }
+import sbt.osgi.manager.Support.logPrefix
+import scala.collection.JavaConversions.{ asScalaSet, mapAsScalaMap, seqAsJavaList }
+
 import sbt._
-import java.util.jar.Attributes
 
 object GenerateManifest {
   def generate(product: File, dependencyClasspath: Seq[File])(implicit arg: Plugin.TaskArgument): Manifest = {

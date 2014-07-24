@@ -1,7 +1,7 @@
 /**
  * sbt-osgi-manager - OSGi development bridge based on Bnd and Tycho.
  *
- * Copyright (c) 2013 Alexey Aksenov ezh@ezh.msk.ru
+ * Copyright (c) 2013-2014 Alexey Aksenov ezh@ezh.msk.ru
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,14 +18,11 @@
 
 package sbt.osgi.manager.bnd
 
-import java.io.PrintWriter
-import java.io.StringWriter
-
-import org.apache.felix.resolver.{ Logger => FLogger }
+import java.io.{ PrintWriter, StringWriter }
+import org.apache.felix.resolver.{ Logger ⇒ FLogger }
 import org.osgi.framework.ServiceReference
 import org.osgi.service.log.LogService
-
-import sbt.{ Logger => SBTLogger }
+import sbt.{ Logger ⇒ SBTLogger }
 
 /**
  * Log service implementation for biz.aQute.resolve.ResolveProcess
@@ -80,11 +77,11 @@ class Logger(parent: SBTLogger) extends org.apache.felix.resolver.Logger(FLogger
     if (sr != null) printWriter.println("ServiceReference: " + sr)
     if (throwable != null) throwable.printStackTrace(printWriter)
     level match {
-      case FLogger.LOG_DEBUG => parent.debug(writer.toString())
-      case FLogger.LOG_ERROR => parent.error(writer.toString())
-      case FLogger.LOG_INFO => parent.info(writer.toString())
-      case FLogger.LOG_WARNING => parent.warn(writer.toString())
-      case _ => parent.error("UNKNOWN LOG LEVEL: " + writer.toString())
+      case FLogger.LOG_DEBUG ⇒ parent.debug(writer.toString())
+      case FLogger.LOG_ERROR ⇒ parent.error(writer.toString())
+      case FLogger.LOG_INFO ⇒ parent.info(writer.toString())
+      case FLogger.LOG_WARNING ⇒ parent.warn(writer.toString())
+      case _ ⇒ parent.error("UNKNOWN LOG LEVEL: " + writer.toString())
     }
   }
 }

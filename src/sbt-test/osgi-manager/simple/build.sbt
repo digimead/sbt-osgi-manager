@@ -8,7 +8,7 @@ OSGiManagerWithDebug()
 
 name := "Simple"
 
-version := "0.0.1.0-SNAPSHOT"
+version := "1.0.0.0-SNAPSHOT"
 
 scalacOptions ++= Seq("-unchecked", "-deprecation", "-Xcheckinit")
 

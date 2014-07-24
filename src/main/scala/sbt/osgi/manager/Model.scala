@@ -18,9 +18,8 @@
 
 package sbt.osgi.manager
 
-import sbt.osgi.manager.Keys._
-
 import sbt._
+import sbt.osgi.manager.Keys._
 
 object Model {
   /////////////////////////////////////

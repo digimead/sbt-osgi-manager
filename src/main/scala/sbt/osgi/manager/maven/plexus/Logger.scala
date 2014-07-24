@@ -1,7 +1,7 @@
 /**
  * sbt-osgi-manager - OSGi development bridge based on Bnd and Tycho.
  *
- * Copyright (c) 2013 Alexey Aksenov ezh@ezh.msk.ru
+ * Copyright (c) 2013-2014 Alexey Aksenov ezh@ezh.msk.ru
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,13 +18,10 @@
 
 package sbt.osgi.manager.maven.plexus
 
-import java.io.PrintWriter
-import java.io.StringWriter
-
+import java.io.{ PrintWriter, StringWriter }
 import org.codehaus.plexus.logging.AbstractLogger
-
 import sbt.osgi.manager.Plugin
-import sbt.osgi.manager.Support._
+import sbt.osgi.manager.Support.logPrefix
 
 class Logger(threshold: Int, name: String) extends AbstractLogger(threshold, name) {
   def getChildLogger(name: String) = this
@@ -37,64 +34,64 @@ class Logger(threshold: Int, name: String) extends AbstractLogger(threshold, nam
 
 object Logger {
   def debug(message: String, throwable: Throwable) = logger match {
-    case Some(logger) =>
+    case Some(logger) ⇒
       Option(throwable) match {
-        case Some(t) => logger.debug(logPrefix("*") + message + "\n" + getThrowableDump(t))
-        case None => logger.debug(logPrefix("*") + message)
+        case Some(t) ⇒ logger.debug(logPrefix("*") + message + "\n" + getThrowableDump(t))
+        case None ⇒ logger.debug(logPrefix("*") + message)
       }
-    case None =>
+    case None ⇒
       Option(throwable) match {
-        case Some(t) => System.err.println(logPrefix("*") + "DEBUG: " + message + "\n" + getThrowableDump(t))
-        case None => System.err.println(logPrefix("*") + "DEBUG: " + message)
+        case Some(t) ⇒ System.err.println(logPrefix("*") + "DEBUG: " + message + "\n" + getThrowableDump(t))
+        case None ⇒ System.err.println(logPrefix("*") + "DEBUG: " + message)
       }
   }
   def error(message: String, throwable: Throwable) = logger match {
-    case Some(logger) =>
+    case Some(logger) ⇒
       Option(throwable) match {
-        case Some(t) => logger.error(logPrefix("*") + message + "\n" + getThrowableDump(t))
-        case None => logger.error(logPrefix("*") + message)
+        case Some(t) ⇒ logger.error(logPrefix("*") + message + "\n" + getThrowableDump(t))
+        case None ⇒ logger.error(logPrefix("*") + message)
       }
       logger.error(logPrefix("*") + message)
-    case None =>
+    case None ⇒
       Option(throwable) match {
-        case Some(t) => System.err.println(logPrefix("*") + "ERROR: " + message + "\n" + getThrowableDump(t))
-        case None => System.err.println(logPrefix("*") + "ERROR: " + message)
+        case Some(t) ⇒ System.err.println(logPrefix("*") + "ERROR: " + message + "\n" + getThrowableDump(t))
+        case None ⇒ System.err.println(logPrefix("*") + "ERROR: " + message)
       }
   }
   def fatalError(message: String, throwable: Throwable) = logger match {
-    case Some(logger) =>
+    case Some(logger) ⇒
       Option(throwable) match {
-        case Some(t) => logger.error(logPrefix("*") + "FATAL: " + message + "\n" + getThrowableDump(t))
-        case None => logger.error(logPrefix("*") + "FATAL: " + message)
+        case Some(t) ⇒ logger.error(logPrefix("*") + "FATAL: " + message + "\n" + getThrowableDump(t))
+        case None ⇒ logger.error(logPrefix("*") + "FATAL: " + message)
       }
-    case None =>
+    case None ⇒
       Option(throwable) match {
-        case Some(t) => System.err.println(logPrefix("*") + "FATAL: " + message + "\n" + getThrowableDump(t))
-        case None => System.err.println(logPrefix("*") + "FATAL: " + message)
+        case Some(t) ⇒ System.err.println(logPrefix("*") + "FATAL: " + message + "\n" + getThrowableDump(t))
+        case None ⇒ System.err.println(logPrefix("*") + "FATAL: " + message)
       }
   }
   def info(message: String, throwable: Throwable) = logger match {
-    case Some(logger) =>
+    case Some(logger) ⇒
       Option(throwable) match {
-        case Some(t) => logger.info(logPrefix("*") + message + "\n" + t)
-        case None => logger.info(logPrefix("*") + message)
+        case Some(t) ⇒ logger.info(logPrefix("*") + message + "\n" + t)
+        case None ⇒ logger.info(logPrefix("*") + message)
       }
-    case None =>
+    case None ⇒
       Option(throwable) match {
-        case Some(t) => System.err.println(logPrefix("*") + "INFO: " + message + "\n" + getThrowableDump(t))
-        case None => System.err.println(logPrefix("*") + "INFO: " + message)
+        case Some(t) ⇒ System.err.println(logPrefix("*") + "INFO: " + message + "\n" + getThrowableDump(t))
+        case None ⇒ System.err.println(logPrefix("*") + "INFO: " + message)
       }
   }
   def warn(message: String, throwable: Throwable) = logger match {
-    case Some(logger) =>
+    case Some(logger) ⇒
       Option(throwable) match {
-        case Some(t) => logger.warn(logPrefix("*") + message + "\n" + getThrowableDump(t))
-        case None => logger.warn(logPrefix("*") + message)
+        case Some(t) ⇒ logger.warn(logPrefix("*") + message + "\n" + getThrowableDump(t))
+        case None ⇒ logger.warn(logPrefix("*") + message)
       }
-    case None =>
+    case None ⇒
       Option(throwable) match {
-        case Some(t) => System.err.println(logPrefix("*") + "WARN: " + message + "\n" + getThrowableDump(t))
-        case None => System.err.println(logPrefix("*") + "WARN: " + message)
+        case Some(t) ⇒ System.err.println(logPrefix("*") + "WARN: " + message + "\n" + getThrowableDump(t))
+        case None ⇒ System.err.println(logPrefix("*") + "WARN: " + message)
       }
   }
   /** Get the default logger */

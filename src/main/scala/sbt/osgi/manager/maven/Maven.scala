@@ -1,7 +1,7 @@
 /**
  * sbt-osgi-manager - OSGi development bridge based on Bnd and Tycho.
  *
- * Copyright (c) 2013 Alexey Aksenov ezh@ezh.msk.ru
+ * Copyright (c) 2013-2014 Alexey Aksenov ezh@ezh.msk.ru
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,58 +18,34 @@
 
 package sbt.osgi.manager.maven
 
-import java.io.File
-import java.io.FilenameFilter
-import java.io.IOException
-import java.io.InputStream
-import java.net.MalformedURLException
-import java.net.URL
-import java.net.URLClassLoader
+import java.io.{ File, FilenameFilter, IOException, InputStream }
+import java.net.{ MalformedURLException, URL, URLClassLoader }
 import java.util.Properties
-
-import scala.collection.JavaConversions._
-
 import org.apache.maven.DefaultMaven
-import org.apache.maven.artifact.Artifact
-import org.apache.maven.artifact.InvalidRepositoryException
+import org.apache.maven.artifact.{ Artifact, InvalidRepositoryException }
 import org.apache.maven.artifact.repository.ArtifactRepository
 import org.apache.maven.cli.MavenCli
-import org.apache.maven.execution.DefaultMavenExecutionRequest
-import org.apache.maven.execution.DefaultMavenExecutionResult
-import org.apache.maven.execution.MavenExecutionRequest
-import org.apache.maven.execution.MavenExecutionRequestPopulationException
-import org.apache.maven.execution.MavenExecutionRequestPopulator
-import org.apache.maven.execution.MavenSession
+import org.apache.maven.execution.{ DefaultMavenExecutionRequest, DefaultMavenExecutionResult, MavenExecutionRequest, MavenExecutionRequestPopulationException, MavenExecutionRequestPopulator, MavenSession }
 import org.apache.maven.plugin.LegacySupport
-import org.apache.maven.project.DefaultProjectBuildingRequest
-import org.apache.maven.project.ProjectBuilder
-import org.apache.maven.project.ProjectBuildingRequest
+import org.apache.maven.project.{ DefaultProjectBuildingRequest, ProjectBuilder, ProjectBuildingRequest }
 import org.apache.maven.repository.RepositorySystem
 import org.apache.maven.settings.Settings
-import org.apache.maven.settings.building.DefaultSettingsBuildingRequest
-import org.apache.maven.settings.building.SettingsBuilder
-import org.apache.maven.settings.building.SettingsBuildingException
-import org.codehaus.plexus.DefaultContainerConfiguration
-import org.codehaus.plexus.DefaultPlexusContainer
+import org.apache.maven.settings.building.{ DefaultSettingsBuildingRequest, SettingsBuilder, SettingsBuildingException }
+import org.codehaus.plexus.{ DefaultContainerConfiguration, DefaultPlexusContainer }
 import org.codehaus.plexus.classworlds.ClassWorld
 import org.codehaus.plexus.classworlds.realm.ClassRealm
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException
 import org.codehaus.plexus.util.IOUtil
 import org.eclipse.core.runtime.adaptor.EclipseStarter
-import org.eclipse.sisu.equinox.embedder.EquinoxLifecycleListener
-import org.eclipse.sisu.equinox.embedder.EquinoxRuntimeLocator
+import org.eclipse.sisu.equinox.embedder.{ EquinoxLifecycleListener, EquinoxRuntimeLocator }
 import org.eclipse.sisu.equinox.embedder.EquinoxRuntimeLocator.EquinoxRuntimeDescription
 import org.eclipse.sisu.equinox.embedder.internal.DefaultEquinoxEmbedder
 import org.eclipse.tycho.p2.resolver.facade.P2ResolverFactory
-import org.osgi.framework.Bundle
-import org.osgi.framework.BundleContext
-import org.osgi.framework.BundleException
-
+import org.osgi.framework.{ Bundle, BundleContext, BundleException }
+import sbt.osgi.manager.{ Model, OSGiManagerException, Plugin }
 import sbt.osgi.manager.Keys._
-import sbt.osgi.manager.Model
-import sbt.osgi.manager.OSGiManagerException
-import sbt.osgi.manager.Plugin
-import sbt.osgi.manager.Support._
+import sbt.osgi.manager.Support.{ getEnvVars, logPrefix, option2rich, withClassLoaderOf }
+import scala.collection.JavaConversions.{ asScalaBuffer, collectionAsScalaIterable, seqAsJavaList }
 
 import sbt._
 
@@ -80,7 +56,7 @@ class Maven(val plexus: DefaultPlexusContainer, val information: Maven.Informati
   val conf = Maven.getMavenConf(home)
   val lib = Maven.getMavenLib(home)
   val session = lookup(classOf[org.apache.maven.Maven]) match {
-    case default: DefaultMaven =>
+    case default: DefaultMaven ⇒
       try {
         val mavenExecutionRequest = createMavenExecutionRequest
         val repositorySession = default.newRepositorySession(mavenExecutionRequest)
@@ -100,10 +76,10 @@ class Maven(val plexus: DefaultPlexusContainer, val information: Maven.Informati
         session.setCurrentProject(project)
         session
       } catch {
-        case e: ComponentLookupException =>
+        case e: ComponentLookupException ⇒
           throw new OSGiManagerException(e.getMessage(), e)
       }
-    case other =>
+    case other ⇒
       throw new OSGiManagerException("Unexpected type of Maven instance: %s. Expected: %s.".format(other.getClass(), classOf[DefaultMaven]))
   }
   lazy val settings = createMavenSettings()
@@ -117,7 +93,16 @@ class Maven(val plexus: DefaultPlexusContainer, val information: Maven.Informati
   // val originalEquinox = lookup(classOf[EquinoxServiceFactory]) - as a history
   // initialize OSGi infrastructure via implicit 'start'
   /** Main resolve factory instance */
-  val p2ResolverFactory = equinox.getService(classOf[P2ResolverFactory])
+  val p2ResolverFactory = {
+    // Negate commit 485da18aa3363e930c0129a70593987efd082133 effect
+    // Override certain SecurityManager methods to avoid filesystem performance hit.
+    // harrah authored on Mar 6 eed3si9n committed on Mar 22
+    // SBT-0.13.2-M3 is ok
+    // SBT-0.13.2-RC1 is broken
+    System.setSecurityManager(null)
+    // Get service and implicitly initialize OSGi
+    equinox.getService(classOf[P2ResolverFactory])
+  }
 
   def lookup[T](clazz: Class[T]): T = plexus.lookup(clazz)
   def lookup[T](clazz: Class[T], hint: String): T = plexus.lookup(clazz, hint)
@@ -132,19 +117,19 @@ class Maven(val plexus: DefaultPlexusContainer, val information: Maven.Informati
     withSafeProperties {
       val settingsBuildingRequest = new DefaultSettingsBuildingRequest()
       Model.getSettingsMavenGlobalXML match {
-        case Some(file) => settingsBuildingRequest.setGlobalSettingsFile(file)
-        case None => MavenCli.DEFAULT_GLOBAL_SETTINGS_FILE
+        case Some(file) ⇒ settingsBuildingRequest.setGlobalSettingsFile(file)
+        case None ⇒ MavenCli.DEFAULT_GLOBAL_SETTINGS_FILE
       }
       Model.getSettingsMavenUserXML match {
-        case Some(file) => settingsBuildingRequest.setUserSettingsFile(file)
-        case None => MavenCli.DEFAULT_USER_SETTINGS_FILE
+        case Some(file) ⇒ settingsBuildingRequest.setUserSettingsFile(file)
+        case None ⇒ MavenCli.DEFAULT_USER_SETTINGS_FILE
       }
       Model.getSettingsMavenUserProperties foreach (settingsBuildingRequest.getUserProperties().putAll)
       Model.getSettingsMavenSystemProperties foreach (settingsBuildingRequest.getSystemProperties().putAll)
       lookup(classOf[SettingsBuilder]).build(settingsBuildingRequest).getEffectiveSettings()
     }
   } catch {
-    case e: SettingsBuildingException =>
+    case e: SettingsBuildingException ⇒
       throw new OSGiManagerException(e.getMessage(), e)
   }
   protected def createMavenExecutionRequest(): MavenExecutionRequest = {
@@ -156,7 +141,7 @@ class Maven(val plexus: DefaultPlexusContainer, val information: Maven.Informati
         lookup(classOf[MavenExecutionRequestPopulator]).populateFromSettings(request, settings)
         lookup(classOf[MavenExecutionRequestPopulator]).populateDefaults(request)
       } catch {
-        case e: MavenExecutionRequestPopulationException =>
+        case e: MavenExecutionRequestPopulationException ⇒
           throw new OSGiManagerException(e.getMessage(), e)
       }
       val localRepository = getLocalRepository()
@@ -197,7 +182,7 @@ class Maven(val plexus: DefaultPlexusContainer, val information: Maven.Informati
     else
       lookup(classOf[RepositorySystem]).createLocalRepository(RepositorySystem.defaultUserLocalRepository)
   } catch {
-    case e: InvalidRepositoryException =>
+    case e: InvalidRepositoryException ⇒
       // never happened
       throw new IllegalStateException(e)
   }
@@ -205,19 +190,19 @@ class Maven(val plexus: DefaultPlexusContainer, val information: Maven.Informati
     val path = try {
       settings.getLocalRepository()
     } catch {
-      case _: OSGiManagerException => null // ignore
-      case _: ComponentLookupException => null // ignore
+      case _: OSGiManagerException ⇒ null // ignore
+      case _: ComponentLookupException ⇒ null // ignore
     }
     Option(path) getOrElse (RepositorySystem.defaultUserLocalRepository.getAbsolutePath())
   }
   /** Replace global system properties with plugin settings */
-  protected def withSafeProperties[T](f: => T): T = {
+  protected def withSafeProperties[T](f: ⇒ T): T = {
     val systemMavenHomeValue = System.getProperty("maven.home")
     val systemMavenUserDirectoryValue = System.getProperty("user.dir")
     val systemUserHomeValue = System.getProperty("user.home")
     System.setProperty("maven.home", home.getAbsolutePath())
     System.setProperty("user.dir", "") // bind conf/settings.xml location to mavenHome
-    Model.getSettingsMavenUserHome foreach (f => System.setProperty("user.home", f.getAbsolutePath()))
+    Model.getSettingsMavenUserHome foreach (f ⇒ System.setProperty("user.home", f.getAbsolutePath()))
     try {
       f
     } finally {
@@ -257,14 +242,14 @@ object Maven {
     val world = new ClassWorld()
     val realm = buildClassRealm(mavenHome, Some(world))
     Maven.getMavenVersion(mavenHome, Some(realm)) match {
-      case Some(information) =>
+      case Some(information) ⇒
         _root_.sbt.osgi.manager.maven.plexus.Logger.
           info("Initialize Maven core. Maven version: " + information.version, null)
         val plexus = buildPlexusContainer(realm, getPlexusOverridingComponentsXml)
         val instance = new Maven(plexus, information)
         singleton = Some(instance)
         instance
-      case None =>
+      case None ⇒
         throw new OSGiManagerException("Maven version not found.")
     }
   }
@@ -327,21 +312,23 @@ object Maven {
     val classRealm = new ClassRealm(world, "plexus.core", parentClassLoader)
     classRealm.setParentRealm(new ClassRealm(world, "maven-parent", Thread.currentThread().getContextClassLoader()))
     // add jars from mavenLibraries
-    for (jarFile <- jarFiles) try {
+    for (jarFile ← jarFiles) try {
       classRealm.addURL(jarFile.toURI().toURL())
     } catch {
-      case e: MalformedURLException =>
+      case e: MalformedURLException ⇒
         throw new OSGiManagerException(e.getMessage(), e)
     }
     // add jars from current classOf[org.apache.maven.Maven] loader
     classOf[org.apache.maven.Maven].getClassLoader() match {
-      case loader: URLClassLoader => loader.getURLs().foreach(classRealm.addURL)
-      case _ =>
+      case loader: URLClassLoader ⇒ loader.getURLs().foreach(classRealm.addURL)
+      case _ ⇒
     }
     classRealm
   }
   protected def buildPlexusContainer(realm: ClassRealm, configurationURL: URL): DefaultPlexusContainer = {
     withClassLoaderOf(realm) {
+      // Remove plexus-container-default...jar
+      // Keep sisu-inject-plexus...jar
       val configuration = new DefaultContainerConfiguration().
         setAutoWiring(true).
         setClassWorld(realm.getWorld()).
@@ -372,7 +359,7 @@ object Maven {
         properties.load(inputStream)
         Some(Information(properties.getProperty("version"), resource.toExternalForm()))
       } catch {
-        case e: IOException =>
+        case e: IOException ⇒
           throw new OSGiManagerException(e.getMessage(), e)
       } finally {
         IOUtil.close(inputStream)
@@ -458,7 +445,7 @@ object Maven {
         addBundlesDirR(bundles, new File(frameworkDir, "plugins").listFiles(), false)
       }
 
-      for (location <- bundleLocations) {
+      for (location ← bundleLocations) {
         if (bundles.length() > 0)
           bundles.append(',')
         bundles.append(getReferenceUrlR(location))
@@ -470,7 +457,7 @@ object Maven {
 
       if (extraSystemPackages.size() > 0) {
         val sb = new StringBuilder()
-        for (pkg <- extraSystemPackages) {
+        for (pkg ← extraSystemPackages) {
           if (sb.length() > 0)
             sb.append(',')
           sb.append(pkg)
@@ -494,21 +481,21 @@ object Maven {
 
       EclipseStarter.setInitialProperties(platformProperties)
 
-      val args = (getNonFrameworkArgsR().filterNot(arg => arg == "-console" || arg == "-consoleLog" || arg == "-debug")).distinct
+      val args = (getNonFrameworkArgsR().filterNot(arg ⇒ arg == "-console" || arg == "-consoleLog" || arg == "-debug")).distinct
       EclipseStarter.startup(args, null)
 
       frameworkContextR = EclipseStarter.getSystemBundleContext()
       activateBundlesInWorkingOrder()
 
-      for (listener <- lifecycleListenersR.values())
+      for (listener ← lifecycleListenersR.values())
         listener.afterFrameworkStarted(this)
     }
     protected def equinoxLocatorR: EquinoxRuntimeLocator = {
       val field = classOf[DefaultEquinoxEmbedder].getDeclaredField("equinoxLocator")
       field.setAccessible(true)
       Option(field.get(this)) match {
-        case Some(locator) => locator.asInstanceOf[EquinoxRuntimeLocator]
-        case None =>
+        case Some(locator) ⇒ locator.asInstanceOf[EquinoxRuntimeLocator]
+        case None ⇒
           val locator = maven.lookup(classOf[EquinoxRuntimeLocator])
           field.set(this, locator)
           locator
@@ -539,8 +526,8 @@ object Maven {
       val field = classOf[DefaultEquinoxEmbedder].getDeclaredField("lifecycleListeners")
       field.setAccessible(true)
       Option(field.get(this)) match {
-        case Some(listeners) => listeners.asInstanceOf[java.util.Map[String, EquinoxLifecycleListener]]
-        case None =>
+        case Some(listeners) ⇒ listeners.asInstanceOf[java.util.Map[String, EquinoxLifecycleListener]]
+        case None ⇒
           val listeners = maven.lookupMap(classOf[EquinoxLifecycleListener])
           field.set(this, listeners)
           listeners
@@ -557,12 +544,12 @@ object Maven {
       tryActivateBundle("org.eclipse.core.net")
     }
     protected def tryActivateBundle(symbolicName: String) =
-      for (bundle <- frameworkContextR.getBundles()) {
+      for (bundle ← frameworkContextR.getBundles()) {
         if (symbolicName.equals(bundle.getSymbolicName())) try {
           // don't have OSGi remember the autostart setting; want to start these bundles manually to control the start order
           bundle.start(Bundle.START_TRANSIENT)
         } catch {
-          case e: BundleException =>
+          case e: BundleException ⇒
             getLogger().warn("Could not start bundle " + bundle.getSymbolicName(), e)
         }
       }

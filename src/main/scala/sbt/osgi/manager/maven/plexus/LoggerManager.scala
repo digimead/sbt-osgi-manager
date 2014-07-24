@@ -19,7 +19,7 @@
 package sbt.osgi.manager.maven.plexus
 
 import org.codehaus.plexus.logging.BaseLoggerManager
-import org.codehaus.plexus.logging.{ Logger => PlexusLogger }
+import org.codehaus.plexus.logging.{ Logger ⇒ PlexusLogger }
 
 class LoggerManager extends BaseLoggerManager {
   override protected def createLogger(key: String): PlexusLogger = {

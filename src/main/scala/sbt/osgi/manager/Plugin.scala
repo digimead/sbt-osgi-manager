@@ -1,7 +1,7 @@
 /**
  * sbt-osgi-manager - OSGi development bridge based on Bnd and Tycho.
  *
- * Copyright (c) 2013 Alexey Aksenov ezh@ezh.msk.ru
+ * Copyright (c) 2013-2014 Alexey Aksenov ezh@ezh.msk.ru
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,19 +18,15 @@
 
 package sbt.osgi.manager
 
-import java.util.Date
-import java.util.Properties
-
-import scala.Option.option2Iterable
+import java.util.{ Date, Properties }
+import sbt.osgi.manager.Keys._
+import sbt.osgi.manager.Support.logPrefix
+import sbt.osgi.manager.bnd.Bnd
 import scala.collection.immutable
 
 import sbt.Keys._
-import sbt.osgi.manager.Keys._
-import sbt.osgi.manager.Support._
-import sbt.osgi.manager.bnd.Bnd
-import sbt.std.TaskStreams
-
 import sbt._
+import sbt.std.TaskStreams
 
 object Plugin {
   // Please, use SBT logLevel and .options file if needed
@@ -78,59 +74,59 @@ object Plugin {
   def markDependencyAsP2(moduleId: ModuleID): ModuleID = moduleId.extra((Dependency.P2.key, Dependency.P2.name))
   /** Mark OSGi resolver as P2 */
   def markResolverAsOBR(resolver: Resolver): Resolver = resolver match {
-    case mavenResolver: MavenRepository =>
+    case mavenResolver: MavenRepository ⇒
       import mavenResolver._
       new URLRepository(name, new Patterns(Seq[String](root), Seq[String](Dependency.OBR.name), false))
-    case unsupported =>
+    case unsupported ⇒
       throw new UnsupportedOperationException("Unknown resolver type %s for %s".format(resolver.getClass(), resolver))
   }
   /** Mark OSGi resolver as P2 */
   def markResolverAsP2(resolver: Resolver): Resolver = resolver match {
-    case mavenResolver: MavenRepository =>
+    case mavenResolver: MavenRepository ⇒
       import mavenResolver._
       new URLRepository(name, new Patterns(Seq[String](root), Seq[String](Dependency.P2.name), false))
-    case unsupported =>
+    case unsupported ⇒
       throw new UnsupportedOperationException("Unknown resolver type %s for %s".format(resolver.getClass(), resolver))
   }
   /** Generate bundle manifest for compiled code. */
   def osgiCompileTask = (dependencyClasspath in Compile, packageOptions in (Compile, packageBin), products in Compile, state, streams, thisProjectRef) map {
-    (dependencyClasspath, packageOptions, products, state, streams, thisProjectRef) =>
+    (dependencyClasspath, packageOptions, products, state, streams, thisProjectRef) ⇒
       implicit val arg = TaskArgument(state, thisProjectRef, Some(streams))
       val manifest = bnd.action.GenerateManifest.generateManifestTask(dependencyClasspath, packageOptions, products)
-      products.foreach { p =>
+      products.foreach { p ⇒
         val manifestPath = p / "META-INF"
         if (!manifestPath.exists())
           manifestPath.mkdirs()
         val manifestFile = manifestPath / "MANIFEST.MF"
         streams.log.debug(logPrefix(arg.name) + "Write manifest to " + manifestFile.getAbsolutePath())
-        Using.fileOutputStream()(manifestFile) { outputStream => manifest.write(outputStream) }
+        Using.fileOutputStream()(manifestFile) { outputStream ⇒ manifest.write(outputStream) }
       }
   }
   /** Fetch all project dependencies as bundles */
   def osgiFetchTask = (dependencyClasspath in Compile, osgiFetchPath in Keys.OSGiConf, state, streams, thisProjectRef) map {
-    (dependencyClasspath, osgiFetchPath, state, streams, thisProjectRef) =>
+    (dependencyClasspath, osgiFetchPath, state, streams, thisProjectRef) ⇒
       implicit val arg = TaskArgument(state, thisProjectRef, Some(streams))
       osgiFetchPath match {
-        case Some(osgiFetchPath) =>
-          bnd.action.Fetch.fetchTask(osgiFetchPath, dependencyClasspath.map(cp =>
+        case Some(osgiFetchPath) ⇒
+          bnd.action.Fetch.fetchTask(osgiFetchPath, dependencyClasspath.map(cp ⇒
             bnd.action.Fetch.Item(cp.get(moduleID.key), cp.data)).toSet)
-        case None =>
+        case None ⇒
           streams.log.info(logPrefix(arg.name) + "Fetch task disabled.")
       }
       () // Project/Def.Initialize[Task[Unit]]
   }
   /** Show plugin information */
-  def osgiPluginInfoTask = (state, streams, thisProjectRef) map { (state, streams, thisProjectRef) =>
+  def osgiPluginInfoTask = (state, streams, thisProjectRef) map { (state, streams, thisProjectRef) ⇒
     implicit val arg = TaskArgument(state, thisProjectRef, Some(streams))
     Option(getClass().getClassLoader().getResourceAsStream("version-sbt-osgi-manager.properties")) match {
-      case Some(stream) =>
+      case Some(stream) ⇒
         val properties = new Properties()
         properties.load(stream)
         val date = new Date(properties.getProperty("build").toLong * 1000)
         streams.log.info(logPrefix(arg.name) + "Name: " + properties.getProperty("name"))
         streams.log.info(logPrefix(arg.name) + "Version: " + properties.getProperty("version"))
         streams.log.info(logPrefix(arg.name) + "Build: " + date + " (" + properties.getProperty("build") + ")")
-      case None =>
+      case None ⇒
         streams.log.error(logPrefix(arg.name) + "OSGi Mananger plugin information not found.")
     }
   }
@@ -140,38 +136,38 @@ object Plugin {
     val uri = extracted.currentRef.build
     val build = extracted.structure.units(uri)
     var actualState: State = state
-    for (id <- build.defined.keys) yield {
+    for (id ← build.defined.keys) yield {
       implicit val projectRef = ProjectRef(uri, id)
       // This selects the 'osgi-maven-prepare' task for the current project.
       // The value produced by 'osgi-maven-prepare' is of type File
       val taskMavenPrepareHomeKey = osgiMavenPrepareHome in Compile in OSGiConf
       EvaluateTask(extracted.structure, taskMavenPrepareHomeKey, actualState, projectRef) match {
-        case Some((state, result)) =>
+        case Some((state, result)) ⇒
           actualState = state
-        case None =>
+        case None ⇒
           throw new OSGiManagerException("Unable to prepare Maven home for project %s.".format(projectRef.project))
       }
       // This selects the 'osgi-bnd-prepare' task for the current project.
       // The value produced by 'osgi-bnd-prepare' is of type File
       val taskBndPrepareHomeKey = osgiBndPrepareHome in Compile in OSGiConf
       EvaluateTask(extracted.structure, taskBndPrepareHomeKey, actualState, projectRef) match {
-        case Some((state, result)) =>
+        case Some((state, result)) ⇒
           actualState = state
-        case None =>
+        case None ⇒
           throw new OSGiManagerException("Unable to prepare Bnd home for project %s.".format(projectRef.project))
       }
     }
     implicit val arg = TaskArgument(actualState, Project.current(actualState), None)
     // resolve P2
     val dependencyP2 = maven.action.Resolve.resolveP2Command()
-    val dependencySettingsP2 = for (projectRef <- dependencyP2.keys) yield if (dependencyP2(projectRef).nonEmpty)
+    val dependencySettingsP2 = for (projectRef ← dependencyP2.keys) yield if (dependencyP2(projectRef).nonEmpty)
       Seq[Project.Setting[_]](libraryDependencies in projectRef ++= dependencyP2(projectRef))
     else
       Seq[Project.Setting[_]]()
     // resolve OBR
     val resolvedDependencies = collectResolvedDependencies(dependencyP2)
     val dependencyOBR = bnd.action.Resolve.resolveOBRCommand(resolvedDependencies)
-    val dependencySettingsOBR = for (projectRef <- dependencyOBR.keys) yield if (dependencyOBR(projectRef).nonEmpty)
+    val dependencySettingsOBR = for (projectRef ← dependencyOBR.keys) yield if (dependencyOBR(projectRef).nonEmpty)
       Seq[Project.Setting[_]](libraryDependencies in projectRef ++= dependencyOBR(projectRef))
     else
       Seq[Project.Setting[_]]()
@@ -189,7 +185,7 @@ object Plugin {
       actualState
   }
   /** Reset all plugin caches */
-  def osgiResetCacheTask = (state, streams, thisProjectRef) map { (state, streams, thisProjectRef) =>
+  def osgiResetCacheTask = (state, streams, thisProjectRef) map { (state, streams, thisProjectRef) ⇒
     implicit val arg = TaskArgument(state, thisProjectRef, Some(streams))
     // It is only one now
     maven.action.Resolve.resetCache()
@@ -201,26 +197,26 @@ object Plugin {
     val osgiResolveCommandDetailed = "Add OSGi dependencies to libraryDependencies setting per user project."
     Help(osgiResolveCommand, osgiResolveCommandBrief, osgiResolveCommandDetailed)
   }
-  def osgiShowTask = (state, streams, thisProjectRef) map { (state, streams, thisProjectRef) =>
+  def osgiShowTask = (state, streams, thisProjectRef) map { (state, streams, thisProjectRef) ⇒
     implicit val arg = TaskArgument(state, thisProjectRef, Some(streams))
     Bnd.show()
     () // Project/Def.Initialize[Task[Unit]]
   }
   def packageOptionsTask =
     (dependencyClasspath in Compile, state, streams, thisProjectRef, packageOptions in (Compile, packageBin), products in Compile) map {
-      (dependencyClasspath, state, streams, thisProjectRef, packageOptions, products) =>
+      (dependencyClasspath, state, streams, thisProjectRef, packageOptions, products) ⇒
         implicit val arg = TaskArgument(state, thisProjectRef, Some(streams))
         bnd.action.GenerateManifest.generatePackageOptionsTask(dependencyClasspath, packageOptions, products)
     }
   /** Prepare Bnd home directory. Returns the home location. */
   def prepareBndHomeTask =
-    (state, streams, thisProjectRef) map { (state, streams, thisProjectRef) =>
+    (state, streams, thisProjectRef) map { (state, streams, thisProjectRef) ⇒
       implicit val arg = TaskArgument(state, thisProjectRef, Some(streams))
       bnd.Bnd.prepareHome()
     }
   /** Prepare Maven home directory. Returns the home location. */
   def prepareMavenHomeTask =
-    (state, streams, thisProjectRef) map { (state, streams, thisProjectRef) =>
+    (state, streams, thisProjectRef) map { (state, streams, thisProjectRef) ⇒
       implicit val arg = TaskArgument(state, thisProjectRef, Some(streams))
       maven.Maven.prepareHome()
     }
@@ -228,24 +224,24 @@ object Plugin {
   protected def collectResolvedDependencies(resolvedDependencies: immutable.HashMap[ProjectRef, Seq[ModuleID]])(implicit arg: Plugin.TaskArgument): immutable.HashMap[ProjectRef, Seq[File]] = {
     val uri = arg.extracted.currentRef.build
     val build = arg.extracted.structure.units(uri)
-    val result = for (id <- build.defined.keys) yield {
+    val result = for (id ← build.defined.keys) yield {
       implicit val projectRef = ProjectRef(uri, id)
       val scope = arg.thisScope.copy(project = Select(projectRef))
       val taskExternalDependencyClasspath = externalDependencyClasspath in scope in Compile
       val localArg = arg.copy(thisProjectRef = projectRef)
       arg.log.debug(logPrefix(localArg.name) + "Collect external-dependency-classpath")
       val projectDependencies = Project.runTask(taskExternalDependencyClasspath, localArg.state) match {
-        case None =>
+        case None ⇒
           None // Key wasn't defined.
-        case Some((state, Inc(inc))) =>
+        case Some((state, Inc(inc))) ⇒
           Incomplete.show(inc.tpe); None // Error detail, inc is of type Incomplete
-        case Some((state, Value(classpath))) =>
+        case Some((state, Value(classpath))) ⇒
           Some(classpath)
       }
-      val additionalDependencies = resolvedDependencies.get(projectRef) getOrElse Seq() map { moduleId =>
-        moduleId.explicitArtifacts.flatMap { artifact =>
+      val additionalDependencies = resolvedDependencies.get(projectRef) getOrElse Seq() map { moduleId ⇒
+        moduleId.explicitArtifacts.flatMap { artifact ⇒
           if (artifact.classifier == None || artifact.classifier == Some(""))
-            artifact.url.flatMap(url => if (url.getProtocol() == "file") Some(new File(url.toURI())) else None)
+            artifact.url.flatMap(url ⇒ if (url.getProtocol() == "file") Some(new File(url.toURI())) else None)
           else
             None
         }
@@ -274,11 +270,11 @@ object Plugin {
       val globalLoggin = _root_.sbt.osgi.manager.patch.Patch.getGlobalLogging(state)
       import globalLoggin._
       full match {
-        case logger: AbstractLogger =>
+        case logger: AbstractLogger ⇒
           val level = logLevel in thisScope get extracted.structure.data
           level.foreach(logger.setLevel(_)) // force level
           logger
-        case logger =>
+        case logger ⇒
           logger
       }
     }

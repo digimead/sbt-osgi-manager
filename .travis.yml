@@ -2,7 +2,7 @@
 language: scala
 script: "sbt 'set scriptedLaunchOpts := Seq(\"-Xms384m\", \"-Xmx384m\", \"-XX:MaxPermSize=128m\")' scripted"
 scala:
-- 2.9.2
+- 2.10.4
 before_script:
  - "echo JAVA_HOME $JAVA_HOME"
  - "echo 'which java' `which java`"
