@@ -33,7 +33,7 @@ Please check the individual source files for details.
 Copyright
 ---------
 
-Copyright © 2013 Alexey B. Aksenov/Ezh. All rights reserved.
+Copyright © 2013-2014 Alexey B. Aksenov/Ezh. All rights reserved.
 
 [dm]: https://github.com/digimead/sbt-dependency-manager
 [sbt]: https://github.com/sbt/sbt
