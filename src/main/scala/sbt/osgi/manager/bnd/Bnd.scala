@@ -129,6 +129,7 @@ object Bnd {
     osgiBndPluginPath := List[String](),
     osgiBndPrivatePackage := List[String](),
     osgiBndRequireBundle := List[String](),
+    osgiBndRequireCapability := "",
     osgiBndRunBundles := List[String](),
     osgiBndRunEE := "JavaSE-1.6",
     osgiBndRunFramework := "",
@@ -251,6 +252,7 @@ object Bnd {
     show("PLUGINPATH", Model.getPropertyPluginPath map (_.mkString(",")) getOrElse "")
     show("PRIVATE_PACKAGE", Model.getPropertyPrivatePackages map (_.mkString(",")) getOrElse "")
     show("REQUIRE_BUNDLE", Model.getPropertyRequireBundle map (_.mkString(",")) getOrElse "")
+    show("REQUIRE_CAPABILITY", Model.getPropertyRequireCapability getOrElse "")
     show("RUNBUNDLES", Model.getPropertyRunBundles map (_.mkString(",")) getOrElse "")
     show("RUNEE", Model.getPropertyRunEE getOrElse "", "UNKNOWN", scala.Console.RED)
     show("RUNFRAMEWORK", Model.getPropertyRunFramework getOrElse "")

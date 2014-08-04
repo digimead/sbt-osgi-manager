@@ -99,6 +99,8 @@ object Keys {
     "Bnd PRIVATE_PACKAGE parameter. Private-Package defines Java packages to be included in the bundle but not exported.")
   lazy val osgiBndRequireBundle = SettingKey[List[String]]("osgiBndRequireBundle",
     "Bnd REQUIRE_BUNDLE parameter. The Require-Bundle header is used to express a dependency on a bundle's exports by reference to its symbolic name instead of via specific packages.")
+  lazy val osgiBndRequireCapability = SettingKey[String]("osgiBndRequireCapability",
+    "Bnd REQUIRE_CAPABILITY parameter. Manifest header identifying the capabilities on which the bundle depends.")
   lazy val osgiBndRunBundles = SettingKey[List[String]]("osgiBndRunBundles",
     "Bnd RUNBUNDLES parameter. Add additional bundles, specified with their bsn and version like in BUILDPATH, that are started before the project is run.")
   lazy val osgiBndRunEE = SettingKey[String]("osgiBndRunEE",

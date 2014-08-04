@@ -30,7 +30,7 @@ homepage := Some(url("https://github.com/digimead/sbt-osgi-manager"))
 version <<= (baseDirectory) { (b) => scala.io.Source.fromFile(b / "version").mkString.trim }
 
 // There is no "-Xfatal-warnings" because we have cross compilation against different Scala versions
-scalacOptions ++= Seq("-encoding", "UTF-8", "-unchecked", "-deprecation", "-Xcheckinit")
+scalacOptions ++= Seq("-encoding", "UTF-8", "-unchecked", "-deprecation", "-Xcheckinit", "-feature")
 
 // http://vanillajava.blogspot.ru/2012/02/using-java-7-to-target-much-older-jvms.html
 javacOptions ++= Seq("-Xlint:unchecked", "-Xlint:deprecation", "-source", "1.6", "-target", "1.6")
@@ -55,7 +55,7 @@ libraryDependencies ++= {
   val tychoVersion = "0.18.0"
   val aetherAPIVersion = "1.7" // based on Tycho, MUST be the same
   Seq(
-    "biz.aQute.bnd" % "bndlib" % "2.1.0",
+    "biz.aQute.bnd" % "bndlib" % "2.3.0",
     "org.apache.felix" % "org.apache.felix.resolver" % "1.0.0",
     "org.apache.maven" % "maven-aether-provider" % mavenVersion,
     "org.apache.maven" % "maven-artifact" % mavenVersion,

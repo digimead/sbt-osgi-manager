@@ -93,6 +93,8 @@ object GenerateManifest {
         if (value.nonEmpty) properties.put(BndConstant.PRIVATE_PACKAGE, value.mkString(",")))
       Model.getPropertyRequireBundle.foreach(value ⇒
         if (value.nonEmpty) properties.put(BndConstant.REQUIRE_BUNDLE, value.mkString(",")))
+      Model.getPropertyRequireCapability.foreach(value ⇒
+        if (value.nonEmpty) properties.put(BndConstant.REQUIRE_CAPABILITY, value))
 
       Model.getPropertyNoUses.foreach(value ⇒
         if (value) properties.put(BndConstant.NOUSES, "true"))

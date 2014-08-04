@@ -99,6 +99,9 @@ object Model {
   /** aQute.bnd.osgi.Constants.REQUIRE_BUNDLE */
   def getPropertyRequireBundle(implicit arg: Plugin.TaskArgument) =
     osgiBndRequireBundle in arg.thisOSGiScope get arg.extracted.structure.data
+  /** aQute.bnd.osgi.Constants.REQUIRE_CAPABILITY */
+  def getPropertyRequireCapability(implicit arg: Plugin.TaskArgument) =
+    osgiBndRequireCapability in arg.thisOSGiScope get arg.extracted.structure.data
   /** aQute.bnd.osgi.Constants.RUNBUNDLES */
   def getPropertyRunBundles(implicit arg: Plugin.TaskArgument) =
     osgiBndRunBundles in arg.thisOSGiScope get arg.extracted.structure.data
