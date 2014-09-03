@@ -129,6 +129,9 @@ object Model {
     osgiDirectory in arg.thisOSGiScope get arg.extracted.structure.data
   def getSettingsFetchInfo(implicit arg: Plugin.TaskArgument) =
     osgiFetchInfo in arg.thisOSGiScope get arg.extracted.structure.data
+  /** Get scope of resolved module. */
+  def getResolvedModuleScope(implicit arg: Plugin.TaskArgument) =
+    osgiModuleScope in arg.thisOSGiScope get arg.extracted.structure.data
 
   /////////////////////////////////////
   // Maven

@@ -35,18 +35,16 @@ import org.eclipse.tycho.core.facade.TargetEnvironment
 import org.eclipse.tycho.core.resolver.shared.{ MavenRepositoryLocation, PlatformPropertiesUtils }
 import org.eclipse.tycho.osgi.adapters.MavenLoggerAdapter
 import org.eclipse.tycho.p2.resolver.facade.P2ResolutionResult
-import sbt.osgi.manager.{ Plugin, Support }
-import sbt.osgi.manager.Dependency
 import sbt.osgi.manager.Dependency.{ getOrigin, moduleId2Dependency, tuplesWithString2repositories }
 import sbt.osgi.manager.Support.{ CacheP2Key, getDependencies, getResolvers, logPrefix }
 import sbt.osgi.manager.maven.Maven
+import sbt.osgi.manager.{ Dependency, Model }
+import sbt.osgi.manager.{ Plugin, Support }
+import sbt.{ Keys ⇒ skey, _ }
 import scala.annotation.tailrec
-import scala.collection.{ immutable, mutable }
 import scala.collection.JavaConversions.{ asScalaBuffer, asScalaSet, collectionAsScalaIterable, seqAsJavaList }
+import scala.collection.{ immutable, mutable }
 import scala.language.reflectiveCalls
-
-import sbt._
-import sbt.{ Keys ⇒ skey }
 
 // Unfortunately:
 //   - from the one side SBT is too simple for handle mixed ModuleID with explicit artifacts,
@@ -237,13 +235,26 @@ object Resolve extends Support.Resolve {
                 arg.log.info(logPrefix(arg.name) + "Collect P2 IU %s".format(riu))
                 arg.log.warn(logPrefix(arg.name) + "Unable to find source code for " + riu)
                 arg.log.debug(logPrefix(arg.name) + "%s -> [%s]".format(riu, originModuleIds.map(_.moduleId.copy(extraAttributes = Map())).mkString(",")))
-                Some(riu.getId() % entry.getId() % riu.getVersion().getOriginal()
-                  from entry.getLocation.getAbsoluteFile.toURI.toURL.toString)
+                Model.getResolvedModuleScope.flatten match {
+                  case Some(scope) ⇒
+                    Some(riu.getId() % entry.getId() % riu.getVersion().getOriginal() % scope from
+                      entry.getLocation.getAbsoluteFile.toURI.toASCIIString())
+                  case None ⇒
+                    Some(riu.getId() % entry.getId() % riu.getVersion().getOriginal() from
+                      entry.getLocation.getAbsoluteFile.toURI.toASCIIString())
+                }
               } else {
                 arg.log.info(logPrefix(arg.name) + "Collect P2 IU %s with source code".format(riu))
                 arg.log.debug(logPrefix(arg.name) + "%s -> [%s]".format(riu, originModuleIds.map(_.moduleId.copy(extraAttributes = Map())).mkString(",")))
-                val moduleId = riu.getId() % entry.getId() % riu.getVersion().getOriginal() from
-                  entry.getLocation.getAbsoluteFile.toURI.toURL.toString
+                val moduleId =
+                  Model.getResolvedModuleScope.flatten match {
+                    case Some(scope) ⇒
+                      riu.getId() % entry.getId() % riu.getVersion().getOriginal() % scope from
+                        entry.getLocation.getAbsoluteFile.toURI.toASCIIString()
+                    case None ⇒
+                      riu.getId() % entry.getId() % riu.getVersion().getOriginal() from
+                        entry.getLocation.getAbsoluteFile.toURI.toASCIIString()
+                  }
                 val artifactsWithSourceCode = sources.map(file ⇒
                   _root_.sbt.Artifact.classified(moduleId.name, _root_.sbt.Artifact.SourceClassifier).copy(url = Some(file.toURI.toURL())))
                 val moduleIdWithSourceCode = moduleId.copy(explicitArtifacts = moduleId.explicitArtifacts ++ artifactsWithSourceCode)
@@ -252,13 +263,25 @@ object Resolve extends Support.Resolve {
             } else {
               arg.log.info(logPrefix(arg.name) + "Collect P2 IU %s".format(riu))
               arg.log.debug(logPrefix(arg.name) + "%s -> [%s]".format(riu, originModuleIds.map(_.moduleId.copy(extraAttributes = Map())).mkString(",")))
-              Some(riu.getId() % entry.getId() % riu.getVersion().getOriginal()
-                from entry.getLocation.getAbsoluteFile.toURI.toURL.toString)
+              Model.getResolvedModuleScope.flatten match {
+                case Some(scope) ⇒
+                  Some(riu.getId() % entry.getId() % riu.getVersion().getOriginal() % scope from
+                    entry.getLocation.getAbsoluteFile.toURI.toASCIIString())
+                case None ⇒
+                  Some(riu.getId() % entry.getId() % riu.getVersion().getOriginal() from
+                    entry.getLocation.getAbsoluteFile.toURI.toASCIIString())
+              }
             }
           } else {
             arg.log.warn(logPrefix(arg.name) + "Collect an unbound installable unit: " + riu)
-            Some(riu.getId() % entry.getId() % riu.getVersion().getOriginal()
-              from entry.getLocation.getAbsoluteFile.toURI.toURL.toString)
+            Model.getResolvedModuleScope.flatten match {
+              case Some(scope) ⇒
+                Some(riu.getId() % entry.getId() % riu.getVersion().getOriginal() % scope from
+                  entry.getLocation.getAbsoluteFile.toURI.toASCIIString())
+              case None ⇒
+                Some(riu.getId() % entry.getId() % riu.getVersion().getOriginal() from
+                  entry.getLocation.getAbsoluteFile.toURI.toASCIIString())
+            }
           }
         case ru ⇒
           arg.log.warn(logPrefix(arg.name) + "Skip an unknown reactor unit: " + ru)

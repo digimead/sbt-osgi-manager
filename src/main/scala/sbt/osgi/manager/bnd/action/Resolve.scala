@@ -19,9 +19,9 @@
 package sbt.osgi.manager.bnd.action
 
 import aQute.bnd.build.Workspace
-import aQute.bnd.deployer.repository.{ AbstractIndexedRepo, FixedIndexedRepo }
 import aQute.bnd.deployer.repository.api.IRepositoryContentProvider
 import aQute.bnd.deployer.repository.providers.R5RepoContentProvider
+import aQute.bnd.deployer.repository.{ AbstractIndexedRepo, FixedIndexedRepo }
 import aQute.bnd.osgi.resource.CapReqBuilder
 import aQute.bnd.service.{ ResourceHandle, Strategy }
 import biz.aQute.resolve.internal.BndrunResolveContext
@@ -31,15 +31,15 @@ import org.apache.felix.resolver.ResolverImpl
 import org.eclipse.equinox.internal.p2.metadata.VersionParser
 import org.osgi.framework.namespace.IdentityNamespace
 import org.osgi.service.resolver.ResolutionException
-import sbt.osgi.manager.{ Plugin, Support }
 import sbt.osgi.manager.Dependency
 import sbt.osgi.manager.Dependency.{ ANY_VERSION, tuplesWithString2repositories, version2string }
+import sbt.osgi.manager.Model
 import sbt.osgi.manager.Support.{ CacheOBRKey, getDependencies, getResolvers, logPrefix }
 import sbt.osgi.manager.bnd.{ Bnd, Logger }
+import sbt.osgi.manager.{ Plugin, Support }
+import sbt.{ Keys ⇒ skey, _ }
 import scala.collection.JavaConversions.{ asScalaBuffer, asScalaSet, collectionAsScalaIterable, seqAsJavaList, setAsJavaSet }
 import scala.collection.immutable
-
-import sbt.{ Keys ⇒ skey, _ }
 
 // This is consolidated thoughts about Bnd that was located across first version of my code.
 // It may save a bit of time for someone who will choose the same way.
@@ -194,7 +194,12 @@ object Resolve extends Support.Resolve {
           case (bsn, version, file, repository) ⇒
             arg.log.info(logPrefix(arg.name) + "Collect OBR bundle %s %s".format(bsn, version))
             arg.log.debug(logPrefix(arg.name) + "%s %s -> [%s] from %s".format(bsn, version, "?", repository.getName()))
-            Some(bsn % bsn % version from file.getAbsoluteFile.toURI.toURL.toString)
+            Model.getResolvedModuleScope.flatten match {
+              case Some(scope) ⇒
+                Some(bsn % bsn % version % scope from file.getAbsoluteFile.toURI.toASCIIString())
+              case None ⇒
+                Some(bsn % bsn % version from file.getAbsoluteFile.toURI.toASCIIString())
+            }
         }.flatten
       } catch {
         case e: ResolutionException ⇒

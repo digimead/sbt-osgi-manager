@@ -45,7 +45,8 @@ object Plugin {
     test.Test.settings ++
       inConfig(Keys.OSGiConf)(Seq(
         osgiDirectory <<= (target) { _ / "osgi" },
-        osgiFetchPath := None)) ++
+        osgiFetchPath := None,
+        osgiModuleScope := Some("osgi"))) ++
       // plugin settings
       bnd.Bnd.settings ++
       maven.Maven.settings ++
@@ -61,7 +62,7 @@ object Plugin {
         osgiCompile <<= osgiCompileTask,
         osgiFetch <<= osgiFetchTask,
         osgiShow <<= osgiShowTask,
-        ivyConfigurations ++= Seq(OSGiTestConf))
+        ivyConfigurations ++= Seq(OSGiConf, OSGiTestConf))
 
   /** Returns last known State. It is a complex helper for Simple Build Tool simple architecture. lol */
   def getLastKnownState(): Option[TaskArgument] = lastKnownState
@@ -160,10 +161,9 @@ object Plugin {
     implicit val arg = TaskArgument(actualState, Project.current(actualState), None)
     // resolve P2
     val dependencyP2 = maven.action.Resolve.resolveP2Command()
-    val dependencySettingsP2 = for (projectRef ← dependencyP2.keys) yield if (dependencyP2(projectRef).nonEmpty)
-      Seq(libraryDependencies in projectRef ++= dependencyP2(projectRef))
-    else
-      Seq()
+    val dependencySettingsP2 =
+      for (projectRef ← dependencyP2.keys)
+        yield if (dependencyP2(projectRef).nonEmpty) Seq(libraryDependencies in projectRef ++= dependencyP2(projectRef)) else Seq()
     // resolve OBR
     val resolvedDependencies = collectResolvedDependencies(dependencyP2)
     val dependencyOBR = bnd.action.Resolve.resolveOBRCommand(resolvedDependencies)
