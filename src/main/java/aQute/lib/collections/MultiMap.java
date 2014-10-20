@@ -97,7 +97,7 @@ public class MultiMap<K, V> extends HashMap<K,List<V>> {
 		return set.addAll(value);
 	}
 
-	public boolean remove(K key, V value) {
+	public boolean remove(Object key, Object value) {
 		assert keyClass.isInstance(key);
 		assert valueClass.isInstance(value);
 

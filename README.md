@@ -17,6 +17,8 @@ Resolved bundles are added to project to 'library-dependencies' settings key. Re
 
 [See SBT OSGi Manager documentation](http://digimead.github.io/sbt-osgi-manager/).
 
+** Required Java 7 or higher **
+
 AUTHORS
 -------
 

@@ -33,11 +33,7 @@ version <<= (baseDirectory) { (b) => scala.io.Source.fromFile(b / "version").mkS
 scalacOptions ++= Seq("-encoding", "UTF-8", "-unchecked", "-deprecation", "-Xcheckinit", "-feature")
 
 // http://vanillajava.blogspot.ru/2012/02/using-java-7-to-target-much-older-jvms.html
-javacOptions ++= Seq("-Xlint:unchecked", "-Xlint:deprecation", "-source", "1.6", "-target", "1.6")
-
-javacOptions in doc := Seq("-source", "1.6")
-
-if (sys.env.contains("XBOOTCLASSPATH")) Seq(javacOptions += "-Xbootclasspath:" + sys.env("XBOOTCLASSPATH")) else Seq()
+javacOptions ++= Seq("-Xlint:unchecked", "-Xlint:deprecation")
 
 sbtPlugin := true
 

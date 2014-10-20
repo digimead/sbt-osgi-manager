@@ -108,6 +108,11 @@ public class SortedList<T> implements SortedSet<T>, List<T> {
 		}
 	}
 
+    @Override
+    public Spliterator<T> spliterator() {
+        return List.super.spliterator();
+    }
+
 	public SortedList(Collection< ? extends Comparable< ? >> x) {
 		this((Collection<T>) x, 0, x.size(), (Comparator<T>) comparator);
 	}

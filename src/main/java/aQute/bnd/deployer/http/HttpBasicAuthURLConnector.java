@@ -165,7 +165,7 @@ public class HttpBasicAuthURLConnector implements URLConnector, Plugin {
 		// Add the authorization string using HTTP Basic Auth
 		if (user != null && pass != null) {
 			String authString = user + ":" + pass;
-			String encoded = Base64.encodeBase64(authString.getBytes("UTF-8"));
+			String encoded = aQute.lib.base64.Base64.encodeBase64(authString.getBytes("UTF-8"));
 			connection.setRequestProperty(HEADER_AUTHORIZATION, PREFIX_BASIC_AUTH + encoded);
 		}
 
