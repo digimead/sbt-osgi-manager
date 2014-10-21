@@ -32,7 +32,6 @@ version <<= (baseDirectory) { (b) => scala.io.Source.fromFile(b / "version").mkS
 // There is no "-Xfatal-warnings" because we have cross compilation against different Scala versions
 scalacOptions ++= Seq("-encoding", "UTF-8", "-unchecked", "-deprecation", "-Xcheckinit", "-feature")
 
-// http://vanillajava.blogspot.ru/2012/02/using-java-7-to-target-much-older-jvms.html
 javacOptions ++= Seq("-Xlint:unchecked", "-Xlint:deprecation")
 
 sbtPlugin := true
