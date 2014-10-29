@@ -25,3 +25,5 @@ libraryDependencies in OSGiConf += typeP2(OSGi.ECLIPSE_PLUGIN % "org.eclipse.ui"
 mainClass in (Compile, packageBin) := Some("a.b.c")
 
 logLevel := Level.Debug
+
+OSGiKey.osgiModuleScope in OSGiConf := Some("compile-internal")
