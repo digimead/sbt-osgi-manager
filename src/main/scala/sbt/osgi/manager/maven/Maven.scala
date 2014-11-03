@@ -330,7 +330,7 @@ object Maven {
       // Remove plexus-container-default...jar
       // Keep sisu-inject-plexus...jar
       val configuration = new DefaultContainerConfiguration().
-        setAutoWiring(true).
+        //setAutoWiring(true).
         setClassWorld(realm.getWorld()).
         setContainerConfigurationURL(configurationURL).
         setName("sbt.osgi.manager").

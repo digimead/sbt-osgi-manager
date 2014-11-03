@@ -194,7 +194,7 @@ object Resolve extends Support.Resolve {
           case (bsn, version, file, repository) ⇒
             arg.log.info(logPrefix(arg.name) + "Collect OBR bundle %s %s".format(bsn, version))
             arg.log.debug(logPrefix(arg.name) + "%s %s -> [%s] from %s".format(bsn, version, "?", repository.getName()))
-            Model.getResolvedModuleScope.flatten match {
+            Model.getResolvedModuleScope.map(_.name) match {
               case Some(scope) ⇒
                 Some(bsn % bsn % version % scope from file.getAbsoluteFile.toURI.toASCIIString())
               case None ⇒

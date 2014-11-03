@@ -44,9 +44,10 @@ object Plugin {
     // base settings
     test.Test.settings ++
       inConfig(Keys.OSGiConf)(Seq(
+        managedClasspath := Classpaths.managedJars(osgiModuleScope.value, classpathTypes.value, update.value),
         osgiDirectory <<= (target) { _ / "osgi" },
         osgiFetchPath := None,
-        osgiModuleScope := Some("osgi"))) ++
+        osgiModuleScope := OSGiConf)) ++
       // plugin settings
       bnd.Bnd.settings ++
       maven.Maven.settings ++
@@ -58,7 +59,11 @@ object Plugin {
         osgiResetCache := osgiResetCacheTask)) ++
       // and global settings
       Seq(
-        commands += Command.command("osgiResolve", osgiResolveCommandHelp)(osgiResolveCommand),
+        commands += Command.command("osgiResolve", osgiResolveCommandHelp)(osgiResolveCommand(false, _)),
+        commands += Command.command("osgiResolveRemote", osgiResolveRemoteCommandHelp)(osgiResolveCommand(true, _)),
+        managedClasspath in Compile <++= managedClasspath in OSGiConf,
+        managedClasspath in Runtime <++= managedClasspath in OSGiConf,
+        managedClasspath in Test <++= managedClasspath in OSGiConf,
         osgiCompile <<= osgiCompileTask,
         osgiFetch <<= osgiFetchTask,
         osgiShow <<= osgiShowTask,
@@ -132,7 +137,7 @@ object Plugin {
     }
   }
   /** Command that populates libraryDependencies with required bundles */
-  def osgiResolveCommand(state: State): State = {
+  def osgiResolveCommand(remoteArtifacts: Boolean, state: State): State = {
     val extracted = Project.extract(state)
     val uri = extracted.currentRef.build
     val build = extracted.structure.units(uri)
@@ -160,7 +165,7 @@ object Plugin {
     }
     implicit val arg = TaskArgument(actualState, Project.current(actualState), None)
     // resolve P2
-    val dependencyP2 = maven.action.Resolve.resolveP2Command()
+    val dependencyP2 = maven.action.Resolve.resolveP2Command(remoteArtifacts)
     val dependencySettingsP2 =
       for (projectRef ← dependencyP2.keys)
         yield if (dependencyP2(projectRef).nonEmpty) Seq(libraryDependencies in projectRef ++= dependencyP2(projectRef)) else Seq()
@@ -192,8 +197,15 @@ object Plugin {
   }
   /** Generate help for osgiResolveCommand */
   def osgiResolveCommandHelp = {
-    val osgiResolveCommand = "osgi-resolve"
-    val osgiResolveCommandBrief = (osgiResolveCommand, "Add OSGi dependencies to projects.")
+    val osgiResolveCommand = "osgiResolve"
+    val osgiResolveCommandBrief = (osgiResolveCommand, "Add OSGi dependencies that points to local artifacts.")
+    val osgiResolveCommandDetailed = "Add OSGi dependencies to libraryDependencies setting per user project."
+    Help(osgiResolveCommand, osgiResolveCommandBrief, osgiResolveCommandDetailed)
+  }
+  /** Generate help for osgiResolveCommand */
+  def osgiResolveRemoteCommandHelp = {
+    val osgiResolveCommand = "osgiResolveRemote"
+    val osgiResolveCommandBrief = (osgiResolveCommand, "Add OSGi dependencies that points to remote artifacts.")
     val osgiResolveCommandDetailed = "Add OSGi dependencies to libraryDependencies setting per user project."
     Help(osgiResolveCommand, osgiResolveCommandBrief, osgiResolveCommandDetailed)
   }
