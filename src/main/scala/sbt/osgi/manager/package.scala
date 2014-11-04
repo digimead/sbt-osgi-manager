@@ -21,11 +21,11 @@ package sbt.osgi
 import java.net.{ URI, URL }
 import org.apache.maven.model.Dependency
 import org.eclipse.equinox.p2.metadata.Version
-import sbt.osgi.manager.{ Dependency, Keys, OSGi, Plugin }
-import scala.language.implicitConversions
-
+import org.eclipse.tycho.core.ee.shared.ExecutionEnvironmentConfigurationStub
 import sbt.Keys._
 import sbt._
+import sbt.osgi.manager.{ Dependency, Keys, OSGi, Plugin }
+import scala.language.implicitConversions
 
 package object manager {
   /** Entry point for the plugin in user's project */
@@ -43,6 +43,10 @@ package object manager {
   lazy val OSGiKey = Keys
   lazy val OSGiConf = Keys.OSGiConf
   lazy val OSGiTestConf = Keys.OSGiTestConf
+
+  lazy val OSGiEnvironmentJRE1_6 = new ExecutionEnvironmentConfigurationStub("JavaSE-1.6")
+  lazy val OSGiEnvironmentJRE1_7 = new ExecutionEnvironmentConfigurationStub("JavaSE-1.7")
+  lazy val OSGiEnvironmentJRE1_8 = new ExecutionEnvironmentConfigurationStub("JavaSE-1.8")
 
   implicit def moduleId2Dependency(dependencies: Seq[ModuleID]): Seq[Dependency] =
     Dependency.moduleId2Dependency(dependencies)

@@ -137,12 +137,12 @@ object Plugin {
     }
   }
   /** Command that populates libraryDependencies with required bundles */
-  def osgiResolveCommand(remoteArtifacts: Boolean, state: State): State = {
+  def osgiResolveCommand(resolveAsRemoteArtifacts: Boolean, state: State): State = {
     val extracted = Project.extract(state)
     val uri = extracted.currentRef.build
     val build = extracted.structure.units(uri)
     var actualState: State = state
-    for (id ← build.defined.keys) yield {
+    val ivySbtSeq = for (id ← build.defined.keys) yield {
       implicit val projectRef = ProjectRef(uri, id)
       // This selects the 'osgi-maven-prepare' task for the current project.
       // The value produced by 'osgi-maven-prepare' is of type File
@@ -162,10 +162,23 @@ object Plugin {
         case None ⇒
           throw new OSGiManagerException("Unable to prepare Bnd home for project %s.".format(projectRef.project))
       }
+      // Get ivySbt
+      EvaluateTask(extracted.structure, ivySbt in Compile, actualState, projectRef) match {
+        case Some((state, result)) ⇒
+          result.toEither match {
+            case Left(incomplete) ⇒
+              throw new OSGiManagerException("Unable to get IvySbt for project %s.".format(projectRef.project))
+            case Right(ivySbt) ⇒
+              actualState = state
+              ivySbt
+          }
+        case None ⇒
+          throw new OSGiManagerException("Unable to get IvySbt for project %s.".format(projectRef.project))
+      }
     }
     implicit val arg = TaskArgument(actualState, Project.current(actualState), None)
     // resolve P2
-    val dependencyP2 = maven.action.Resolve.resolveP2Command(remoteArtifacts)
+    val dependencyP2 = maven.action.Resolve.resolveP2Command(ivySbtSeq.head, resolveAsRemoteArtifacts)
     val dependencySettingsP2 =
       for (projectRef ← dependencyP2.keys)
         yield if (dependencyP2(projectRef).nonEmpty) Seq(libraryDependencies in projectRef ++= dependencyP2(projectRef)) else Seq()

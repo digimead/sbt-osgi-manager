@@ -62,10 +62,6 @@ import scala.language.reflectiveCalls
 
 /** Contain resolve action for Maven and P2 repository */
 object Resolve extends Support.Resolve {
-  val environmentJRE1_6 = new ExecutionEnvironmentConfigurationStub("JavaSE-1.6")
-  val environmentJRE1_7 = new ExecutionEnvironmentConfigurationStub("JavaSE-1.7")
-  val environmentJRE1_8 = new ExecutionEnvironmentConfigurationStub("JavaSE-1.8")
-
   /** Resolve the dependency against the standard Maven repository */
   def resolveBasic(maven: Maven)(implicit arg: Plugin.TaskArgument) {
     val groupId = "org.apache.maven"
@@ -134,14 +130,15 @@ object Resolve extends Support.Resolve {
       + result.getRepository());*/
   }
   /** Resolve the dependency for the specific project against Eclipse P2 repository */
-  def resolveP2(resolveAsRemoteArtifacts: Boolean)(implicit arg: Plugin.TaskArgument): Seq[ModuleID] = {
+  def resolveP2(ivySbt: IvySbt, resolveAsRemoteArtifacts: Boolean)(implicit arg: Plugin.TaskArgument): Seq[ModuleID] = {
     // get resolvers as Seq[(id, url)]
     val resolvers = getResolvers(Dependency.P2, arg.thisOSGiScope)
     val dependencies = getDependencies(Dependency.P2, arg.thisOSGiScope)
     if (resolvers.nonEmpty && dependencies.nonEmpty) {
       arg.log.info(logPrefix(arg.name) + "Resolve P2 dependencies")
       val bridge = Maven()
-      val modules = ResolveP2(dependencies, resolvers, environmentJRE1_6, bridge, resolveAsRemoteArtifacts, true)
+      val modules = ResolveP2(dependencies, resolvers, sbt.osgi.manager.OSGiEnvironmentJRE1_6,
+        bridge, ivySbt, resolveAsRemoteArtifacts, true)
       val resolved = skey.libraryDependencies in arg.thisScope get arg.extracted.structure.data getOrElse Seq()
       updateCache(CacheP2Key(arg.thisProjectRef.project), dependencies, resolvers)
       modules.filterNot { m ⇒
@@ -157,7 +154,7 @@ object Resolve extends Support.Resolve {
     }
   }
   /** Command that populates libraryDependencies with required bundles */
-  def resolveP2Command(resolveAsRemoteArtifacts: Boolean)(implicit arg: Plugin.TaskArgument): immutable.HashMap[ProjectRef, Seq[ModuleID]] = {
+  def resolveP2Command(ivySbt: IvySbt, resolveAsRemoteArtifacts: Boolean)(implicit arg: Plugin.TaskArgument): immutable.HashMap[ProjectRef, Seq[ModuleID]] = {
     val uri = arg.extracted.currentRef.build
     val build = arg.extracted.structure.units(uri)
     // Check if we already processed our dependencies with same values
@@ -176,7 +173,7 @@ object Resolve extends Support.Resolve {
     } else {
       immutable.HashMap((for (id ← build.defined.keys) yield {
         implicit val projectRef = ProjectRef(uri, id)
-        (projectRef, resolveP2(resolveAsRemoteArtifacts)(arg.copy(thisProjectRef = projectRef)))
+        (projectRef, resolveP2(ivySbt, resolveAsRemoteArtifacts)(arg.copy(thisProjectRef = projectRef)))
       }).toSeq: _*)
     }
   }

@@ -22,32 +22,27 @@ import java.io.{ BufferedOutputStream, FileOutputStream, OutputStream }
 import java.net.{ URI, URISyntaxException }
 import java.util.Properties
 import java.util.jar.{ JarOutputStream, Pack200 }
-import org.apache.maven.artifact.Artifact
-import org.apache.maven.artifact.resolver.ArtifactResolutionRequest
 import org.apache.maven.model.{ Dependency ⇒ MavenDependency }
-import org.apache.maven.repository.RepositorySystem
 import org.eclipse.core.runtime.{ IProgressMonitor, IStatus }
 import org.eclipse.equinox.p2.core.ProvisionException
-import org.eclipse.equinox.p2.metadata.IInstallableUnit
+import org.eclipse.equinox.p2.metadata.{ IArtifactKey, IInstallableUnit }
 import org.eclipse.equinox.p2.repository.artifact.{ IArtifactDescriptor, IArtifactRepository, IArtifactRepositoryManager }
+import org.eclipse.tycho.artifacts.TargetPlatform
 import org.eclipse.tycho.core.ee.shared.ExecutionEnvironmentConfigurationStub
 import org.eclipse.tycho.core.facade.TargetEnvironment
 import org.eclipse.tycho.core.resolver.shared.{ MavenRepositoryLocation, PlatformPropertiesUtils }
 import org.eclipse.tycho.osgi.adapters.MavenLoggerAdapter
 import org.eclipse.tycho.p2.resolver.facade.P2ResolutionResult
-import sbt.osgi.manager.Dependency.{ getOrigin, moduleId2Dependency, tuplesWithString2repositories }
-import sbt.osgi.manager.Support.{ CacheP2Key, getDependencies, getResolvers, logPrefix }
+import sbt.{ File, IO, IvySbt, ModuleID, moduleIDConfigurable }
+import sbt.osgi.manager.{ Model, Plugin }
+import sbt.osgi.manager.Dependency.getOrigin
+import sbt.osgi.manager.Support.logPrefix
 import sbt.osgi.manager.maven.Maven
-import sbt.osgi.manager.{ Dependency, Model }
-import sbt.osgi.manager.{ Plugin, Support }
-import sbt.{ Keys ⇒ skey, _ }
+import sbt.toGroupID
 import scala.annotation.tailrec
-import scala.collection.JavaConversions.{ asScalaBuffer, asScalaSet, collectionAsScalaIterable, seqAsJavaList }
 import scala.collection.{ immutable, mutable }
+import scala.collection.JavaConversions.{ asScalaBuffer, asScalaSet, collectionAsScalaIterable }
 import scala.language.reflectiveCalls
-import org.eclipse.tycho.p2.target.facade.TargetPlatformBuilder
-import org.eclipse.tycho.artifacts.TargetPlatform
-import org.eclipse.equinox.p2.metadata.IArtifactKey
 
 object ResolveP2 {
   /** Instance of Pack200, specified in JSR 200, is an HTTP compression method by Sun for faster JAR file transfer speeds over the network. */
@@ -57,13 +52,18 @@ object ResolveP2 {
   // For more information about metadata and artifact repository manager, look at
   // http://eclipsesource.com/blogs/tutorials/eclipse-p2-tutorial-managing-metadata/
   def apply(dependencies: Seq[MavenDependency], rawRepositories: Seq[(String, URI)],
-    environment: ExecutionEnvironmentConfigurationStub, maven: Maven,
+    environment: ExecutionEnvironmentConfigurationStub, maven: Maven, ivySbt: IvySbt,
     resolveAsRemoteArtifacts: Boolean, includeLocalMavenRepo: Boolean)(implicit arg: Plugin.TaskArgument): Seq[ModuleID] = {
     val (targetPlatform, repositories) = createTargetPlatformAndRepositories(rawRepositories,
       environment, maven, includeLocalMavenRepo) getOrElse { return Seq.empty }
     val resolver = maven.p2ResolverFactory.createResolver(new MavenLoggerAdapter(maven.plexus.getLogger, true))
     dependencies.foreach(d ⇒ resolver.addDependency(d.getType(), d.getArtifactId(), d.getVersion()))
-    val resolutionResult = resolver.resolveDependencies(targetPlatform, null) // set reactor project location to null
+
+    val resolutionResult = ivySbt.withIvy(arg.log) { ivy ⇒
+      // Set reactor project location to null
+      resolver.resolveDependencies(targetPlatform, null)
+    }
+
     val artifacts = (for (r ← resolutionResult) yield r.getArtifacts()).flatten
     if (artifacts.isEmpty) {
       arg.log.info(logPrefix(arg.name) + "There are no any resolved entries")
@@ -289,7 +289,7 @@ object ResolveP2 {
             val name = key.getId() + "_" + key.getVersion() + ".jar"
             val target = new File(directory, name)
             if (P2SimpleRepository.download(descriptor, target, r))
-              sourceCode = Some(r.getLocation(descriptor))
+              sourceCode = Some(target.toURI())
           }
         case Nil ⇒
           arg.log.debug(logPrefix(arg.name) + "Unable to find source code for " + iu + " in " + r)
@@ -304,7 +304,7 @@ object ResolveP2 {
               val name = key.getId() + "_" + key.getVersion() + ".jar"
               val target = new File(directory, name)
               if (P2SimpleRepository.download(descriptor, target, r))
-                sourceCode = Some(r.getLocation(descriptor))
+                sourceCode = Some(target.toURI())
             }
       }
     }
