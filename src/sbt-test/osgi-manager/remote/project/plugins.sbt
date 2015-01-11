@@ -4,7 +4,7 @@ resolvers ++= Seq(
   "digimead-maven" at "http://commondatastorage.googleapis.com/maven.repository.digimead.org/"
 )
 
-addSbtPlugin("org.digimead" % "sbt-dependency-manager" % "0.7")
+addSbtPlugin("org.digimead" % "sbt-dependency-manager" % "0.8.0.2-SNAPSHOT")
 
 libraryDependencies <+= (sbtBinaryVersion in update, scalaBinaryVersion in update, baseDirectory) { (sbtV, scalaV, base) =>
   Defaults.sbtPluginExtra("org.digimead" % "sbt-osgi-manager" %

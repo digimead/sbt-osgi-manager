@@ -1,0 +1,7 @@
+-$ exists target/osgi/
+> project base
+> osgiResolve
+> project sub
+$ exists target/osgi/
+> compile
+> clean
