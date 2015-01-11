@@ -19,6 +19,31 @@ Resolved bundles are added to project to 'library-dependencies' settings key. Re
 
 __Required Java 6 or higher__
 
+Few tips
+--------
+
+Use [local](https://github.com/digimead/sbt-osgi-manager/tree/master/src/sbt-test/osgi-manager/local) test as example if you wish to store OSGi dependencies on your local storage
+
+Use [remote](https://github.com/digimead/sbt-osgi-manager/tree/master/src/sbt-test/osgi-manager/remote) test as example if you wish to use OSGi dependencies directly from remote resource
+
+Use [subproject](https://github.com/digimead/sbt-osgi-manager/tree/master/src/sbt-test/osgi-manager/subproject) test as example with nested projects
+
+Checkout plugin and run ```sbt-0.13 'set scriptedLaunchOpts := Seq("-Xms384m", "-Xmx384m", "-XX:MaxPermSize=128m")' scripted```. Compare tests output and your project debug messages. You may look for tests output at Travis (click on build status)
+
+```osgiResolve``` and ```osgiResolveLocal``` are input tasks. You must run it from SBT console or from SBT hooks like onLoad before project tasks.
+
+Example session:
+```
+sbt> show osgi:libraryDependencies
+  ... empty list ...
+sbt> osgiResolve
+  ... resolution process ...
+sbt> show osgi:libraryDependencies
+  ... list with OSGi dependencies ...
+```
+
+Use ```osgiShow``` task.
+
 AUTHORS
 -------
 
@@ -35,7 +60,7 @@ Please check the individual source files for details.
 Copyright
 ---------
 
-Copyright © 2013-2014 Alexey B. Aksenov/Ezh. All rights reserved.
+Copyright © 2013-2015 Alexey B. Aksenov/Ezh. All rights reserved.
 
 [dm]: https://github.com/digimead/sbt-dependency-manager
 [sbt]: https://github.com/sbt/sbt
