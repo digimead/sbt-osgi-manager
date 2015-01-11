@@ -40,4 +40,4 @@ Copyright © 2013-2014 Alexey B. Aksenov/Ezh. All rights reserved.
 [dm]: https://github.com/digimead/sbt-dependency-manager
 [sbt]: https://github.com/sbt/sbt
 [sc]: http://eed3si9n.com/testing-sbt-plugins
-[sp]: https://github.com/digimead/sbt-osgi-manager/tree/master/src/sbt-test/osgi-manager/simple
+[sp]: https://github.com/digimead/sbt-osgi-manager/tree/master/src/sbt-test/osgi-manager/local
