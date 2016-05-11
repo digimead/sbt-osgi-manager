@@ -1,7 +1,7 @@
 /**
  * sbt-osgi-manager - OSGi development bridge based on Bnd and Tycho.
  *
- * Copyright (c) 2014 Alexey Aksenov ezh@ezh.msk.ru
+ * Copyright (c) 2014-2016 Alexey Aksenov ezh@ezh.msk.ru
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,8 +43,9 @@ import scala.annotation.tailrec
 import scala.collection.{ immutable, mutable }
 import scala.collection.JavaConversions.{ asScalaBuffer, asScalaSet, collectionAsScalaIterable }
 import scala.language.reflectiveCalls
+import scala.language.implicitConversions
 
-object ResolveP2 {
+class ResolveP2 {
   /** Instance of Pack200, specified in JSR 200, is an HTTP compression method by Sun for faster JAR file transfer speeds over the network. */
   val unpacker = Pack200.newUnpacker()
 
@@ -416,4 +417,10 @@ object ResolveP2 {
       def getLocation(descriptor: IArtifactDescriptor): URI
     }
   }
+}
+
+object ResolveP2 {
+  implicit def resolveP22implementation(r: ResolveP2.type): ResolveP2 = r.inner
+  /** Resolve P2 implementation. */
+  lazy val inner = new ResolveP2()
 }

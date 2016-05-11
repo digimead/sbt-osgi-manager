@@ -63,7 +63,7 @@ object Plugin {
         commands += Command.command("osgiResolveRemote", osgiResolveRemoteCommandHelp)(osgiResolveCommand(true, _)),
         managedClasspath in Compile <++= managedClasspath in OSGiConf,
         managedClasspath in Runtime <++= managedClasspath in OSGiConf,
-        managedClasspath in Test <++= managedClasspath in OSGiConf,
+        managedClasspath in sbt.Test <++= managedClasspath in OSGiConf,
         osgiCompile <<= osgiCompileTask,
         osgiFetch <<= osgiFetchTask,
         osgiShow <<= osgiShowTask,
@@ -278,13 +278,13 @@ object Plugin {
 
   /** Consolidated argument with all required information */
   case class TaskArgument(
-    /** The data structure representing all command execution information. */
-    state: State,
-    // It is more reasonable to pass it from SBT than of fetch it directly.
-    /** The reference to the current project. */
-    thisProjectRef: ProjectRef,
-    /** The structure that contains reference to log facilities. */
-    streams: Option[TaskStreams[ScopedKey[_]]] = None) {
+      /** The data structure representing all command execution information. */
+      state: State,
+      // It is more reasonable to pass it from SBT than of fetch it directly.
+      /** The reference to the current project. */
+      thisProjectRef: ProjectRef,
+      /** The structure that contains reference to log facilities. */
+      streams: Option[TaskStreams[ScopedKey[_]]] = None) {
     /** Extracted state projection */
     lazy val extracted = Project.extract(state)
     /** SBT logger */

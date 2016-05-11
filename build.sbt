@@ -36,6 +36,11 @@ javacOptions ++= Seq("-Xlint:unchecked", "-Xlint:deprecation")
 
 sbtPlugin := true
 
+// Java then Scala for main sources
+compileOrder in Compile := CompileOrder.JavaThenScala
+// Java then Scala for main sources
+compileOrder in Test := CompileOrder.JavaThenScala
+
 resourceGenerators in Compile <+=
   (resourceManaged in Compile, name, version) map { (dir, n, v) =>
     val file = dir / "version-%s.properties".format(n)
@@ -45,10 +50,10 @@ resourceGenerators in Compile <+=
   }
 
 libraryDependencies ++= {
-  val mavenVersion = "3.0" // based on Tycho, MUST be the same
+  val aetherAPIVersion = "1.7"
+  val mavenVersion = "3.0"
   val mavenWagonVersion = "2.4"
   val tychoVersion = "0.18.0"
-  val aetherAPIVersion = "1.7" // based on Tycho, MUST be the same
   Seq(
     "biz.aQute.bnd" % "bndlib" % "2.3.0",
     "org.apache.felix" % "org.apache.felix.resolver" % "1.0.0",
@@ -64,7 +69,8 @@ libraryDependencies ++= {
     "org.eclipse.tycho" % "tycho-p2-facade" % tychoVersion,
     "org.osgi" % "org.osgi.core" % "5.0.0",
     "org.osgi" % "org.osgi.enterprise" % "5.0.0",
-    "org.sonatype.aether" % "aether-connector-wagon" % aetherAPIVersion
+    "org.sonatype.aether" % "aether-connector-wagon" % aetherAPIVersion,
+    "org.scalatest" %% "scalatest" % "2.2.6" % "test"
   )
 }
 
