@@ -51,7 +51,7 @@ resourceGenerators in Compile <+=
 
 libraryDependencies ++= {
   val aetherAPIVersion = "1.7"
-  val mavenVersion = "3.0"
+  val mavenVersion = "3.1.0"
   val mavenWagonVersion = "2.4"
   val tychoVersion = "0.18.0"
   Seq(

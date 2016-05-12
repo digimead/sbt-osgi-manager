@@ -1,7 +1,7 @@
 /**
  * sbt-osgi-manager - OSGi development bridge based on Bnd and Tycho.
  *
- * Copyright (c) 2013-2014 Alexey Aksenov ezh@ezh.msk.ru
+ * Copyright (c) 2013-2016 Alexey Aksenov ezh@ezh.msk.ru
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,12 +42,11 @@ import org.eclipse.sisu.equinox.embedder.EquinoxRuntimeLocator.EquinoxRuntimeDes
 import org.eclipse.sisu.equinox.embedder.internal.DefaultEquinoxEmbedder
 import org.eclipse.tycho.p2.resolver.facade.P2ResolverFactory
 import org.osgi.framework.{ Bundle, BundleContext, BundleException }
+import sbt.{ inConfig, richFile }
 import sbt.osgi.manager.{ Model, OSGiManagerException, Plugin }
-import sbt.osgi.manager.Keys._
+import sbt.osgi.manager.Keys.{ OSGiConf, osgiDirectory, osgiMavenDirectory, osgiMavenGlobalSettingsXML, osgiMavenIsOffline, osgiMavenIsUpdateSnapshots, osgiMavenPlexusXML, osgiMavenSystemProperties, osgiMavenUserHome, osgiMavenUserProperties, osgiMavenUserSettingsXML }
 import sbt.osgi.manager.Support.{ getEnvVars, logPrefix, option2rich, withClassLoaderOf }
 import scala.collection.JavaConversions.{ asScalaBuffer, collectionAsScalaIterable, seqAsJavaList }
-
-import sbt._
 
 class Maven(val plexus: DefaultPlexusContainer, val information: Maven.Information)(implicit arg: Plugin.TaskArgument) {
   val home = Maven.getHome()
@@ -328,7 +327,7 @@ object Maven {
   protected def buildPlexusContainer(realm: ClassRealm, configurationURL: URL): DefaultPlexusContainer = {
     withClassLoaderOf(realm) {
       // Remove plexus-container-default...jar
-      // Keep sisu-inject-plexus...jar
+      // Remove sisu-inject-plexus...jar
       val configuration = new DefaultContainerConfiguration().
         //setAutoWiring(true).
         setClassWorld(realm.getWorld()).
@@ -336,10 +335,12 @@ object Maven {
         setName("sbt.osgi.manager").
         //setComponentVisibility(PlexusConstants.GLOBAL_VISIBILITY).
         setRealm(realm)
-      // NOTE: sisu-inject-plexus and plexus-container-default provide the same org.codehaus.plexus.DefaultPlexusContainer with the different API
-      // This is leads to the typical "classpath hell" situation
-      // Plexus IoC (actually SISU-plexus compat)
-      val container = new DefaultPlexusContainer(configuration)
+      // classes from plexus-container-default come with the maven installation
+      // BUT groupId/artifactId was changed from
+      //    plexus-container-default (maven 2.0.x)
+      //    sisu-inject-plexus (maven 3.0.x)
+      //    org.eclipse.sisu.plexus (maven 3.1.x)
+      val container = new DefaultPlexusContainer(configuration, new DependencyInjectionModule)
       container.getLogger().debug("Initialize Plexus container.")
       container.discoverComponents(container.getContainerRealm())
       container

@@ -40,9 +40,10 @@ object Test {
   def removeAll(path: File) = {
     def getRecursively(f: File): Seq[File] =
       Option(f.listFiles).getOrElse(Array.empty).filter(_.isDirectory).flatMap(getRecursively) ++ f.listFiles
-    getRecursively(path).foreach { f ⇒
-      f.delete()
-    }
+    if (path.isDirectory())
+      getRecursively(path).foreach { f ⇒
+        f.delete()
+      }
   }
   /** Substitute singleton implementation. */
   def withImplementation[A, B](singleton: { val inner: B }, implementation: B)(f: ⇒ A): A = {
