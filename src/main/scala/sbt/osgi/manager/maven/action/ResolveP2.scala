@@ -29,7 +29,7 @@ import org.eclipse.equinox.p2.metadata.{ IArtifactKey, IInstallableUnit }
 import org.eclipse.equinox.p2.repository.artifact.{ IArtifactDescriptor, IArtifactRepository, IArtifactRepositoryManager }
 import org.eclipse.tycho.artifacts.TargetPlatform
 import org.eclipse.tycho.core.ee.shared.ExecutionEnvironmentConfigurationStub
-import org.eclipse.tycho.core.facade.TargetEnvironment
+import org.eclipse.tycho.core.shared.TargetEnvironment
 import org.eclipse.tycho.core.resolver.shared.{ MavenRepositoryLocation, PlatformPropertiesUtils }
 import org.eclipse.tycho.osgi.adapters.MavenLoggerAdapter
 import org.eclipse.tycho.p2.resolver.facade.P2ResolutionResult
@@ -44,19 +44,58 @@ import scala.collection.{ immutable, mutable }
 import scala.collection.JavaConversions.{ asScalaBuffer, asScalaSet, collectionAsScalaIterable }
 import scala.language.reflectiveCalls
 import scala.language.implicitConversions
+import org.eclipse.tycho.p2.target.facade.TargetPlatformConfigurationStub
+import java.util.ArrayList
+import sbt.osgi.manager.Environment
 
 class ResolveP2 {
   /** Instance of Pack200, specified in JSR 200, is an HTTP compression method by Sun for faster JAR file transfer speeds over the network. */
   val unpacker = Pack200.newUnpacker()
 
+  /** Add repositories to target platform parameters. */
+  def addRepositoriesToTargetPlatformConfiguration(tpParameters: TargetPlatformConfigurationStub, p2Pepositories: Seq[(String, URI)], maven: Maven)(implicit arg: Plugin.TaskArgument): Seq[IArtifactRepository] = {
+    val loadedPepositories = {
+      for (repo ← p2Pepositories) yield {
+        val id = repo._1
+        val location = repo._2
+        try {
+          tpParameters.addP2Repository(new MavenRepositoryLocation(id, location))
+          Some(location)
+        } catch {
+          case e: URISyntaxException ⇒
+            arg.log.warn(logPrefix(arg.name) + "Unable to resolve repository URI : " + location)
+            None
+          case e: ProvisionException ⇒
+            arg.log.warn(logPrefix(arg.name) + e.getMessage())
+            None
+          case e: Throwable ⇒
+            arg.log.warn(logPrefix(arg.name) + e.getMessage())
+            None
+        }
+      }
+    }.flatten
+    if (loadedPepositories.isEmpty) {
+      arg.log.info(logPrefix(arg.name) + "There are no any usable repositories")
+      return Seq.empty
+    }
+    // Get remote repositories
+    val provisioningAgentInterface = maven.equinox.getClass.getClassLoader.loadClass("org.eclipse.equinox.p2.core.IProvisioningAgent")
+    val remoteAgent = maven.equinox.getService(provisioningAgentInterface).asInstanceOf[{ def getService(serviceName: String): AnyRef }]
+    val remoteArtifactRepositoryManager = remoteAgent.getService(IArtifactRepositoryManager.SERVICE_NAME).asInstanceOf[IArtifactRepositoryManager]
+    val repositories = loadedPepositories.map(uri ⇒ Option(remoteArtifactRepositoryManager.loadRepository(uri, null))).flatten // set monitors to null
+    if (repositories.isEmpty)
+      arg.log.info(logPrefix(arg.name) + "There are no any usable repositories")
+    repositories.toSeq
+  }
   /** Resolve the dependency against Eclipse P2 repository */
   // For more information about metadata and artifact repository manager, look at
   // http://eclipsesource.com/blogs/tutorials/eclipse-p2-tutorial-managing-metadata/
   def apply(dependencies: Seq[MavenDependency], rawRepositories: Seq[(String, URI)],
     environment: ExecutionEnvironmentConfigurationStub, maven: Maven, ivySbt: IvySbt,
     resolveAsRemoteArtifacts: Boolean, includeLocalMavenRepo: Boolean)(implicit arg: Plugin.TaskArgument): Seq[ModuleID] = {
-    val (targetPlatform, repositories) = createTargetPlatformAndRepositories(rawRepositories,
-      environment, maven, includeLocalMavenRepo) getOrElse { return Seq.empty }
+    val targetPlatformConfiguration = new TargetPlatformConfigurationStub()
+    val repositories = addRepositoriesToTargetPlatformConfiguration(targetPlatformConfiguration, rawRepositories, maven)
+    val targetPlatform = createTargetPlatform(targetPlatformConfiguration, environment, !includeLocalMavenRepo, maven)
     val resolver = maven.p2ResolverFactory.createResolver(new MavenLoggerAdapter(maven.plexus.getLogger, true))
     dependencies.foreach(d ⇒ resolver.addDependency(d.getType(), d.getArtifactId(), d.getVersion()))
 
@@ -95,6 +134,19 @@ class ResolveP2 {
       }).flatten
     }.flatten
   }
+  /** Create target platform context. */
+  def createTargetPlatform(tpParameters: TargetPlatformConfigurationStub, eeConfiguration: ExecutionEnvironmentConfigurationStub,
+    forceIgnoreLocalArtifacts: Boolean, maven: Maven)(implicit arg: Plugin.TaskArgument): TargetPlatform = {
+    // actually targetPlatformBuilder is a resolution context
+    val pomDependencies = maven.p2ResolverFactory.newPomDependencyCollector()
+    val tpFactory = maven.p2ResolverFactory.getTargetPlatformFactory()
+    val environmentList = new ArrayList[TargetEnvironment]()
+    Environment.all.foreach { case (tOS, tWS, tARCH) ⇒ environmentList.add(new TargetEnvironment(tOS.value, tWS.value, tARCH.value)) }
+    tpParameters.setEnvironments(environmentList)
+    tpParameters.setForceIgnoreLocalArtifacts(forceIgnoreLocalArtifacts)
+    tpFactory.createTargetPlatform(tpParameters, eeConfiguration, new ArrayList(), pomDependencies)
+  }
+
   /** Unpack packedAndGzipped to target */
   protected def aquireGzippedPack200Artifact(packedAndGzipped: File, target: File)(implicit arg: Plugin.TaskArgument): Option[Throwable] = {
     val out = new JarOutputStream(new BufferedOutputStream(new FileOutputStream(target)))
@@ -166,45 +218,6 @@ class ResolveP2 {
       }.toSeq.flatten
       (artifact -> mavenDependencies)
     }: _*)
-  }
-  /** Create target platform context. */
-  protected def createTargetPlatformAndRepositories(p2Pepositories: Seq[(String, URI)],
-    environment: ExecutionEnvironmentConfigurationStub, maven: Maven,
-    includeLocalMavenRepo: Boolean)(implicit arg: Plugin.TaskArgument): Option[(TargetPlatform, Seq[IArtifactRepository])] = {
-    // actually targetPlatformBuilder is a resolution context
-    val targetPlatformBuilder = maven.p2ResolverFactory.createTargetPlatformBuilder(environment)
-    targetPlatformBuilder.setIncludeLocalMavenRepo(includeLocalMavenRepo)
-    val loadedPepositories = {
-      for (repo ← p2Pepositories) yield {
-        val id = repo._1
-        val location = repo._2
-        try {
-          targetPlatformBuilder.addP2Repository(new MavenRepositoryLocation(id, location))
-          Some(location)
-        } catch {
-          case e: URISyntaxException ⇒
-            arg.log.warn(logPrefix(arg.name) + "Unable to resolve repository URI : " + location)
-            None
-          case e: ProvisionException ⇒
-            arg.log.warn(logPrefix(arg.name) + e.getMessage())
-            None
-          case e: Throwable ⇒
-            arg.log.warn(logPrefix(arg.name) + e.getMessage())
-            None
-        }
-      }
-    }.flatten
-    if (loadedPepositories.isEmpty) {
-      arg.log.info(logPrefix(arg.name) + "There are no any usable repositories")
-      return None
-    }
-    val targetPlatform = targetPlatformBuilder.buildTargetPlatform()
-    // Get remote repositories
-    val provisioningAgentInterface = maven.equinox.getClass.getClassLoader.loadClass("org.eclipse.equinox.p2.core.IProvisioningAgent")
-    val remoteAgent = maven.equinox.getService(provisioningAgentInterface).asInstanceOf[{ def getService(serviceName: String): AnyRef }]
-    val remoteArtifactRepositoryManager = remoteAgent.getService(IArtifactRepositoryManager.SERVICE_NAME).asInstanceOf[IArtifactRepositoryManager]
-    val repositories = loadedPepositories.map(uri ⇒ Option(remoteArtifactRepositoryManager.loadRepository(uri, null))).flatten // set monitors to null
-    Some(targetPlatform, repositories)
   }
   /** Create sbt.ModuleID from P2ResolutionResult.Entry and IInstallableUnit */
   protected def getModuleId(resolutionEntry: P2ResolutionResult.Entry, iu: IInstallableUnit, resolveAsRemoteArtifacts: Boolean,

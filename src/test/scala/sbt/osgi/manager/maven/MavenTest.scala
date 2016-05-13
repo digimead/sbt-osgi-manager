@@ -22,15 +22,14 @@ import java.io.File
 import java.net.URI
 import org.apache.maven.model.{ Dependency ⇒ MavenDependency }
 import org.eclipse.equinox.p2.metadata.IInstallableUnit
-import org.eclipse.equinox.p2.repository.artifact.IArtifactRepository
-import org.eclipse.tycho.artifacts.TargetPlatform
-import org.eclipse.tycho.core.ee.shared.ExecutionEnvironmentConfigurationStub
 import org.eclipse.tycho.osgi.adapters.MavenLoggerAdapter
 import org.eclipse.tycho.p2.resolver.facade.P2ResolutionResult
+import org.eclipse.tycho.p2.target.facade.TargetPlatformConfigurationStub
 import org.scalatest.{ FreeSpec, Matchers }
 import sbt.{ AttributeEntry, AttributeMap, BasicCommands, Build, BuildStreams, BuildStructure, BuildUnit, BuildUtil, ConsoleOut, Def, DetectedAutoPlugin, DetectedModules, DetectedPlugins, File, GlobalLogging, KeyIndex, Keys, Load, LoadedDefinitions, LoadedPlugins, MainLogging, PartBuildUnit, Plugin, PluginData, Project, ProjectRef, Scope, SessionSettings, Settings, State, StructureIndex, This }
 import sbt.osgi.manager.{ Dependency, OSGi, OSGiConf, OSGiKey, Plugin, Test }
 import sbt.osgi.manager.maven.action.ResolveP2
+import sbt.osgi.manager.maven.action.ResolveP2.resolveP22implementation
 import sbt.toGroupID
 import scala.collection.JavaConversions.{ asScalaBuffer, asScalaSet, collectionAsScalaIterable }
 import scala.collection.immutable
@@ -54,12 +53,13 @@ class MavenTest extends FreeSpec with Matchers {
 
       val dependencies = Seq(Dependency.convertDependency(OSGi.ECLIPSE_PLUGIN % "org.eclipse.ui" % OSGi.ANY_VERSION.toString()))
       val rawRepositories = Seq(("Eclipse P2 update site", new URI("http://eclipse.ialto.com/eclipse/updates/4.2/R-4.2.1-201209141800/")))
+      val targetPlatformConfiguration = new TargetPlatformConfigurationStub()
+      val repositories = ResolveP2.addRepositoriesToTargetPlatformConfiguration(targetPlatformConfiguration, rawRepositories, bridge)
       val environment = sbt.osgi.manager.OSGiEnvironmentJRE1_6
-      val (targetPlatform, repositories) = ResolveP2.inner.asInstanceOf[TestResolveP2].
-        createTargetPlatformAndRepositories(rawRepositories,
-          environment, bridge, true) getOrElse { fail("Unable to createTargetPlatformAndRepositories") }
+      val targetPlatform = ResolveP2.createTargetPlatform(targetPlatformConfiguration, environment, true, bridge)
       targetPlatform should not be (null)
       repositories should not be (null)
+      repositories should have size (1)
       info("Repositories: " + repositories.mkString(","))
       val resolver = bridge.p2ResolverFactory.createResolver(new MavenLoggerAdapter(bridge.plexus.getLogger, true))
       resolver should not be (null)
@@ -134,11 +134,6 @@ class MavenTest extends FreeSpec with Matchers {
       attributes, initialGlobalLogging, State.Continue)
   }
   class TestResolveP2 extends ResolveP2 {
-    override def createTargetPlatformAndRepositories(p2Pepositories: Seq[(String, URI)],
-      environment: ExecutionEnvironmentConfigurationStub, maven: Maven,
-      includeLocalMavenRepo: Boolean)(implicit arg: Plugin.TaskArgument): Option[(TargetPlatform, Seq[IArtifactRepository])] =
-      super.createTargetPlatformAndRepositories(p2Pepositories, environment, maven, includeLocalMavenRepo)
-
     override def collectArtifactsPerDependency(dependencies: Seq[MavenDependency],
       artifacts: Seq[P2ResolutionResult.Entry])(implicit arg: Plugin.TaskArgument): immutable.HashMap[P2ResolutionResult.Entry, Seq[MavenDependency]] =
       super.collectArtifactsPerDependency(dependencies, artifacts)

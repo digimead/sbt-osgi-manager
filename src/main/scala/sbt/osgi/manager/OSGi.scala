@@ -1,7 +1,7 @@
 /**
  * sbt-osgi-manager - OSGi development bridge based on Bnd and Tycho.
  *
- * Copyright (c) 2013 Alexey Aksenov ezh@ezh.msk.ru
+ * Copyright (c) 2013-2016 Alexey Aksenov ezh@ezh.msk.ru
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,16 +18,18 @@
 
 package sbt.osgi.manager
 
-import org.eclipse.tycho.ArtifactKey
+import org.eclipse.tycho.{ ArtifactType, PackagingType }
 
 /** Various declarations for end user */
 object OSGi {
-  lazy val ECLIPSE_APPLICATION = ArtifactKey.TYPE_ECLIPSE_APPLICATION
-  lazy val ECLIPSE_FEATURE = ArtifactKey.TYPE_ECLIPSE_FEATURE
-  lazy val ECLIPSE_PLUGIN = ArtifactKey.TYPE_ECLIPSE_PLUGIN
-  lazy val ECLIPSE_REPOSITORY = ArtifactKey.TYPE_ECLIPSE_REPOSITORY
-  lazy val ECLIPSE_TEST_PLUGIN = ArtifactKey.TYPE_ECLIPSE_TEST_PLUGIN
-  lazy val ECLIPSE_UPDATE_SITE = ArtifactKey.TYPE_ECLIPSE_UPDATE_SITE
+  lazy val ECLIPSE_APPLICATION = PackagingType.TYPE_ECLIPSE_APPLICATION
+  lazy val ECLIPSE_ECLIPSE_PRODUCT = ArtifactType.TYPE_ECLIPSE_PRODUCT
+  lazy val ECLIPSE_FEATURE = ArtifactType.TYPE_ECLIPSE_FEATURE
+  lazy val ECLIPSE_INSTALLABLE_UNIT = ArtifactType.TYPE_INSTALLABLE_UNIT
+  lazy val ECLIPSE_PLUGIN = ArtifactType.TYPE_ECLIPSE_PLUGIN
+  lazy val ECLIPSE_REPOSITORY = PackagingType.TYPE_ECLIPSE_REPOSITORY
+  lazy val ECLIPSE_TEST_PLUGIN = PackagingType.TYPE_ECLIPSE_TEST_PLUGIN
+  lazy val ECLIPSE_UPDATE_SITE = PackagingType.TYPE_ECLIPSE_UPDATE_SITE
   lazy val ANY_VERSION = Dependency.ANY_VERSION
   lazy val ANY_ORGANIZATION = Dependency.ANY_ORGANIZATION
 }

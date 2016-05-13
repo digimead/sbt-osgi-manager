@@ -21,6 +21,8 @@ package sbt.osgi.manager.maven
 import com.google.inject.{ AbstractModule, Provides, Singleton }
 import com.google.inject.name.{ Named, Names }
 import java.util.{ Collections, HashSet, Set }
+import org.apache.maven.SessionScope
+import org.apache.maven.execution.scope.internal.MojoExecutionScope
 import org.apache.maven.repository.internal.SnapshotMetadataGeneratorFactory
 import org.eclipse.aether.{ AbstractRepositoryListener, RepositoryListener }
 import org.eclipse.aether.connector.basic.BasicRepositoryConnectorFactory
@@ -51,6 +53,8 @@ class DependencyInjectionModule extends AbstractModule {
     bind(classOf[ChecksumPolicyProvider]).to(classOf[DefaultChecksumPolicyProvider])
     bind(classOf[WagonProvider]).to(classOf[PlexusWagonProvider])
     bind(classOf[WagonConfigurator]).to(classOf[PlexusWagonConfigurator])
+    bind(classOf[MojoExecutionScope]).annotatedWith(Names.named("org.apache.maven.Maven")).to(classOf[MojoExecutionScope])
+    bind(classOf[SessionScope]).annotatedWith(Names.named("org.apache.maven.Maven")).to(classOf[SessionScope])
   }
 
   @Provides

@@ -50,26 +50,27 @@ resourceGenerators in Compile <+=
   }
 
 libraryDependencies ++= {
-  val aetherAPIVersion = "1.7"
-  val mavenVersion = "3.1.0"
-  val mavenWagonVersion = "2.4"
-  val tychoVersion = "0.18.0"
+  val aetherVersion = "0.9.1.v20140329"
+  val mavenVersion = "3.2.2"
+  val tychoVersion = "0.23.0"
   Seq(
     "biz.aQute.bnd" % "bndlib" % "2.3.0",
-    "org.apache.felix" % "org.apache.felix.resolver" % "1.0.0",
     "org.apache.maven" % "maven-aether-provider" % mavenVersion,
     "org.apache.maven" % "maven-artifact" % mavenVersion,
     "org.apache.maven" % "maven-compat" % mavenVersion,
     "org.apache.maven" % "maven-core" % mavenVersion,
     "org.apache.maven" % "maven-plugin-api" % mavenVersion,
     "org.apache.maven" % "maven-embedder" % mavenVersion, // provide org.apache.maven.cli.MavenCli
-    "org.apache.maven.wagon" % "wagon-http" % mavenWagonVersion, // HTTP connector for remore repositories
-    "org.apache.maven.wagon" % "wagon-file" % mavenWagonVersion, // File connector for local repositories
     "org.eclipse.tycho" % "tycho-core" % tychoVersion,
     "org.eclipse.tycho" % "tycho-p2-facade" % tychoVersion,
-    "org.osgi" % "org.osgi.core" % "5.0.0",
+    "org.osgi" % "org.osgi.core" % "6.0.0",
     "org.osgi" % "org.osgi.enterprise" % "5.0.0",
-    "org.sonatype.aether" % "aether-connector-wagon" % aetherAPIVersion,
+    "org.osgi" % "org.osgi.annotation" % "6.0.0",
+    "org.eclipse.aether" % "aether-impl" % aetherVersion,
+    "org.eclipse.aether" % "aether-transport-wagon" % aetherVersion,
+    "org.eclipse.aether" % "aether-connector-basic" % aetherVersion,
+    "org.eclipse.aether" % "aether-transport-file" % aetherVersion,
+    "org.eclipse.aether" % "aether-transport-http" % aetherVersion,
     "org.scalatest" %% "scalatest" % "2.2.6" % "test"
   )
 }
