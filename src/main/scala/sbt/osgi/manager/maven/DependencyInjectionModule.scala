@@ -20,23 +20,34 @@ package sbt.osgi.manager.maven
 
 import com.google.inject.{ AbstractModule, Provides, Singleton }
 import com.google.inject.name.{ Named, Names }
-import java.util.{ Collections, HashSet, Set }
-import org.apache.maven.SessionScope
+import java.util.{ ArrayList, Collections, HashSet, List, Set }
+import javax.inject.{ Inject, Provider }
+import org.apache.maven.classrealm.{ ClassRealmManager, ClassRealmManagerDelegate, DefaultClassRealmManager }
+import org.apache.maven.execution.{ DefaultMavenExecutionRequestPopulator, MavenExecutionRequestPopulator }
 import org.apache.maven.execution.scope.internal.MojoExecutionScope
+import org.apache.maven.extension.internal.{ CoreExports, CoreExtensionEntry }
+import org.apache.maven.internal.aether.DefaultRepositorySystemSessionFactory
 import org.apache.maven.repository.internal.SnapshotMetadataGeneratorFactory
-import org.eclipse.aether.{ AbstractRepositoryListener, RepositoryListener }
+import org.apache.maven.session.scope.internal.SessionScope
+import org.codehaus.plexus.PlexusContainer
+import org.eclipse.aether.{ AbstractRepositoryListener, RepositoryListener, RepositorySystem }
+import org.eclipse.aether.artifact.Artifact
 import org.eclipse.aether.connector.basic.BasicRepositoryConnectorFactory
-import org.eclipse.aether.impl.MetadataGeneratorFactory
-import org.eclipse.aether.internal.impl.{ DefaultChecksumPolicyProvider, EnhancedLocalRepositoryManagerFactory, Maven2RepositoryLayoutFactory }
+import org.eclipse.aether.impl.{ ArtifactResolver, DependencyCollector, Deployer, Installer, LocalRepositoryProvider, MetadataGeneratorFactory, MetadataResolver, OfflineController, RemoteRepositoryManager, RepositoryConnectorProvider, RepositoryEventDispatcher, SyncContextFactory, UpdateCheckManager, UpdatePolicyAnalyzer }
+import org.eclipse.aether.internal.impl.{ DefaultArtifactResolver, DefaultChecksumPolicyProvider, DefaultDependencyCollector, DefaultDeployer, DefaultFileProcessor, DefaultInstaller, DefaultLocalRepositoryProvider, DefaultMetadataResolver, DefaultOfflineController, DefaultRemoteRepositoryManager, DefaultRepositoryConnectorProvider, DefaultRepositoryEventDispatcher, DefaultRepositoryLayoutProvider, DefaultRepositorySystem, DefaultSyncContextFactory, DefaultTransporterProvider, DefaultUpdateCheckManager, DefaultUpdatePolicyAnalyzer, EnhancedLocalRepositoryManagerFactory, Maven2RepositoryLayoutFactory }
 import org.eclipse.aether.internal.transport.wagon.{ PlexusWagonConfigurator, PlexusWagonProvider }
+import org.eclipse.aether.repository.WorkspaceReader
 import org.eclipse.aether.spi.connector.RepositoryConnectorFactory
 import org.eclipse.aether.spi.connector.checksum.ChecksumPolicyProvider
-import org.eclipse.aether.spi.connector.layout.RepositoryLayoutFactory
-import org.eclipse.aether.spi.connector.transport.TransporterFactory
+import org.eclipse.aether.spi.connector.layout.{ RepositoryLayoutFactory, RepositoryLayoutProvider }
+import org.eclipse.aether.spi.connector.transport.{ TransporterFactory, TransporterProvider }
+import org.eclipse.aether.spi.io.FileProcessor
 import org.eclipse.aether.spi.localrepo.LocalRepositoryManagerFactory
+import org.eclipse.aether.spi.log.{ LoggerFactory, NullLoggerFactory }
 import org.eclipse.aether.transport.file.FileTransporterFactory
 import org.eclipse.aether.transport.http.HttpTransporterFactory
 import org.eclipse.aether.transport.wagon.{ WagonConfigurator, WagonProvider }
+import sbt.osgi.manager.maven.DependencyInjectionModule.{ CoreExportsProvider, IDEWorkspaceReader }
 
 class DependencyInjectionModule extends AbstractModule {
   val singletonRepositoryLayoutFactory = new Maven2RepositoryLayoutFactory()
@@ -45,16 +56,38 @@ class DependencyInjectionModule extends AbstractModule {
   val singletonMetadataGeneratorFactory = new SnapshotMetadataGeneratorFactory
 
   override protected def configure() {
-    //install(new MavenAetherModule())
-    // alternatively, use the Guice Multibindings extensions
+    bind(classOf[ArtifactResolver]).to(classOf[DefaultArtifactResolver])
+    bind(classOf[ChecksumPolicyProvider]).to(classOf[DefaultChecksumPolicyProvider])
+    bind(classOf[ClassRealmManager]).annotatedWith(Names.named("org.apache.maven.Maven")).to(classOf[DefaultClassRealmManager])
+    bind(classOf[CoreExports]).toProvider(classOf[DependencyInjectionModule.CoreExportsProvider])
+    bind(classOf[DefaultLocalRepositoryProvider]).annotatedWith(Names.named("org.apache.maven.Maven")).to(classOf[DefaultLocalRepositoryProvider])
+    bind(classOf[DefaultRepositorySystemSessionFactory]).annotatedWith(Names.named("org.apache.maven.Maven")).to(classOf[DefaultRepositorySystemSessionFactory])
+    bind(classOf[DependencyCollector]).to(classOf[DefaultDependencyCollector])
+    bind(classOf[Deployer]).to(classOf[DefaultDeployer])
+    bind(classOf[FileProcessor]).to(classOf[DefaultFileProcessor])
+    bind(classOf[Installer]).to(classOf[DefaultInstaller])
+    bind(classOf[LocalRepositoryManagerFactory]).annotatedWith(Names.named("simple")).toInstance(singletonLocalRepositoryManagerFactory)
+    bind(classOf[LocalRepositoryProvider]).to(classOf[DefaultLocalRepositoryProvider])
+    bind(classOf[MavenExecutionRequestPopulator]).to(classOf[DefaultMavenExecutionRequestPopulator])
+    bind(classOf[MetadataResolver]).to(classOf[DefaultMetadataResolver])
+    bind(classOf[MojoExecutionScope]).annotatedWith(Names.named("org.apache.maven.Maven")).to(classOf[MojoExecutionScope])
+    bind(classOf[OfflineController]).to(classOf[DefaultOfflineController])
+    bind(classOf[RemoteRepositoryManager]).to(classOf[DefaultRemoteRepositoryManager])
     bind(classOf[RepositoryConnectorFactory]).annotatedWith(Names.named("basic")).to(classOf[BasicRepositoryConnectorFactory])
+    bind(classOf[RepositoryConnectorProvider]).to(classOf[DefaultRepositoryConnectorProvider])
+    bind(classOf[RepositoryEventDispatcher]).to(classOf[DefaultRepositoryEventDispatcher])
+    bind(classOf[RepositoryLayoutProvider]).to(classOf[DefaultRepositoryLayoutProvider])
+    bind(classOf[RepositorySystem]).to(classOf[DefaultRepositorySystem])
+    bind(classOf[SessionScope]).annotatedWith(Names.named("org.apache.maven.Maven")).to(classOf[SessionScope])
+    bind(classOf[SyncContextFactory]).to(classOf[DefaultSyncContextFactory])
     bind(classOf[TransporterFactory]).annotatedWith(Names.named("file")).to(classOf[FileTransporterFactory])
     bind(classOf[TransporterFactory]).annotatedWith(Names.named("http")).to(classOf[HttpTransporterFactory])
-    bind(classOf[ChecksumPolicyProvider]).to(classOf[DefaultChecksumPolicyProvider])
-    bind(classOf[WagonProvider]).to(classOf[PlexusWagonProvider])
+    bind(classOf[TransporterProvider]).to(classOf[DefaultTransporterProvider])
+    bind(classOf[UpdateCheckManager]).to(classOf[DefaultUpdateCheckManager])
+    bind(classOf[UpdatePolicyAnalyzer]).to(classOf[DefaultUpdatePolicyAnalyzer])
     bind(classOf[WagonConfigurator]).to(classOf[PlexusWagonConfigurator])
-    bind(classOf[MojoExecutionScope]).annotatedWith(Names.named("org.apache.maven.Maven")).to(classOf[MojoExecutionScope])
-    bind(classOf[SessionScope]).annotatedWith(Names.named("org.apache.maven.Maven")).to(classOf[SessionScope])
+    bind(classOf[WagonProvider]).to(classOf[PlexusWagonProvider])
+    bind(classOf[WorkspaceReader]).annotatedWith(Names.named("ide")).to(classOf[DependencyInjectionModule.IDEWorkspaceReader])
   }
 
   @Provides
@@ -106,8 +139,27 @@ class DependencyInjectionModule extends AbstractModule {
     factories.add(singletonMetadataGeneratorFactory)
     Collections.unmodifiableSet(factories)
   }
+  @Provides
+  @Singleton
+  def provideLoggerFactory(): LoggerFactory = {
+    NullLoggerFactory.INSTANCE
+  }
+  @Provides
+  @Singleton
+  def provideClassRealmManagerDelegate(): List[ClassRealmManagerDelegate] = {
+    new ArrayList[ClassRealmManagerDelegate]()
+  }
 }
 
 object DependencyInjectionModule {
   class StubRepositoryListener extends AbstractRepositoryListener
+  class CoreExportsProvider @Inject() (container: PlexusContainer) extends Provider[CoreExports] {
+    val _exports: CoreExports = new CoreExports(CoreExtensionEntry.discoverFrom(container.getContainerRealm()))
+    def get(): CoreExports = _exports
+  }
+  class IDEWorkspaceReader extends WorkspaceReader {
+    def getRepository() = null
+    def findArtifact(artifact: Artifact) = null
+    def findVersions(artifact: Artifact): List[String] = new ArrayList()
+  }
 }

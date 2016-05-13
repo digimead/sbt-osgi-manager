@@ -51,8 +51,8 @@ resourceGenerators in Compile <+=
 
 libraryDependencies ++= {
   val aetherVersion = "0.9.1.v20140329"
-  val mavenVersion = "3.2.2"
-  val tychoVersion = "0.23.0"
+  val mavenVersion = "3.3.9"
+  val tychoVersion = "0.25.0"
   Seq(
     "biz.aQute.bnd" % "bndlib" % "2.3.0",
     "org.apache.maven" % "maven-aether-provider" % mavenVersion,
