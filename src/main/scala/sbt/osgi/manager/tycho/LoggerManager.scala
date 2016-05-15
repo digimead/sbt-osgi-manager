@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package sbt.osgi.manager.maven.plexus
+package sbt.osgi.manager.tycho
 
 import org.codehaus.plexus.logging.BaseLoggerManager
 import org.codehaus.plexus.logging.{ Logger ⇒ PlexusLogger }

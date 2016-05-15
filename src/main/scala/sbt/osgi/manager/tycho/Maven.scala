@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package sbt.osgi.manager.maven
+package sbt.osgi.manager.tycho
 
 import java.io.{ File, FilenameFilter, IOException, InputStream }
 import java.net.{ MalformedURLException, URL, URLClassLoader }
@@ -43,10 +43,11 @@ import org.eclipse.sisu.equinox.embedder.internal.DefaultEquinoxEmbedder
 import org.eclipse.tycho.p2.resolver.facade.P2ResolverFactory
 import org.osgi.framework.{ Bundle, BundleContext, BundleException }
 import sbt.{ inConfig, richFile }
-import sbt.osgi.manager.{ Model, OSGiManagerException, Plugin }
-import sbt.osgi.manager.Keys.{ OSGiConf, osgiDirectory, osgiMavenDirectory, osgiMavenGlobalSettingsXML, osgiMavenIsOffline, osgiMavenIsUpdateSnapshots, osgiMavenPlexusXML, osgiMavenSystemProperties, osgiMavenUserHome, osgiMavenUserProperties, osgiMavenUserSettingsXML }
+import sbt.osgi.manager.{ Environment, Model, OSGiManagerException, Plugin }
+import sbt.osgi.manager.Keys._
 import sbt.osgi.manager.Support.{ getEnvVars, logPrefix, option2rich, withClassLoaderOf }
 import scala.collection.JavaConversions.{ asScalaBuffer, collectionAsScalaIterable, seqAsJavaList }
+import org.apache.maven.cli.configuration.SettingsXmlConfigurationProcessor
 
 class Maven(val plexus: DefaultPlexusContainer, val information: Maven.Information)(implicit arg: Plugin.TaskArgument) {
   val home = Maven.getHome()
@@ -117,11 +118,11 @@ class Maven(val plexus: DefaultPlexusContainer, val information: Maven.Informati
       val settingsBuildingRequest = new DefaultSettingsBuildingRequest()
       Model.getSettingsMavenGlobalXML match {
         case Some(file) ⇒ settingsBuildingRequest.setGlobalSettingsFile(file)
-        case None ⇒ MavenCli.DEFAULT_GLOBAL_SETTINGS_FILE
+        case None ⇒ SettingsXmlConfigurationProcessor.DEFAULT_GLOBAL_SETTINGS_FILE
       }
       Model.getSettingsMavenUserXML match {
         case Some(file) ⇒ settingsBuildingRequest.setUserSettingsFile(file)
-        case None ⇒ MavenCli.DEFAULT_USER_SETTINGS_FILE
+        case None ⇒ SettingsXmlConfigurationProcessor.DEFAULT_USER_SETTINGS_FILE
       }
       Model.getSettingsMavenUserProperties foreach (settingsBuildingRequest.getUserProperties().putAll)
       Model.getSettingsMavenSystemProperties foreach (settingsBuildingRequest.getSystemProperties().putAll)
@@ -229,7 +230,9 @@ object Maven {
     },
     osgiMavenUserHome := new File(System.getProperty("user.home")),
     osgiMavenUserProperties := new Properties(),
-    osgiMavenUserSettingsXML := None))
+    osgiMavenUserSettingsXML := None,
+    osgiTychoExecutionEnvironmentConfiguration := Environment.Execution.JavaSE6,
+    osgiTychoTarget := Environment.current))
 
   /** Create new Maven singleton */
   def apply()(implicit arg: Plugin.TaskArgument): Maven = singleton getOrElse {
@@ -242,7 +245,7 @@ object Maven {
     val realm = buildClassRealm(mavenHome, Some(world))
     Maven.getMavenVersion(mavenHome, Some(realm)) match {
       case Some(information) ⇒
-        _root_.sbt.osgi.manager.maven.plexus.Logger.
+        _root_.sbt.osgi.manager.tycho.Logger.
           info("Initialize Maven core. Maven version: " + information.version, null)
         val plexus = buildPlexusContainer(realm, getPlexusOverridingComponentsXml)
         val instance = new Maven(plexus, information)

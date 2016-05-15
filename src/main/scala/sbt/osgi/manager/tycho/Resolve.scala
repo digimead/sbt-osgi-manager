@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package sbt.osgi.manager.maven.action
+package sbt.osgi.manager.tycho
 
 import java.io.{ BufferedOutputStream, FileOutputStream, OutputStream }
 import java.net.{ URI, URISyntaxException }
@@ -30,16 +30,14 @@ import org.eclipse.core.runtime.{ IProgressMonitor, IStatus }
 import org.eclipse.equinox.p2.core.ProvisionException
 import org.eclipse.equinox.p2.metadata.IInstallableUnit
 import org.eclipse.equinox.p2.repository.artifact.{ IArtifactDescriptor, IArtifactRepository, IArtifactRepositoryManager }
-import org.eclipse.tycho.core.ee.shared.ExecutionEnvironmentConfigurationStub
+import org.eclipse.tycho.core.ee.shared.ExecutionEnvironmentConfiguration
 import org.eclipse.tycho.core.shared.TargetEnvironment
 import org.eclipse.tycho.core.resolver.shared.{ MavenRepositoryLocation, PlatformPropertiesUtils }
 import org.eclipse.tycho.osgi.adapters.MavenLoggerAdapter
 import org.eclipse.tycho.p2.resolver.facade.P2ResolutionResult
 import sbt.osgi.manager.Dependency.{ getOrigin, moduleId2Dependency, tuplesWithString2repositories }
 import sbt.osgi.manager.Support.{ CacheP2Key, getDependencies, getResolvers, logPrefix }
-import sbt.osgi.manager.maven.Maven
-import sbt.osgi.manager.{ Dependency, Model }
-import sbt.osgi.manager.{ Plugin, Support }
+import sbt.osgi.manager.{ Environment, Keys, Dependency, Model, Plugin, Support }
 import sbt.{ Keys ⇒ skey, _ }
 import scala.annotation.tailrec
 import scala.collection.JavaConversions.{ asScalaBuffer, asScalaSet, collectionAsScalaIterable, seqAsJavaList }
@@ -130,15 +128,15 @@ object Resolve extends Support.Resolve {
       + result.getRepository());*/
   }
   /** Resolve the dependency for the specific project against Eclipse P2 repository */
-  def resolveP2(ivySbt: IvySbt, resolveAsRemoteArtifacts: Boolean)(implicit arg: Plugin.TaskArgument): Seq[ModuleID] = {
+  def resolveP2(ivySbt: IvySbt, resolveAsRemoteArtifacts: Boolean, eeConfiguration: ExecutionEnvironmentConfiguration,
+    target: Seq[(Environment.OS, Environment.WS, Environment.ARCH)])(implicit arg: Plugin.TaskArgument): Seq[ModuleID] = {
     // get resolvers as Seq[(id, url)]
     val resolvers = getResolvers(Dependency.P2, arg.thisOSGiScope)
     val dependencies = getDependencies(Dependency.P2, arg.thisOSGiScope)
     if (resolvers.nonEmpty && dependencies.nonEmpty) {
       arg.log.info(logPrefix(arg.name) + "Resolve P2 dependencies")
       val bridge = Maven()
-      val modules = ResolveP2(dependencies, resolvers, sbt.osgi.manager.OSGiEnvironmentJRE1_6,
-        bridge, ivySbt, resolveAsRemoteArtifacts, true)
+      val modules = ResolveP2(dependencies, resolvers, eeConfiguration, target, bridge, ivySbt, resolveAsRemoteArtifacts, true)
       val resolved = skey.libraryDependencies in arg.thisScope get arg.extracted.structure.data getOrElse Seq()
       updateCache(CacheP2Key(arg.thisProjectRef.project), dependencies, resolvers)
       modules.filterNot { m ⇒
@@ -173,7 +171,11 @@ object Resolve extends Support.Resolve {
     } else {
       immutable.HashMap((for (id ← build.defined.keys) yield {
         implicit val projectRef = ProjectRef(uri, id)
-        (projectRef, resolveP2(ivySbt, resolveAsRemoteArtifacts)(arg.copy(thisProjectRef = projectRef)))
+        val eeConfiguration = Keys.osgiTychoExecutionEnvironmentConfiguration in arg.thisOSGiScope get arg.extracted.structure.data getOrElse {
+          throw new IllegalStateException("Tycho execution environment configuration is not defined")
+        }
+        val target = Keys.osgiTychoTarget in arg.thisOSGiScope get arg.extracted.structure.data getOrElse Environment.current
+        (projectRef, resolveP2(ivySbt, resolveAsRemoteArtifacts, eeConfiguration, target)(arg.copy(thisProjectRef = projectRef)))
       }).toSeq: _*)
     }
   }

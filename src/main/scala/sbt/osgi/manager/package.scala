@@ -1,7 +1,7 @@
 /**
  * sbt-osgi-manager - OSGi development bridge based on Bnd and Tycho.
  *
- * Copyright (c) 2013-2014 Alexey Aksenov ezh@ezh.msk.ru
+ * Copyright (c) 2013-2016 Alexey Aksenov ezh@ezh.msk.ru
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,9 +44,6 @@ package object manager {
   lazy val OSGiConf = Keys.OSGiConf
   lazy val OSGiTestConf = Keys.OSGiTestConf
 
-  lazy val OSGiEnvironmentJRE1_6 = new ExecutionEnvironmentConfigurationStub("JavaSE-1.6")
-  lazy val OSGiEnvironmentJRE1_7 = new ExecutionEnvironmentConfigurationStub("JavaSE-1.7")
-  lazy val OSGiEnvironmentJRE1_8 = new ExecutionEnvironmentConfigurationStub("JavaSE-1.8")
 
   implicit def moduleId2Dependency(dependencies: Seq[ModuleID]): Seq[Dependency] =
     Dependency.moduleId2Dependency(dependencies)

@@ -2,7 +2,7 @@
 	<components>
 		<component>
 			<role>org.codehaus.plexus.logging.LoggerManager</role>
-			<implementation>sbt.osgi.manager.maven.plexus.LoggerManager</implementation>
+			<implementation>sbt.osgi.manager.tycho.LoggerManager</implementation>
 			<instantiation-strategy>
 				singleton
 			</instantiation-strategy>

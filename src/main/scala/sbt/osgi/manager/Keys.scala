@@ -20,8 +20,8 @@ package sbt.osgi.manager
 
 import aQute.bnd.osgi.Analyzer
 import java.util.Properties
-
-import sbt._
+import org.eclipse.tycho.core.ee.shared.ExecutionEnvironmentConfiguration
+import sbt.{ Configuration, ModuleID, SettingKey, TaskKey, config }
 
 object Keys {
   def OSGiConf = config("osgi").hide
@@ -143,4 +143,6 @@ object Keys {
   lazy val osgiMavenUserSettingsXML = SettingKey[Option[java.io.File]]("osgiMavenUserXML", "MAVEN")
   lazy val osgiMavenUserHome = SettingKey[java.io.File]("osgiMavenUserDirectory", "Directory that contains '.m2'")
   lazy val osgiMavenUserProperties = SettingKey[Properties]("osgiMavenUserProperties", "Maven user properties")
+  lazy val osgiTychoExecutionEnvironmentConfiguration = SettingKey[ExecutionEnvironmentConfiguration]("osgiTychoExecutionEnvironmentConfiguration", "Tycho execution environment configuration. There are few predefined at sbt.osgi.manager.Environment.Execution")
+  lazy val osgiTychoTarget = SettingKey[Seq[(Environment.OS, Environment.WS, Environment.ARCH)]]("osgiTychoTarget", "Tycho resolution target")
 }

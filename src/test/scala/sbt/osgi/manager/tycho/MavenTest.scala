@@ -16,23 +16,24 @@
  * limitations under the License.
  */
 
-package sbt.osgi.manager.maven
+package sbt.osgi.manager.tycho
 
 import java.io.File
 import java.net.URI
-import org.apache.maven.model.{ Dependency ⇒ MavenDependency }
+import java.util.ArrayList
+import org.apache.maven.model.{ Dependency => MavenDependency }
 import org.eclipse.equinox.p2.metadata.IInstallableUnit
+import org.eclipse.tycho.core.shared.TargetEnvironment
 import org.eclipse.tycho.osgi.adapters.MavenLoggerAdapter
 import org.eclipse.tycho.p2.resolver.facade.P2ResolutionResult
 import org.eclipse.tycho.p2.target.facade.TargetPlatformConfigurationStub
 import org.scalatest.{ FreeSpec, Matchers }
 import sbt.{ AttributeEntry, AttributeMap, BasicCommands, Build, BuildStreams, BuildStructure, BuildUnit, BuildUtil, ConsoleOut, Def, DetectedAutoPlugin, DetectedModules, DetectedPlugins, File, GlobalLogging, KeyIndex, Keys, Load, LoadedDefinitions, LoadedPlugins, MainLogging, PartBuildUnit, Plugin, PluginData, Project, ProjectRef, Scope, SessionSettings, Settings, State, StructureIndex, This }
-import sbt.osgi.manager.{ Dependency, OSGi, OSGiConf, OSGiKey, Plugin, Test }
-import sbt.osgi.manager.maven.action.ResolveP2
-import sbt.osgi.manager.maven.action.ResolveP2.resolveP22implementation
+import sbt.osgi.manager.{ Dependency, Environment, OSGi, OSGiConf, OSGiKey, Plugin, Test }
+import sbt.osgi.manager.tycho.ResolveP2.resolveP22implementation
 import sbt.toGroupID
+import scala.collection.{ breakOut, immutable }
 import scala.collection.JavaConversions.{ asScalaBuffer, asScalaSet, collectionAsScalaIterable }
-import scala.collection.immutable
 import scala.language.implicitConversions
 
 class MavenTest extends FreeSpec with Matchers {
@@ -55,8 +56,8 @@ class MavenTest extends FreeSpec with Matchers {
       val rawRepositories = Seq(("Eclipse P2 update site", new URI("http://eclipse.ialto.com/eclipse/updates/4.2/R-4.2.1-201209141800/")))
       val targetPlatformConfiguration = new TargetPlatformConfigurationStub()
       val repositories = ResolveP2.addRepositoriesToTargetPlatformConfiguration(targetPlatformConfiguration, rawRepositories, bridge)
-      val environment = sbt.osgi.manager.OSGiEnvironmentJRE1_6
-      val targetPlatform = ResolveP2.createTargetPlatform(targetPlatformConfiguration, environment, true, bridge)
+      val environment = sbt.osgi.manager.Environment.Execution.JavaSE6
+      val targetPlatform = ResolveP2.createTargetPlatform(targetPlatformConfiguration, environment, Seq.empty, true, bridge)
       targetPlatform should not be (null)
       repositories should not be (null)
       repositories should have size (1)
@@ -64,9 +65,22 @@ class MavenTest extends FreeSpec with Matchers {
       val resolver = bridge.p2ResolverFactory.createResolver(new MavenLoggerAdapter(bridge.plexus.getLogger, true))
       resolver should not be (null)
       resolver.addDependency(dependencies.head.getType(), dependencies.head.getArtifactId(), dependencies.head.getVersion())
-      val resolutionResult = resolver.resolveDependencies(targetPlatform, null)
-      resolutionResult should not be (null)
-      val artifacts = (for (r ← resolutionResult) yield r.getArtifacts()).flatten
+      val resolutionResults: Seq[P2ResolutionResult] = Environment.all.flatMap {
+        case (tOS, tWS, tARCH) ⇒
+          try {
+            val environmentList = new ArrayList[TargetEnvironment]()
+            environmentList.add(new TargetEnvironment(tOS.value, tWS.value, tARCH.value))
+            resolver.setEnvironments(environmentList)
+            resolver.resolveDependencies(targetPlatform, null).toSeq
+          } catch {
+            case e: RuntimeException ⇒
+              arg.log.info(e.getMessage)
+              Seq(ResolveP2.EmptyP2ResolutionResult: P2ResolutionResult)
+          }
+      }
+      resolutionResults should not be ('empty)
+
+      val artifacts = resolutionResults.map(_.getArtifacts).flatten.groupBy(_.getId).map(_._2.head)(breakOut).sortBy(_.getId)
 
       // Process results
       val rePerDependencyMap = ResolveP2.inner.asInstanceOf[TestResolveP2].collectArtifactsPerDependency(dependencies, artifacts)
@@ -84,7 +98,7 @@ class MavenTest extends FreeSpec with Matchers {
         })
       }
 
-      artifacts.size should be(57)
+      artifacts.size should be(63)
     }
   }
 

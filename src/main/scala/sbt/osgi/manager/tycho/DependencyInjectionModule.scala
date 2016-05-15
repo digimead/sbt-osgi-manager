@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package sbt.osgi.manager.maven
+package sbt.osgi.manager.tycho
 
 import com.google.inject.{ AbstractModule, Provides, Singleton }
 import com.google.inject.name.{ Named, Names }
@@ -47,7 +47,7 @@ import org.eclipse.aether.spi.log.{ LoggerFactory, NullLoggerFactory }
 import org.eclipse.aether.transport.file.FileTransporterFactory
 import org.eclipse.aether.transport.http.HttpTransporterFactory
 import org.eclipse.aether.transport.wagon.{ WagonConfigurator, WagonProvider }
-import sbt.osgi.manager.maven.DependencyInjectionModule.{ CoreExportsProvider, IDEWorkspaceReader }
+import sbt.osgi.manager.tycho.DependencyInjectionModule.{ CoreExportsProvider, IDEWorkspaceReader }
 
 class DependencyInjectionModule extends AbstractModule {
   val singletonRepositoryLayoutFactory = new Maven2RepositoryLayoutFactory()

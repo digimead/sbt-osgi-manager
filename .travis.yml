@@ -1,5 +1,5 @@
 ---
-jdk: openjdk8
+jdk: oraclejdk8
 language: scala
 script: "sbt 'set scriptedLaunchOpts := Seq(\"-Xms384m\", \"-Xmx384m\", \"-XX:MaxPermSize=128m\")' scripted"
 scala:

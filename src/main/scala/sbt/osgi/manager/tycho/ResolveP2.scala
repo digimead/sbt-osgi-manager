@@ -16,11 +16,11 @@
  * limitations under the License.
  */
 
-package sbt.osgi.manager.maven.action
+package sbt.osgi.manager.tycho
 
 import java.io.{ BufferedOutputStream, FileOutputStream, OutputStream }
 import java.net.{ URI, URISyntaxException }
-import java.util.Properties
+import java.util.{ ArrayList, Collections, Properties }
 import java.util.jar.{ JarOutputStream, Pack200 }
 import org.apache.maven.model.{ Dependency ⇒ MavenDependency }
 import org.eclipse.core.runtime.{ IProgressMonitor, IStatus }
@@ -28,25 +28,21 @@ import org.eclipse.equinox.p2.core.ProvisionException
 import org.eclipse.equinox.p2.metadata.{ IArtifactKey, IInstallableUnit }
 import org.eclipse.equinox.p2.repository.artifact.{ IArtifactDescriptor, IArtifactRepository, IArtifactRepositoryManager }
 import org.eclipse.tycho.artifacts.TargetPlatform
-import org.eclipse.tycho.core.ee.shared.ExecutionEnvironmentConfigurationStub
-import org.eclipse.tycho.core.shared.TargetEnvironment
+import org.eclipse.tycho.core.ee.shared.ExecutionEnvironmentConfiguration
 import org.eclipse.tycho.core.resolver.shared.{ MavenRepositoryLocation, PlatformPropertiesUtils }
+import org.eclipse.tycho.core.shared.TargetEnvironment
 import org.eclipse.tycho.osgi.adapters.MavenLoggerAdapter
 import org.eclipse.tycho.p2.resolver.facade.P2ResolutionResult
+import org.eclipse.tycho.p2.target.facade.TargetPlatformConfigurationStub
 import sbt.{ File, IO, IvySbt, ModuleID, moduleIDConfigurable }
-import sbt.osgi.manager.{ Model, Plugin }
+import sbt.osgi.manager.{ Environment, Model, Plugin }
 import sbt.osgi.manager.Dependency.getOrigin
 import sbt.osgi.manager.Support.logPrefix
-import sbt.osgi.manager.maven.Maven
 import sbt.toGroupID
 import scala.annotation.tailrec
-import scala.collection.{ immutable, mutable }
+import scala.collection.{ breakOut, immutable, mutable }
 import scala.collection.JavaConversions.{ asScalaBuffer, asScalaSet, collectionAsScalaIterable }
-import scala.language.reflectiveCalls
-import scala.language.implicitConversions
-import org.eclipse.tycho.p2.target.facade.TargetPlatformConfigurationStub
-import java.util.ArrayList
-import sbt.osgi.manager.Environment
+import scala.language.{ implicitConversions, reflectiveCalls }
 
 class ResolveP2 {
   /** Instance of Pack200, specified in JSR 200, is an HTTP compression method by Sun for faster JAR file transfer speeds over the network. */
@@ -91,20 +87,33 @@ class ResolveP2 {
   // For more information about metadata and artifact repository manager, look at
   // http://eclipsesource.com/blogs/tutorials/eclipse-p2-tutorial-managing-metadata/
   def apply(dependencies: Seq[MavenDependency], rawRepositories: Seq[(String, URI)],
-    environment: ExecutionEnvironmentConfigurationStub, maven: Maven, ivySbt: IvySbt,
-    resolveAsRemoteArtifacts: Boolean, includeLocalMavenRepo: Boolean)(implicit arg: Plugin.TaskArgument): Seq[ModuleID] = {
+    eeConfiguration: ExecutionEnvironmentConfiguration, target: Seq[(Environment.OS, Environment.WS, Environment.ARCH)],
+    maven: Maven, ivySbt: IvySbt, resolveAsRemoteArtifacts: Boolean, includeLocalMavenRepo: Boolean)(implicit arg: Plugin.TaskArgument): Seq[ModuleID] = {
     val targetPlatformConfiguration = new TargetPlatformConfigurationStub()
     val repositories = addRepositoriesToTargetPlatformConfiguration(targetPlatformConfiguration, rawRepositories, maven)
-    val targetPlatform = createTargetPlatform(targetPlatformConfiguration, environment, !includeLocalMavenRepo, maven)
+    val targetPlatform = createTargetPlatform(targetPlatformConfiguration, eeConfiguration, target, !includeLocalMavenRepo, maven)
     val resolver = maven.p2ResolverFactory.createResolver(new MavenLoggerAdapter(maven.plexus.getLogger, true))
     dependencies.foreach(d ⇒ resolver.addDependency(d.getType(), d.getArtifactId(), d.getVersion()))
 
-    val resolutionResult = ivySbt.withIvy(arg.log) { ivy ⇒
+    val resolutionResults: Seq[P2ResolutionResult] = ivySbt.withIvy(arg.log) { ivy ⇒
       // Set reactor project location to null
+      (if (target.isEmpty) Environment.all else target).flatMap {
+        case (tOS, tWS, tARCH) ⇒
+          try {
+            val environmentList = new ArrayList[TargetEnvironment]()
+            environmentList.add(new TargetEnvironment(tOS.value, tWS.value, tARCH.value))
+            resolver.setEnvironments(environmentList)
+            resolver.resolveDependencies(targetPlatform, null).toSeq
+          } catch {
+            case e: RuntimeException ⇒
+              arg.log.info(e.getMessage)
+              Seq(ResolveP2.EmptyP2ResolutionResult: P2ResolutionResult)
+          }
+      }
       resolver.resolveDependencies(targetPlatform, null)
     }
 
-    val artifacts = (for (r ← resolutionResult) yield r.getArtifacts()).flatten
+    val artifacts = resolutionResults.map(_.getArtifacts).flatten.groupBy(_.getId).map(_._2.head)(breakOut).sortBy(_.getId)
     if (artifacts.isEmpty) {
       arg.log.info(logPrefix(arg.name) + "There are no any resolved entries")
       return Seq()
@@ -135,13 +144,17 @@ class ResolveP2 {
     }.flatten
   }
   /** Create target platform context. */
-  def createTargetPlatform(tpParameters: TargetPlatformConfigurationStub, eeConfiguration: ExecutionEnvironmentConfigurationStub,
-    forceIgnoreLocalArtifacts: Boolean, maven: Maven)(implicit arg: Plugin.TaskArgument): TargetPlatform = {
+  def createTargetPlatform(tpParameters: TargetPlatformConfigurationStub, eeConfiguration: ExecutionEnvironmentConfiguration,
+    target: Seq[(Environment.OS, Environment.WS, Environment.ARCH)], forceIgnoreLocalArtifacts: Boolean,
+    maven: Maven)(implicit arg: Plugin.TaskArgument): TargetPlatform = {
     // actually targetPlatformBuilder is a resolution context
     val pomDependencies = maven.p2ResolverFactory.newPomDependencyCollector()
     val tpFactory = maven.p2ResolverFactory.getTargetPlatformFactory()
     val environmentList = new ArrayList[TargetEnvironment]()
-    Environment.all.foreach { case (tOS, tWS, tARCH) ⇒ environmentList.add(new TargetEnvironment(tOS.value, tWS.value, tARCH.value)) }
+    if (target.isEmpty)
+      Environment.all.foreach { case (tOS, tWS, tARCH) ⇒ environmentList.add(new TargetEnvironment(tOS.value, tWS.value, tARCH.value)) }
+    else
+      target.foreach { case (tOS, tWS, tARCH) ⇒ environmentList.add(new TargetEnvironment(tOS.value, tWS.value, tARCH.value)) }
     tpParameters.setEnvironments(environmentList)
     tpParameters.setForceIgnoreLocalArtifacts(forceIgnoreLocalArtifacts)
     tpFactory.createTargetPlatform(tpParameters, eeConfiguration, new ArrayList(), pomDependencies)
@@ -436,4 +449,11 @@ object ResolveP2 {
   implicit def resolveP22implementation(r: ResolveP2.type): ResolveP2 = r.inner
   /** Resolve P2 implementation. */
   lazy val inner = new ResolveP2()
+
+  object EmptyP2ResolutionResult extends P2ResolutionResult {
+    val artifacts = Collections.emptyList[P2ResolutionResult.Entry]()
+    val reactorUnits = Collections.emptySet()
+    def getArtifacts() = artifacts
+    def getNonReactorUnits() = reactorUnits
+  }
 }

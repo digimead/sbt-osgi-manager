@@ -1,7 +1,7 @@
 /**
  * sbt-osgi-manager - OSGi development bridge based on Bnd and Tycho.
  *
- * Copyright (c) 2013-2014 Alexey Aksenov ezh@ezh.msk.ru
+ * Copyright (c) 2013-2016 Alexey Aksenov ezh@ezh.msk.ru
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ object Plugin {
   /** Entry point for plugin in user's project */
   lazy val defaultSettings =
     // base settings
-    test.Test.settings ++
+    testSettings ++
       inConfig(Keys.OSGiConf)(Seq(
         managedClasspath := Classpaths.managedJars(osgiModuleScope.value, classpathTypes.value, update.value),
         osgiDirectory <<= (target) { _ / "osgi" },
@@ -50,7 +50,7 @@ object Plugin {
         osgiModuleScope := OSGiConf)) ++
       // plugin settings
       bnd.Bnd.settings ++
-      maven.Maven.settings ++
+      tycho.Maven.settings ++
       // and all tasks & commands
       inConfig(Keys.OSGiConf)(Seq(
         osgiBndPrepareHome <<= Plugin.prepareBndHomeTask,
@@ -68,6 +68,10 @@ object Plugin {
         osgiFetch <<= osgiFetchTask,
         osgiShow <<= osgiShowTask,
         ivyConfigurations ++= Seq(OSGiConf, OSGiTestConf))
+  /** Entry point for plugin in user's project */
+  lazy val testSettings = inConfig(OSGiTestConf)(Defaults.testSettings ++ Seq(
+    externalDependencyClasspath <<= Classpaths.concatDistinct(externalDependencyClasspath, externalDependencyClasspath in Compile),
+    internalDependencyClasspath <<= Classpaths.concatDistinct(internalDependencyClasspath, internalDependencyClasspath in _root_.sbt.Test)))
 
   /** Returns last known State. It is a complex helper for Simple Build Tool simple architecture. lol */
   def getLastKnownState(): Option[TaskArgument] = lastKnownState
@@ -178,7 +182,7 @@ object Plugin {
     }
     implicit val arg = TaskArgument(actualState, Project.current(actualState), None)
     // resolve P2
-    val dependencyP2 = maven.action.Resolve.resolveP2Command(ivySbtSeq.head, resolveAsRemoteArtifacts)
+    val dependencyP2 = tycho.Resolve.resolveP2Command(ivySbtSeq.head, resolveAsRemoteArtifacts)
     val dependencySettingsP2 =
       for (projectRef ← dependencyP2.keys)
         yield if (dependencyP2(projectRef).nonEmpty) Seq(libraryDependencies in projectRef ++= dependencyP2(projectRef)) else Seq()
@@ -206,7 +210,7 @@ object Plugin {
   def osgiResetCacheTask = (state, streams, thisProjectRef) map { (state, streams, thisProjectRef) ⇒
     implicit val arg = TaskArgument(state, thisProjectRef, Some(streams))
     // It is only one now
-    maven.action.Resolve.resetCache()
+    tycho.Resolve.resetCache()
   }
   /** Generate help for osgiResolveCommand */
   def osgiResolveCommandHelp = {
@@ -243,7 +247,7 @@ object Plugin {
   def prepareMavenHomeTask =
     (state, streams, thisProjectRef) map { (state, streams, thisProjectRef) ⇒
       implicit val arg = TaskArgument(state, thisProjectRef, Some(streams))
-      maven.Maven.prepareHome()
+      tycho.Maven.prepareHome()
     }
   /** Collects resolved artifacts per project */
   protected def collectResolvedDependencies(resolvedDependencies: immutable.HashMap[ProjectRef, Seq[ModuleID]])(implicit arg: Plugin.TaskArgument): immutable.HashMap[ProjectRef, Seq[File]] = {

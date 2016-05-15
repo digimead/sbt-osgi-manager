@@ -32,13 +32,23 @@ object Environment {
     OS.all.map { os ⇒ getWS(os).map(getARCH).flatten }.flatten
   }
 
-  lazy val JRE1_6 = new ExecutionEnvironmentConfigurationStub("JavaSE-1.6")
-  lazy val JRE1_7 = new ExecutionEnvironmentConfigurationStub("JavaSE-1.7")
-  lazy val JRE1_8 = new ExecutionEnvironmentConfigurationStub("JavaSE-1.8")
-
-  //  def getTargetEnvironment(os: OS = OS.current(), ws: WS = WS.current(), arch: ARCH = ARCH.current()): TargetEnvironment
-  //    new TargetEnvironment(os.value, ws.value, arch.value)
-
+  /** Execution environment */
+  object Execution {
+    lazy val JavaSE6 = new ExecutionEnvironmentConfigurationStub("JavaSE-1.6")
+    lazy val JavaSE7 = new ExecutionEnvironmentConfigurationStub("JavaSE-1.7")
+    lazy val JavaSE8 = new ExecutionEnvironmentConfigurationStub("JavaSE-1.8")
+    lazy val JavaSE9 = new ExecutionEnvironmentConfigurationStub("JavaSE-1.9")
+    lazy val cdc10 = new ExecutionEnvironmentConfigurationStub("CDC-1.0/Foundation-1.0")
+    lazy val cdc11 = new ExecutionEnvironmentConfigurationStub("CDC-1.1/Foundation-1.1")
+    lazy val j2SE12 = new ExecutionEnvironmentConfigurationStub("J2SE-1.2")
+    lazy val j2SE13 = new ExecutionEnvironmentConfigurationStub("J2SE-1.3")
+    lazy val j2SE14 = new ExecutionEnvironmentConfigurationStub("J2SE-1.4")
+    lazy val j2SE5 = new ExecutionEnvironmentConfigurationStub("J2SE-1.5")
+    lazy val jre11 = new ExecutionEnvironmentConfigurationStub("JRE-1.1")
+    lazy val osgiMin10 = new ExecutionEnvironmentConfigurationStub("OSGi/Minimum-1.0")
+    lazy val osgiMin11 = new ExecutionEnvironmentConfigurationStub("OSGi/Minimum-1.1")
+    lazy val osgiMin12 = new ExecutionEnvironmentConfigurationStub("OSGi/Minimum-1.2")
+  }
   /** osgi.arch */
   case class ARCH(val value: String)
   object ARCH {
