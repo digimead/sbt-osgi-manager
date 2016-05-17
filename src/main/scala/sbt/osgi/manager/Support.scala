@@ -22,6 +22,7 @@ import java.util.{ Locale, Properties }
 import org.codehaus.plexus.util.Os
 import org.eclipse.equinox.internal.p2.metadata.VersionParser
 import org.eclipse.equinox.p2.metadata.Version
+import org.eclipse.tycho.core.ee.shared.ExecutionEnvironmentConfiguration
 import sbt.{ Keys ⇒ skey, ModuleID, Resolver, Scope, URLRepository }
 import scala.collection.JavaConversions.asScalaSet
 import scala.collection.mutable
@@ -166,10 +167,13 @@ object Support {
       cache.clear
     }
     /** Check if there are settings which is already cached for the cacheKey */
-    def isCached(cacheKey: CacheKey, dependencies: Seq[ModuleID], resolvers: Seq[(String, String)])(implicit arg: Plugin.TaskArgument): Boolean = synchronized {
+    def isCached(cacheKey: CacheKey, eeConfiguration: ExecutionEnvironmentConfiguration,
+      target: Seq[(Environment.OS, Environment.WS, Environment.ARCH)],
+      dependencies: Seq[ModuleID], resolvers: Seq[(String, String)])(implicit arg: Plugin.TaskArgument): Boolean = synchronized {
       cache.get(cacheKey) match {
         case Some(cached) ⇒
-          val value = (dependencies.map(_.hashCode) ++ resolvers.map(_.hashCode)).sorted
+          val value = (dependencies.map(_.hashCode) ++ resolvers.map(_.hashCode) ++
+            target.map(_.hashCode()) :+ eeConfiguration.getProfileName.hashCode()).sorted
           arg.log.debug(logPrefix(arg.name) + "Check cache for " + cacheKey + " with value " + cached + " against value: " + value)
           val result = cached.sameElements(value)
           if (result)
@@ -183,8 +187,11 @@ object Support {
       }
     }
     /** Update P2 cache value */
-    def updateCache(cacheKey: CacheKey, dependencies: Seq[ModuleID], resolvers: Seq[(String, String)])(implicit arg: Plugin.TaskArgument) = synchronized {
-      val value = (dependencies.map(_.hashCode) ++ resolvers.map(_.hashCode)).sorted
+    def updateCache(cacheKey: CacheKey, eeConfiguration: ExecutionEnvironmentConfiguration,
+      target: Seq[(Environment.OS, Environment.WS, Environment.ARCH)],
+      dependencies: Seq[ModuleID], resolvers: Seq[(String, String)])(implicit arg: Plugin.TaskArgument) = synchronized {
+      val value = (dependencies.map(_.hashCode) ++ resolvers.map(_.hashCode) ++
+        target.map(_.hashCode()) :+ eeConfiguration.getProfileName.hashCode()).sorted
       arg.log.debug(logPrefix(arg.name) + "Update cache for " + cacheKey + " with value: " + value)
       cache(cacheKey) = value
     }

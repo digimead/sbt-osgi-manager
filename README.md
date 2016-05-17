@@ -1,7 +1,7 @@
 SBT OSGi Manager [![Build Status](https://travis-ci.org/digimead/sbt-osgi-manager.png)](https://travis-ci.org/digimead/sbt-osgi-manager)
 ================
 
-OSGi development bridge based on Bnd and Tycho.
+OSGi development bridge based on Bnd 2.3 and Tycho 0.25.
 
 There is a [sample project][sp]. Please, overview `test` file which contains interactive example in [Scripted format][sc].
 
@@ -17,7 +17,7 @@ Resolved bundles are added to project to 'library-dependencies' settings key. Re
 
 [See SBT OSGi Manager documentation](http://digimead.github.io/sbt-osgi-manager/).
 
-__Required Java 6 or higher__
+__Required Java 8 or higher__
 
 Few tips
 --------
@@ -60,7 +60,7 @@ Please check the individual source files for details.
 Copyright
 ---------
 
-Copyright © 2013-2015 Alexey B. Aksenov/Ezh. All rights reserved.
+Copyright © 2013-2016 Alexey B. Aksenov/Ezh. All rights reserved.
 
 [dm]: https://github.com/digimead/sbt-dependency-manager
 [sbt]: https://github.com/sbt/sbt

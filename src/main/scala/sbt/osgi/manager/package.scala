@@ -32,9 +32,9 @@ package object manager {
   def OSGiManager = Plugin.defaultSettings ++ Seq( // modify global SBT tasks
     packageOptions in (Compile, packageBin) in This <<= Plugin.packageOptionsTask)
   /** Entry point for the plugin in user's project */
-  def OSGiManagerWithDebug(tcpPortForEquinoxConsole: Int = 12345) = {
+  def OSGiManagerWithDebug(tcpPortForEquinoxConsole: Option[Int] = None) = {
     debug(true)
-    Plugin.debug = Some(tcpPortForEquinoxConsole)
+    Plugin.debug = tcpPortForEquinoxConsole
     Plugin.defaultSettings
   } ++ Seq( // modify global SBT tasks
     packageOptions in (Compile, packageBin) in This <<= Plugin.packageOptionsTask)
@@ -43,7 +43,6 @@ package object manager {
   lazy val OSGiKey = Keys
   lazy val OSGiConf = Keys.OSGiConf
   lazy val OSGiTestConf = Keys.OSGiTestConf
-
 
   implicit def moduleId2Dependency(dependencies: Seq[ModuleID]): Seq[Dependency] =
     Dependency.moduleId2Dependency(dependencies)

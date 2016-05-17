@@ -106,11 +106,10 @@ class ResolveP2 {
             resolver.resolveDependencies(targetPlatform, null).toSeq
           } catch {
             case e: RuntimeException ⇒
-              arg.log.info(e.getMessage)
+              arg.log.debug(e.getMessage)
               Seq(ResolveP2.EmptyP2ResolutionResult: P2ResolutionResult)
           }
       }
-      resolver.resolveDependencies(targetPlatform, null)
     }
 
     val artifacts = resolutionResults.map(_.getArtifacts).flatten.groupBy(_.getId).map(_._2.head)(breakOut).sortBy(_.getId)

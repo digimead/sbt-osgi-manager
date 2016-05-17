@@ -1,7 +1,9 @@
 ---
 jdk: oraclejdk8
 language: scala
-script: "sbt 'set scriptedLaunchOpts := Seq(\"-Xms384m\", \"-Xmx384m\", \"-XX:MaxPermSize=128m\")' scripted"
+script:
+- "sbt test"
+- "sbt 'set scriptedLaunchOpts := Seq(\"-Xms384m\", \"-Xmx384m\", \"-XX:MaxPermSize=128m\")' scripted"
 scala:
 - 2.10.6
 before_script:

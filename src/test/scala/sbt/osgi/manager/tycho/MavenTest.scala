@@ -21,16 +21,16 @@ package sbt.osgi.manager.tycho
 import java.io.File
 import java.net.URI
 import java.util.ArrayList
-import org.apache.maven.model.{ Dependency => MavenDependency }
+import org.apache.maven.model.{ Dependency ⇒ MavenDependency }
 import org.eclipse.equinox.p2.metadata.IInstallableUnit
 import org.eclipse.tycho.core.shared.TargetEnvironment
 import org.eclipse.tycho.osgi.adapters.MavenLoggerAdapter
 import org.eclipse.tycho.p2.resolver.facade.P2ResolutionResult
 import org.eclipse.tycho.p2.target.facade.TargetPlatformConfigurationStub
 import org.scalatest.{ FreeSpec, Matchers }
+import org.slf4j.LoggerFactory
 import sbt.{ AttributeEntry, AttributeMap, BasicCommands, Build, BuildStreams, BuildStructure, BuildUnit, BuildUtil, ConsoleOut, Def, DetectedAutoPlugin, DetectedModules, DetectedPlugins, File, GlobalLogging, KeyIndex, Keys, Load, LoadedDefinitions, LoadedPlugins, MainLogging, PartBuildUnit, Plugin, PluginData, Project, ProjectRef, Scope, SessionSettings, Settings, State, StructureIndex, This }
 import sbt.osgi.manager.{ Dependency, Environment, OSGi, OSGiConf, OSGiKey, Plugin, Test }
-import sbt.osgi.manager.tycho.ResolveP2.resolveP22implementation
 import sbt.toGroupID
 import scala.collection.{ breakOut, immutable }
 import scala.collection.JavaConversions.{ asScalaBuffer, asScalaSet, collectionAsScalaIterable }
@@ -45,6 +45,8 @@ class MavenTest extends FreeSpec with Matchers {
   "test" in {
     Test.withImplementation(ResolveP2, new TestResolveP2) {
       info("Maven environment located at folder: " + mavenFolder)
+      val log = LoggerFactory.getLogger(classOf[MavenTest])
+
       Test.removeAll(mavenFolder)
       implicit val arg = Plugin.TaskArgument(FakeState.state, ProjectRef(FakeState.testProject.base.toURI(), FakeState.testProject.id))
       val mavenHome = Maven.prepareHome()

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2014 Alexey Aksenov ezh@ezh.msk.ru
+// Copyright (c) 2013-2016 Alexey Aksenov ezh@ezh.msk.ru
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -50,7 +50,7 @@ resourceGenerators in Compile <+=
   }
 
 libraryDependencies ++= {
-  val aetherVersion = "0.9.1.v20140329"
+  val aetherVersion = "1.1.0"
   val mavenVersion = "3.3.9"
   val tychoVersion = "0.25.0"
   Seq(
@@ -66,6 +66,7 @@ libraryDependencies ++= {
     "org.osgi" % "org.osgi.core" % "6.0.0",
     "org.osgi" % "org.osgi.enterprise" % "5.0.0",
     "org.osgi" % "org.osgi.annotation" % "6.0.0",
+    "org.sonatype.aether" % "aether-impl" % "1.13.1", // prevents java.lang.ClassNotFoundException: org.sonatype.aether.spi.connector.RepositoryConnectorFactory
     "org.eclipse.aether" % "aether-impl" % aetherVersion,
     "org.eclipse.aether" % "aether-transport-wagon" % aetherVersion,
     "org.eclipse.aether" % "aether-connector-basic" % aetherVersion,

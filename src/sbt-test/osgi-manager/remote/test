@@ -1,5 +1,4 @@
 > osgiShow
-
 -$ exists target/deps/
 -$ exists target/osgi/
 > osgiResolveRemote
@@ -8,3 +7,10 @@ $ exists target/osgi/
 $ exists target/deps/org.eclipse.ui_3.103.0.v20120705-114351.jar
 > compile
 > clean
+> check 61
+> set sbt.osgi.manager.Keys.osgiTychoTarget in sbt.osgi.manager.OSGiConf := List()
+> osgiResolveRemote
+> check 67
+> set sbt.osgi.manager.Keys.osgiTychoTarget in sbt.osgi.manager.OSGiConf := List((sbt.osgi.manager.Environment.OS.WIN32, sbt.osgi.manager.Environment.WS.WIN32, sbt.osgi.manager.Environment.ARCH.X86), (sbt.osgi.manager.Environment.OS.WIN32, sbt.osgi.manager.Environment.WS.WIN32, sbt.osgi.manager.Environment.ARCH.X86_64))
+> osgiResolveRemote
+> check 62

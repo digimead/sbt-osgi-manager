@@ -472,8 +472,13 @@ object Maven {
 
       // Debug
       if (Plugin.debug.nonEmpty) {
+        Plugin.debug match {
+          case Some(port) ⇒
+            platformProperties.put("osgi.console", port.toString())
+          case None ⇒
+            platformProperties.put("osgi.console", "none")
+        }
         platformProperties.put("osgi.console.enable.builtin", "true")
-        platformProperties.put("osgi.console", Plugin.debug.get.toString)
         platformProperties.put("osgi.debug", "")
         platformProperties.put("eclipse.consoleLog", "true")
       }

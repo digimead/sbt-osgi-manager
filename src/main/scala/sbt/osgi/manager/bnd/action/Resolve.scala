@@ -1,7 +1,7 @@
 /**
  * sbt-osgi-manager - OSGi development bridge based on Bnd and Tycho.
  *
- * Copyright (c) 2013-2014 Alexey Aksenov ezh@ezh.msk.ru
+ * Copyright (c) 2013-2016 Alexey Aksenov ezh@ezh.msk.ru
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,11 +29,12 @@ import java.io.{ BufferedOutputStream, File, FileFilter, FileOutputStream, Outpu
 import java.net.{ MalformedURLException, URI }
 import org.apache.felix.resolver.ResolverImpl
 import org.eclipse.equinox.internal.p2.metadata.VersionParser
+import org.eclipse.tycho.core.ee.shared.ExecutionEnvironmentConfiguration
 import org.osgi.framework.namespace.IdentityNamespace
 import org.osgi.service.resolver.ResolutionException
 import sbt.osgi.manager.Dependency
 import sbt.osgi.manager.Dependency.{ ANY_VERSION, tuplesWithString2repositories, version2string }
-import sbt.osgi.manager.Model
+import sbt.osgi.manager.{ Environment, Keys, Model }
 import sbt.osgi.manager.Support.{ CacheOBRKey, getDependencies, getResolvers, logPrefix }
 import sbt.osgi.manager.bnd.{ Bnd, Logger }
 import sbt.osgi.manager.{ Plugin, Support }
@@ -82,7 +83,8 @@ object Resolve extends Support.Resolve {
   val localRepositoryLocation = new URI("file:/")
 
   /** Resolve the dependency for the specific project against OBR repository */
-  def resolveOBR(resolvedDependencies: Seq[File])(implicit arg: Plugin.TaskArgument): Seq[ModuleID] = {
+  def resolveOBR(resolvedDependencies: Seq[File], eeConfiguration: ExecutionEnvironmentConfiguration,
+    target: Seq[(Environment.OS, Environment.WS, Environment.ARCH)])(implicit arg: Plugin.TaskArgument): Seq[ModuleID] = {
     // get resolvers as Seq[(id, url)]
     val resolvers = getResolvers(Dependency.OBR, arg.thisOSGiScope)
     val dependencies = getDependencies(Dependency.OBR, arg.thisOSGiScope)
@@ -91,7 +93,7 @@ object Resolve extends Support.Resolve {
       val bridge = Bnd.get()
       val modules = resolveOBR(dependencies, resolvers, bridge, resolvedDependencies)
       val resolved = skey.libraryDependencies in arg.thisScope get arg.extracted.structure.data getOrElse Seq()
-      updateCache(CacheOBRKey(arg.thisProjectRef.project), dependencies, resolvers)
+      updateCache(CacheOBRKey(arg.thisProjectRef.project), eeConfiguration, target, dependencies, resolvers)
       modules.filterNot { m ⇒
         val alreadyInLibraryDependencies = resolved.exists(_ == m)
         if (alreadyInLibraryDependencies)
@@ -101,7 +103,7 @@ object Resolve extends Support.Resolve {
       modules
     } else {
       arg.log.info(logPrefix(arg.name) + "No OBR dependencies found")
-      updateCache(CacheOBRKey(arg.thisProjectRef.project), dependencies, resolvers)
+      updateCache(CacheOBRKey(arg.thisProjectRef.project), eeConfiguration, target, dependencies, resolvers)
       Seq()
     }
   }
@@ -217,10 +219,14 @@ object Resolve extends Support.Resolve {
     val uri = arg.extracted.currentRef.build
     val build = arg.extracted.structure.units(uri)
     // Check if we already processed our dependencies with same values
+    val eeConfiguration = Keys.osgiTychoExecutionEnvironmentConfiguration in arg.thisOSGiScope get arg.extracted.structure.data getOrElse {
+      throw new IllegalStateException("Tycho execution environment configuration is not defined")
+    }
+    val target = Keys.osgiTychoTarget in arg.thisOSGiScope get arg.extracted.structure.data getOrElse Environment.current
     val cached = for (id ← build.defined.keys) yield {
       implicit val projectRef = ProjectRef(uri, id)
       val localArg = arg.copy(thisProjectRef = projectRef)
-      isCached(CacheOBRKey(id), getDependencies(Dependency.OBR, localArg.thisOSGiScope)(localArg),
+      isCached(CacheOBRKey(id), eeConfiguration, target, getDependencies(Dependency.OBR, localArg.thisOSGiScope)(localArg),
         getResolvers(Dependency.OBR, localArg.thisOSGiScope)(localArg))(localArg)
     }
     if (cached.forall(_ == true)) {
@@ -232,7 +238,7 @@ object Resolve extends Support.Resolve {
     } else {
       immutable.HashMap((for (id ← build.defined.keys) yield {
         implicit val projectRef = ProjectRef(uri, id)
-        (projectRef, resolveOBR(resolvedDependencies.get(projectRef) getOrElse Seq())(arg.copy(thisProjectRef = projectRef)))
+        (projectRef, resolveOBR(resolvedDependencies.get(projectRef) getOrElse Seq(), eeConfiguration, target)(arg.copy(thisProjectRef = projectRef)))
       }).toSeq: _*)
     }
   }

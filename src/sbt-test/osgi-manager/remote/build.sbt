@@ -25,3 +25,11 @@ libraryDependencies in OSGiConf += typeP2(OSGi.ECLIPSE_PLUGIN % "org.eclipse.ui"
 mainClass in (Compile, packageBin) := Some("a.b.c")
 
 logLevel := Level.Debug
+
+InputKey[Unit]("check") := {
+  val args = Def.spaceDelimited().parsed
+  val size = (libraryDependencies in OSGiConf).value.size
+  System.out.println("OSGi library dependencies size = " + size)
+  if (size != Integer.parseInt(args.head)) error("unexpected size: " + size)
+  ()
+}
