@@ -40,7 +40,7 @@ object Plugin {
   @volatile private var lastKnownState: Option[TaskArgument] = None
 
   /** Entry point for plugin in user's project */
-  lazy val defaultSettings =
+  def defaultSettings =
     // base settings
     testSettings ++
       inConfig(Keys.OSGiConf)(Seq(
@@ -143,11 +143,10 @@ object Plugin {
   /** Command that populates libraryDependencies with required bundles */
   def osgiResolveCommand(resolveAsRemoteArtifacts: Boolean, state: State): State = {
     val extracted = Project.extract(state)
-    val uri = extracted.currentRef.build
-    val build = extracted.structure.units(uri)
     var actualState: State = state
-    val ivySbtSeq = for (id ← build.defined.keys) yield {
-      implicit val projectRef = ProjectRef(uri, id)
+    implicit val projectRef = extracted.currentRef
+    implicit val arg = TaskArgument(actualState, Project.current(actualState), None)
+    val ivySbtForCommand = {
       // This selects the 'osgi-maven-prepare' task for the current project.
       // The value produced by 'osgi-maven-prepare' is of type File
       val taskMavenPrepareHomeKey = osgiMavenPrepareHome in Compile in OSGiConf
@@ -180,9 +179,8 @@ object Plugin {
           throw new OSGiManagerException("Unable to get IvySbt for project %s.".format(projectRef.project))
       }
     }
-    implicit val arg = TaskArgument(actualState, Project.current(actualState), None)
     // resolve P2
-    val dependencyP2 = tycho.Resolve.resolveP2Command(ivySbtSeq.head, resolveAsRemoteArtifacts)
+    val dependencyP2 = tycho.Resolve.resolveP2Command(ivySbtForCommand, resolveAsRemoteArtifacts)
     val dependencySettingsP2 =
       for (projectRef ← dependencyP2.keys)
         yield if (dependencyP2(projectRef).nonEmpty) Seq(libraryDependencies in projectRef ++= dependencyP2(projectRef)) else Seq()

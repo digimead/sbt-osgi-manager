@@ -24,7 +24,7 @@ import java.util.Properties
 import org.apache.maven.DefaultMaven
 import org.apache.maven.artifact.{ Artifact, InvalidRepositoryException }
 import org.apache.maven.artifact.repository.ArtifactRepository
-import org.apache.maven.cli.MavenCli
+import org.apache.maven.cli.configuration.SettingsXmlConfigurationProcessor
 import org.apache.maven.execution.{ DefaultMavenExecutionRequest, DefaultMavenExecutionResult, MavenExecutionRequest, MavenExecutionRequestPopulationException, MavenExecutionRequestPopulator, MavenSession }
 import org.apache.maven.plugin.LegacySupport
 import org.apache.maven.project.{ DefaultProjectBuildingRequest, ProjectBuilder, ProjectBuildingRequest }
@@ -47,7 +47,6 @@ import sbt.osgi.manager.{ Environment, Model, OSGiManagerException, Plugin }
 import sbt.osgi.manager.Keys._
 import sbt.osgi.manager.Support.{ getEnvVars, logPrefix, option2rich, withClassLoaderOf }
 import scala.collection.JavaConversions.{ asScalaBuffer, collectionAsScalaIterable, seqAsJavaList }
-import org.apache.maven.cli.configuration.SettingsXmlConfigurationProcessor
 
 class Maven(val plexus: DefaultPlexusContainer, val information: Maven.Information)(implicit arg: Plugin.TaskArgument) {
   val home = Maven.getHome()
@@ -90,19 +89,9 @@ class Maven(val plexus: DefaultPlexusContainer, val information: Maven.Informati
   // I load whole org.osgi.* and org.eclipse.* via sbt.PluginManagement.PluginClassLoader
   /** EquinoxServiceFactory instance */
   val equinox = new Maven.EquinoxEmbedder(this)
-  // val originalEquinox = lookup(classOf[EquinoxServiceFactory]) - as a history
-  // initialize OSGi infrastructure via implicit 'start'
+  // Get service and implicitly initialize OSGi
   /** Main resolve factory instance */
-  val p2ResolverFactory = {
-    // Negate commit 485da18aa3363e930c0129a70593987efd082133 effect
-    // Override certain SecurityManager methods to avoid filesystem performance hit.
-    // harrah authored on Mar 6 eed3si9n committed on Mar 22
-    // SBT-0.13.2-M3 is ok
-    // SBT-0.13.2-RC1 is broken
-    System.setSecurityManager(null)
-    // Get service and implicitly initialize OSGi
-    equinox.getService(classOf[P2ResolverFactory])
-  }
+  val p2ResolverFactory = equinox.getService(classOf[P2ResolverFactory])
 
   def lookup[T](clazz: Class[T]): T = plexus.lookup(clazz)
   def lookup[T](clazz: Class[T], hint: String): T = plexus.lookup(clazz, hint)
@@ -397,6 +386,10 @@ object Maven {
       var extraSystemPackages = new java.util.ArrayList[String]()
       var platformProperties = new java.util.LinkedHashMap[String, String]()
 
+      Plugin.getLastKnownState().map { state ⇒
+        val location = classOf[org.osgi.framework.FrameworkUtil].getProtectionDomain().getCodeSource().getLocation().toURI().getPath()
+        state.log.debug("OSGi jar: " + location)
+      }
       equinoxLocatorR.locateRuntime(new EquinoxRuntimeDescription() {
         def addExtraSystemPackage(systemPackage: String) {
           if (systemPackage == null || systemPackage.length() == 0)
@@ -484,6 +477,12 @@ object Maven {
       }
 
       platformProperties.put("org.osgi.framework.bootdelegation", bootClasses.mkString(","))
+
+      Plugin.getLastKnownState().map { state ⇒
+        state.log.debug("Startup properties: ")
+        for (key ← platformProperties.keySet().toSeq.sorted)
+          state.log.debug(s" * ${key} → ${platformProperties.get(key)}")
+      }
 
       // TODO switch to org.eclipse.osgi.launch.Equinox
       // EclipseStarter is not helping here

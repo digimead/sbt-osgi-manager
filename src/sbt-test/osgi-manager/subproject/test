@@ -1,7 +1,12 @@
 -$ exists target/osgi/
-> project base
+-$ exists local/target/osgi/
+> project local
 > osgiResolve
-> project sub
+-$ exists target/osgi/
+$ exists local/target/osgi/
+> project root
+> osgiResolve
 $ exists target/osgi/
+$ exists local/target/osgi/
 > compile
 > clean

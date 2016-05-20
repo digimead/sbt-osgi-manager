@@ -16,10 +16,10 @@ logLevel := Level.Info
 
 mainClass in (Compile, packageBin) := Some("a.b.c")
 
-logLevel := Level.Debug
+//logLevel := Level.Debug
 
-lazy val base_project = Project(id = "base", base = file("local"))
+lazy val base_project = Project(id = "local", base = file("local"))
 
-val sub_project = Project(id = "sub", base = file(".")).dependsOn(base_project)
+val sub_project = Project(id = "root", base = file(".")).dependsOn(base_project)
 
 libraryDependencies ++= (libraryDependencies in base_project).value
