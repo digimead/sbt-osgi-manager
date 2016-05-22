@@ -24,7 +24,7 @@ import org.digimead.sbt.util.SLF4JBridge
 import sbt._
 import sbt.Keys._
 import sbt.osgi.manager.Keys._
-import sbt.osgi.manager.Support.logPrefix
+import sbt.osgi.manager.support.Support.logPrefix
 import sbt.osgi.manager.bnd.Bnd
 import sbt.osgi.manager.support.PluginClassLoader
 import sbt.osgi.manager.tycho.LoggerSLF4J

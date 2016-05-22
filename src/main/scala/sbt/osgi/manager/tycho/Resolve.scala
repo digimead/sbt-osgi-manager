@@ -18,30 +18,18 @@
 
 package sbt.osgi.manager.tycho
 
-import java.io.{ BufferedOutputStream, FileOutputStream, OutputStream }
-import java.net.{ URI, URISyntaxException }
-import java.util.Properties
-import java.util.jar.{ JarOutputStream, Pack200 }
 import org.apache.maven.artifact.Artifact
 import org.apache.maven.artifact.resolver.ArtifactResolutionRequest
-import org.apache.maven.model.{ Dependency ⇒ MavenDependency }
+import org.apache.maven.model.{ Dependency => MavenDependency }
 import org.apache.maven.repository.RepositorySystem
-import org.eclipse.core.runtime.{ IProgressMonitor, IStatus }
-import org.eclipse.equinox.p2.core.ProvisionException
-import org.eclipse.equinox.p2.metadata.IInstallableUnit
-import org.eclipse.equinox.p2.repository.artifact.{ IArtifactDescriptor, IArtifactRepository, IArtifactRepositoryManager }
 import org.eclipse.tycho.core.ee.shared.ExecutionEnvironmentConfiguration
-import org.eclipse.tycho.core.shared.TargetEnvironment
-import org.eclipse.tycho.core.resolver.shared.{ MavenRepositoryLocation, PlatformPropertiesUtils }
-import org.eclipse.tycho.osgi.adapters.MavenLoggerAdapter
-import org.eclipse.tycho.p2.resolver.facade.P2ResolutionResult
-import sbt.osgi.manager.Dependency.{ getOrigin, moduleId2Dependency, tuplesWithString2repositories }
-import sbt.osgi.manager.Support.{ CacheP2Key, getDependencies, getResolvers, logPrefix }
-import sbt.osgi.manager.{ Environment, Keys, Dependency, Model, Plugin, Support }
-import sbt.{ Keys ⇒ skey, _ }
-import scala.annotation.tailrec
-import scala.collection.JavaConversions.{ asScalaBuffer, asScalaSet, collectionAsScalaIterable, seqAsJavaList }
-import scala.collection.{ immutable, mutable }
+import sbt.{ IvySbt, Keys => skey, ModuleID, ProjectRef }
+import sbt.osgi.manager.{ Dependency, Environment, Keys, Plugin, support }
+import sbt.osgi.manager.Dependency.{ moduleId2Dependency, tuplesWithString2repositories }
+import sbt.osgi.manager.support.CacheP2Key
+import sbt.osgi.manager.support.Support.{ getDependencies, getResolvers, logPrefix }
+import scala.collection.JavaConversions.{ asScalaBuffer, seqAsJavaList }
+import scala.collection.immutable
 import scala.language.reflectiveCalls
 
 // Unfortunately:
@@ -59,7 +47,7 @@ import scala.language.reflectiveCalls
 //   Your patch will be accepted. You are welcome.
 
 /** Contain resolve action for Maven and P2 repository */
-object Resolve extends Support.Resolve {
+object Resolve extends support.Resolve {
   /** Resolve the dependency against the standard Maven repository */
   def resolveBasic(maven: Maven)(implicit arg: Plugin.TaskArgument) {
     val groupId = "org.apache.maven"
@@ -163,7 +151,7 @@ object Resolve extends Support.Resolve {
     val cached = for (id ← build.defined.keys) yield {
       implicit val projectRef = ProjectRef(uri, id)
       val localArg = arg.copy(thisProjectRef = projectRef)
-      isCached(Support.CacheP2Key(id), eeConfiguration, target, getDependencies(Dependency.P2, localArg.thisOSGiScope)(localArg),
+      isCached(CacheP2Key(id), eeConfiguration, target, getDependencies(Dependency.P2, localArg.thisOSGiScope)(localArg),
         getResolvers(Dependency.P2, localArg.thisOSGiScope)(localArg))(localArg)
     }
     if (cached.forall(_ == true) && !resolveAsRemoteArtifacts) {

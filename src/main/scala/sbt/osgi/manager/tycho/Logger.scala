@@ -21,7 +21,7 @@ package sbt.osgi.manager.tycho
 import java.io.{ PrintWriter, StringWriter }
 import org.codehaus.plexus.logging.AbstractLogger
 import sbt.osgi.manager.Plugin
-import sbt.osgi.manager.Support.logPrefix
+import sbt.osgi.manager.support.Support.logPrefix
 
 class Logger(threshold: Int, name: String) extends AbstractLogger(threshold, name) {
   def getChildLogger(name: String) = this

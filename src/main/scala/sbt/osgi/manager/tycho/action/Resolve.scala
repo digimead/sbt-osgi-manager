@@ -22,7 +22,7 @@ import sbt._
 import sbt.Keys._
 import sbt.osgi.manager.{ OSGiManagerException, Plugin }
 import sbt.osgi.manager.Keys.{ OSGiConf, osgiBndPrepareHome, osgiMavenPrepareHome }
-import sbt.osgi.manager.Support.logPrefix
+import sbt.osgi.manager.support.Support.logPrefix
 import sbt.osgi.manager.bnd
 import scala.collection.immutable
 import scala.language.{ implicitConversions, reflectiveCalls }

@@ -37,7 +37,7 @@ import org.eclipse.tycho.p2.target.facade.TargetPlatformConfigurationStub
 import sbt.{ File, IO, IvySbt, ModuleID, moduleIDConfigurable }
 import sbt.osgi.manager.{ Environment, Model, Plugin }
 import sbt.osgi.manager.Dependency.getOrigin
-import sbt.osgi.manager.Support.logPrefix
+import sbt.osgi.manager.support.Support.logPrefix
 import sbt.toGroupID
 import scala.annotation.tailrec
 import scala.collection.{ breakOut, immutable, mutable }

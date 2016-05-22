@@ -26,7 +26,7 @@ import aQute.bnd.header.Attrs
 import aQute.bnd.service.{ Plugin ⇒ BndPlugin }
 import sbt.osgi.manager.{ Model, OSGiManagerException, Plugin }
 import sbt.osgi.manager.Keys._
-import sbt.osgi.manager.Support.{ logPrefix, option2rich }
+import sbt.osgi.manager.support.Support.{ logPrefix, option2rich }
 import scala.collection.JavaConversions.seqAsJavaList
 import scala.ref.WeakReference
 

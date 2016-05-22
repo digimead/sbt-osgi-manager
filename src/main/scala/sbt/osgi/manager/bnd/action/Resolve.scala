@@ -19,9 +19,9 @@
 package sbt.osgi.manager.bnd.action
 
 import aQute.bnd.build.Workspace
+import aQute.bnd.deployer.repository.{ AbstractIndexedRepo, FixedIndexedRepo }
 import aQute.bnd.deployer.repository.api.IRepositoryContentProvider
 import aQute.bnd.deployer.repository.providers.R5RepoContentProvider
-import aQute.bnd.deployer.repository.{ AbstractIndexedRepo, FixedIndexedRepo }
 import aQute.bnd.osgi.resource.CapReqBuilder
 import aQute.bnd.service.{ ResourceHandle, Strategy }
 import biz.aQute.resolve.internal.BndrunResolveContext
@@ -32,13 +32,14 @@ import org.eclipse.equinox.internal.p2.metadata.VersionParser
 import org.eclipse.tycho.core.ee.shared.ExecutionEnvironmentConfiguration
 import org.osgi.framework.namespace.IdentityNamespace
 import org.osgi.service.resolver.ResolutionException
-import sbt.osgi.manager.Dependency
+import sbt.{ IO, Keys ⇒ skey, ModuleID, ProjectRef, URL, moduleIDConfigurable }
+import sbt.osgi.manager.{ Dependency, Environment, Keys, Model, Plugin }
 import sbt.osgi.manager.Dependency.{ ANY_VERSION, tuplesWithString2repositories, version2string }
-import sbt.osgi.manager.{ Environment, Keys, Model }
-import sbt.osgi.manager.Support.{ CacheOBRKey, getDependencies, getResolvers, logPrefix }
 import sbt.osgi.manager.bnd.{ Bnd, Logger }
-import sbt.osgi.manager.{ Plugin, Support }
-import sbt.{ Keys ⇒ skey, _ }
+import sbt.osgi.manager.support
+import sbt.osgi.manager.support.CacheOBRKey
+import sbt.osgi.manager.support.Support.{ getDependencies, getResolvers, logPrefix }
+import sbt.toGroupID
 import scala.collection.JavaConversions.{ asScalaBuffer, asScalaSet, collectionAsScalaIterable, seqAsJavaList, setAsJavaSet }
 import scala.collection.immutable
 
@@ -76,7 +77,7 @@ import scala.collection.immutable
 //    Ezh
 
 /** Resolve interface for SBT via Bnd API */
-object Resolve extends Support.Resolve {
+object Resolve extends support.Resolve {
   /** Predefined name for OSGi R5 repository with resolved dependencies */
   val internalRepositoryName = "Internal repository with resolved dependencies"
   /** Predefined location for OSGi R5 repository with resolved dependencies */

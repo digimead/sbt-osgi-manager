@@ -23,7 +23,7 @@ import java.io.File
 import java.util.Properties
 import java.util.jar.{ Attributes, Manifest }
 import sbt.osgi.manager.{ Model, Plugin }
-import sbt.osgi.manager.Support.logPrefix
+import sbt.osgi.manager.support.Support.logPrefix
 import scala.collection.JavaConversions.{ asScalaSet, mapAsScalaMap, seqAsJavaList }
 
 import sbt._

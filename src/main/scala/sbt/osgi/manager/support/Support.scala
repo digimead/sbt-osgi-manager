@@ -1,7 +1,7 @@
 /**
  * sbt-osgi-manager - OSGi development bridge based on Bnd and Tycho.
  *
- * Copyright (c) 2013-2014 Alexey Aksenov ezh@ezh.msk.ru
+ * Copyright (c) 2013-2016 Alexey Aksenov ezh@ezh.msk.ru
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,15 @@
  * limitations under the License.
  */
 
-package sbt.osgi.manager
+package sbt.osgi.manager.support
 
 import java.util.{ Locale, Properties }
 import org.codehaus.plexus.util.Os
 import org.eclipse.equinox.internal.p2.metadata.VersionParser
 import org.eclipse.equinox.p2.metadata.Version
-import org.eclipse.tycho.core.ee.shared.ExecutionEnvironmentConfiguration
-import sbt.{ Keys ⇒ skey, ModuleID, Resolver, Scope, URLRepository }
+import sbt.{ Keys => skey, ModuleID, Resolver, Scope, URLRepository }
+import sbt.osgi.manager.{ Dependency, OSGiManagerException, Plugin }
 import scala.collection.JavaConversions.asScalaSet
-import scala.collection.mutable
 import scala.language.implicitConversions
 
 object Support {
@@ -157,48 +156,4 @@ object Support {
   class RichOption[T](option: Option[T]) {
     def getOrThrow(onError: String) = option getOrElse { throw new NoSuchElementException(onError) }
   }
-  trait Resolve {
-    /** Simple cache that holds per project already processed: resolvers + dependencies */
-    private lazy val cache = new mutable.HashMap[CacheKey, Seq[Int]]
-
-    /** Reset resolution cache */
-    def resetCache()(implicit arg: Plugin.TaskArgument) = synchronized {
-      arg.log.debug(logPrefix(arg.name) + "Clear cache.")
-      cache.clear
-    }
-    /** Check if there are settings which is already cached for the cacheKey */
-    def isCached(cacheKey: CacheKey, eeConfiguration: ExecutionEnvironmentConfiguration,
-      target: Seq[(Environment.OS, Environment.WS, Environment.ARCH)],
-      dependencies: Seq[ModuleID], resolvers: Seq[(String, String)])(implicit arg: Plugin.TaskArgument): Boolean = synchronized {
-      cache.get(cacheKey) match {
-        case Some(cached) ⇒
-          val value = (dependencies.map(_.hashCode) ++ resolvers.map(_.hashCode) ++
-            target.map(_.hashCode()) :+ eeConfiguration.getProfileName.hashCode()).sorted
-          arg.log.debug(logPrefix(arg.name) + "Check cache for " + cacheKey + " with value " + cached + " against value: " + value)
-          val result = cached.sameElements(value)
-          if (result)
-            arg.log.debug(logPrefix(arg.name) + "Cache HIT.")
-          else
-            arg.log.debug(logPrefix(arg.name) + "Cache MISS.")
-          result
-        case None ⇒
-          arg.log.debug(logPrefix(arg.name) + "Cache is empty.")
-          false
-      }
-    }
-    /** Update P2 cache value */
-    def updateCache(cacheKey: CacheKey, eeConfiguration: ExecutionEnvironmentConfiguration,
-      target: Seq[(Environment.OS, Environment.WS, Environment.ARCH)],
-      dependencies: Seq[ModuleID], resolvers: Seq[(String, String)])(implicit arg: Plugin.TaskArgument) = synchronized {
-      val value = (dependencies.map(_.hashCode) ++ resolvers.map(_.hashCode) ++
-        target.map(_.hashCode()) :+ eeConfiguration.getProfileName.hashCode()).sorted
-      arg.log.debug(logPrefix(arg.name) + "Update cache for " + cacheKey + " with value: " + value)
-      cache(cacheKey) = value
-    }
-  }
-  sealed trait CacheKey {
-    val projectId: String
-  }
-  case class CacheOBRKey(projectId: String) extends CacheKey
-  case class CacheP2Key(projectId: String) extends CacheKey
 }

@@ -45,7 +45,7 @@ import org.osgi.framework.{ Bundle, BundleContext, BundleException }
 import sbt.{ inConfig, richFile }
 import sbt.osgi.manager.{ Environment, Model, OSGiManagerException, Plugin }
 import sbt.osgi.manager.Keys._
-import sbt.osgi.manager.Support.{ getEnvVars, logPrefix, option2rich, withClassLoaderOf }
+import sbt.osgi.manager.support.Support.{ getEnvVars, logPrefix, option2rich, withClassLoaderOf }
 import scala.collection.JavaConversions.{ asScalaBuffer, collectionAsScalaIterable, seqAsJavaList }
 
 class Maven(val plexus: DefaultPlexusContainer, val information: Maven.Information)(implicit arg: Plugin.TaskArgument) {

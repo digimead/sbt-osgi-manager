@@ -21,7 +21,7 @@ package sbt.osgi.manager.bnd.action
 import aQute.bnd.osgi.{ Analyzer, Jar }
 import java.io.File
 import sbt.osgi.manager.{ Model, Plugin }
-import sbt.osgi.manager.Support.{ logPrefix, option2rich, toOSGiVersion }
+import sbt.osgi.manager.support.Support.{ logPrefix, option2rich, toOSGiVersion }
 import scala.collection.JavaConversions.{ asScalaBuffer, asScalaSet }
 
 import sbt._
