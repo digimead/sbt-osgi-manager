@@ -20,7 +20,8 @@ package sbt.osgi.manager.tycho.action
 
 import sbt._
 import sbt.Keys._
-import sbt.osgi.manager.{ OSGiManagerException, Plugin }
+import sbt.osgi.manager.{ Plugin }
+import sbt.osgi.manager.support.OSGiManagerException
 import sbt.osgi.manager.Keys.{ OSGiConf, osgiBndPrepareHome, osgiMavenPrepareHome }
 import sbt.osgi.manager.support.Support.logPrefix
 import sbt.osgi.manager.bnd

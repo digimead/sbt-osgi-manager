@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package sbt.osgi.manager
+package sbt.osgi.manager.support
 
 class OSGiManagerException(message: String, cause: Throwable) extends Exception(message, cause) {
   def this(message: String) = this(message, null)
