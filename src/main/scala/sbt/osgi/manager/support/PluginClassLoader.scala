@@ -215,7 +215,9 @@ object PluginClassLoader {
   val passToParent = Seq(
     "java.",
     "org.apache.maven.model.Dependency",
+    "org.digimead.sbt.util.StaticLoggerBinder",
     "org.slf4j.ILoggerFactory",
+    "org.slf4j.spi.LoggerFactoryBinder",
     "sbt.",
     "scala.")
 }
