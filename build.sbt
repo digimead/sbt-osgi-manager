@@ -61,6 +61,7 @@ libraryDependencies ++= {
     "org.apache.maven" % "maven-core" % mavenVersion,
     "org.apache.maven" % "maven-plugin-api" % mavenVersion,
     "org.apache.maven" % "maven-embedder" % mavenVersion, // provide org.apache.maven.cli.MavenCli
+    "org.digimead" %% "digi-sbt-util" % "0.1.0.0",
     "org.eclipse.tycho" % "tycho-core" % tychoVersion,
     "org.eclipse.tycho" % "tycho-p2-facade" % tychoVersion,
     "org.osgi" % "org.osgi.core" % "6.0.0",

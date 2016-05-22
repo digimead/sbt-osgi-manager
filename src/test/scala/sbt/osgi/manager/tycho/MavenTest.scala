@@ -45,8 +45,6 @@ class MavenTest extends FreeSpec with Matchers {
   "test" in {
     Test.withImplementation(ResolveP2, new TestResolveP2) {
       info("Maven environment located at folder: " + mavenFolder)
-      val log = LoggerFactory.getLogger(classOf[MavenTest])
-
       Test.removeAll(mavenFolder)
       implicit val arg = Plugin.TaskArgument(FakeState.state, ProjectRef(FakeState.testProject.base.toURI(), FakeState.testProject.id))
       val mavenHome = Maven.prepareHome()

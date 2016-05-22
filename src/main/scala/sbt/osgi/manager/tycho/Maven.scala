@@ -293,25 +293,17 @@ object Maven {
    * the {@link ClassRealm} is ChildFirst with the current classLoader as parent.
    */
   protected def buildClassRealm(mavenHome: File, argWorld: Option[ClassWorld] = None, argParentClassLoader: Option[ClassLoader] = None): ClassRealm = {
-    val mavenLibraries = new File(mavenHome, "lib")
     assert(mavenHome != null, "mavenHome cannot be null")
     assert(mavenHome.exists(), "mavenHome must exists")
     assert(mavenHome.exists(), "mavenHome/lib must exists")
-    val jarFiles = mavenLibraries.listFiles(new FilenameFilter { def accept(dir: File, name: String) = name.endsWith(".jar") })
     val world = argWorld getOrElse new ClassWorld()
     val parentClassLoader = argParentClassLoader getOrElse classOf[org.apache.maven.Maven].getClassLoader()
     val classRealm = new ClassRealm(world, "plexus.core", parentClassLoader)
     classRealm.setParentRealm(new ClassRealm(world, "maven-parent", Thread.currentThread().getContextClassLoader()))
-    // add jars from mavenLibraries
-    for (jarFile ← jarFiles) try {
-      classRealm.addURL(jarFile.toURI().toURL())
-    } catch {
-      case e: MalformedURLException ⇒
-        throw new OSGiManagerException(e.getMessage(), e)
-    }
     // add jars from current classOf[org.apache.maven.Maven] loader
     classOf[org.apache.maven.Maven].getClassLoader() match {
-      case loader: URLClassLoader ⇒ loader.getURLs().foreach(classRealm.addURL)
+      case loader: URLClassLoader ⇒
+        loader.getURLs().filter { _.toString().contains("org.apache.maven") }.foreach(classRealm.addURL)
       case _ ⇒
     }
     classRealm

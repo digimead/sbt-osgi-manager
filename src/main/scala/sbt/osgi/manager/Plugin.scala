@@ -18,15 +18,19 @@
 
 package sbt.osgi.manager
 
+import java.net.URLClassLoader
 import java.util.{ Date, Properties }
+import org.digimead.sbt.util.SLF4JBridge
+import sbt._
+import sbt.Keys._
 import sbt.osgi.manager.Keys._
 import sbt.osgi.manager.Support.logPrefix
 import sbt.osgi.manager.bnd.Bnd
-import scala.collection.immutable
-
-import sbt.Keys._
-import sbt._
+import sbt.osgi.manager.support.PluginClassLoader
+import sbt.osgi.manager.tycho.LoggerSLF4J
+import sbt.osgi.manager.tycho.action.Resolve
 import sbt.std.TaskStreams
+import scala.collection.immutable
 
 object Plugin {
   // Please, use SBT logLevel and .options file if needed
@@ -141,69 +145,11 @@ object Plugin {
     }
   }
   /** Command that populates libraryDependencies with required bundles */
-  def osgiResolveCommand(resolveAsRemoteArtifacts: Boolean, state: State): State = {
-    val extracted = Project.extract(state)
-    var actualState: State = state
-    implicit val projectRef = extracted.currentRef
-    implicit val arg = TaskArgument(actualState, Project.current(actualState), None)
-    val ivySbtForCommand = {
-      // This selects the 'osgi-maven-prepare' task for the current project.
-      // The value produced by 'osgi-maven-prepare' is of type File
-      val taskMavenPrepareHomeKey = osgiMavenPrepareHome in Compile in OSGiConf
-      EvaluateTask(extracted.structure, taskMavenPrepareHomeKey, actualState, projectRef) match {
-        case Some((state, result)) ⇒
-          actualState = state
-        case None ⇒
-          throw new OSGiManagerException("Unable to prepare Maven home for project %s.".format(projectRef.project))
-      }
-      // This selects the 'osgi-bnd-prepare' task for the current project.
-      // The value produced by 'osgi-bnd-prepare' is of type File
-      val taskBndPrepareHomeKey = osgiBndPrepareHome in Compile in OSGiConf
-      EvaluateTask(extracted.structure, taskBndPrepareHomeKey, actualState, projectRef) match {
-        case Some((state, result)) ⇒
-          actualState = state
-        case None ⇒
-          throw new OSGiManagerException("Unable to prepare Bnd home for project %s.".format(projectRef.project))
-      }
-      // Get ivySbt
-      EvaluateTask(extracted.structure, ivySbt in Compile, actualState, projectRef) match {
-        case Some((state, result)) ⇒
-          result.toEither match {
-            case Left(incomplete) ⇒
-              throw new OSGiManagerException("Unable to get IvySbt for project %s.".format(projectRef.project))
-            case Right(ivySbt) ⇒
-              actualState = state
-              ivySbt
-          }
-        case None ⇒
-          throw new OSGiManagerException("Unable to get IvySbt for project %s.".format(projectRef.project))
-      }
+  def osgiResolveCommand(resolveAsRemoteArtifacts: Boolean, state: State): State =
+    SLF4JBridge.withLogFactory(LoggerSLF4J.Factory) {
+      org.digimead.sbt.util.Util.inner.applyWithClassLoader[State](PluginClassLoader,
+        classOf[tycho.action.Resolve], resolveAsRemoteArtifacts: java.lang.Boolean, state)
     }
-    // resolve P2
-    val dependencyP2 = tycho.Resolve.resolveP2Command(ivySbtForCommand, resolveAsRemoteArtifacts)
-    val dependencySettingsP2 =
-      for (projectRef ← dependencyP2.keys)
-        yield if (dependencyP2(projectRef).nonEmpty) Seq(libraryDependencies in projectRef ++= dependencyP2(projectRef)) else Seq()
-    // resolve OBR
-    val resolvedDependencies = collectResolvedDependencies(dependencyP2)
-    val dependencyOBR = bnd.action.Resolve.resolveOBRCommand(resolvedDependencies)
-    val dependencySettingsOBR = for (projectRef ← dependencyOBR.keys) yield if (dependencyOBR(projectRef).nonEmpty)
-      Seq(libraryDependencies in projectRef ++= dependencyOBR(projectRef))
-    else
-      Seq()
-    val dependencySettings = dependencySettingsP2.flatten ++ dependencySettingsOBR.flatten
-    arg.log.debug(logPrefix("*") + "Add  settings: " + dependencySettings)
-    if (dependencySettings.nonEmpty) {
-      arg.log.info(logPrefix(arg.name) + "Update library dependencies")
-      val newStructure = {
-        import arg.extracted._
-        val append = Load.transformSettings(Load.projectScope(currentRef), currentRef.build, rootProject, dependencySettings.toSeq)
-        Load.reapply(session.original ++ append, structure)
-      }
-      Project.setProject(arg.extracted.session, newStructure, actualState)
-    } else
-      actualState
-  }
   /** Reset all plugin caches */
   def osgiResetCacheTask = (state, streams, thisProjectRef) map { (state, streams, thisProjectRef) ⇒
     implicit val arg = TaskArgument(state, thisProjectRef, Some(streams))

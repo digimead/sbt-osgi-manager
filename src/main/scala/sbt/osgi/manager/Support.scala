@@ -159,7 +159,7 @@ object Support {
   }
   trait Resolve {
     /** Simple cache that holds per project already processed: resolvers + dependencies */
-    private val cache = new mutable.HashMap[CacheKey, Seq[Int]]
+    private lazy val cache = new mutable.HashMap[CacheKey, Seq[Int]]
 
     /** Reset resolution cache */
     def resetCache()(implicit arg: Plugin.TaskArgument) = synchronized {
