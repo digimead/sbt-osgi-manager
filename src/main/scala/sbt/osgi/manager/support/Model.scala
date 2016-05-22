@@ -16,10 +16,11 @@
  * limitations under the License.
  */
 
-package sbt.osgi.manager
+package sbt.osgi.manager.support
 
 import sbt._
 import sbt.osgi.manager.Keys._
+import sbt.osgi.manager.Plugin
 
 object Model {
   /////////////////////////////////////

@@ -43,9 +43,9 @@ import org.eclipse.sisu.equinox.embedder.internal.DefaultEquinoxEmbedder
 import org.eclipse.tycho.p2.resolver.facade.P2ResolverFactory
 import org.osgi.framework.{ Bundle, BundleContext, BundleException }
 import sbt.{ inConfig, richFile }
-import sbt.osgi.manager.{ Environment, Model, Plugin }
-import sbt.osgi.manager.support.OSGiManagerException
+import sbt.osgi.manager.{ Environment, Plugin }
 import sbt.osgi.manager.Keys._
+import sbt.osgi.manager.support.{ Model, OSGiManagerException }
 import sbt.osgi.manager.support.Support.{ getEnvVars, logPrefix, option2rich, withClassLoaderOf }
 import scala.collection.JavaConversions.{ asScalaBuffer, collectionAsScalaIterable, seqAsJavaList }
 

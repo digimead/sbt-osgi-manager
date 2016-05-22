@@ -33,11 +33,11 @@ import org.eclipse.tycho.core.ee.shared.ExecutionEnvironmentConfiguration
 import org.osgi.framework.namespace.IdentityNamespace
 import org.osgi.service.resolver.ResolutionException
 import sbt.{ IO, Keys ⇒ skey, ModuleID, ProjectRef, URL, moduleIDConfigurable }
-import sbt.osgi.manager.{ Dependency, Environment, Keys, Model, Plugin }
+import sbt.osgi.manager.{ Dependency, Environment, Keys, Plugin }
 import sbt.osgi.manager.Dependency.{ ANY_VERSION, tuplesWithString2repositories, version2string }
 import sbt.osgi.manager.bnd.{ Bnd, Logger }
 import sbt.osgi.manager.support
-import sbt.osgi.manager.support.CacheOBRKey
+import sbt.osgi.manager.support.{ CacheOBRKey, Model }
 import sbt.osgi.manager.support.Support.{ getDependencies, getResolvers, logPrefix }
 import sbt.toGroupID
 import scala.collection.JavaConversions.{ asScalaBuffer, asScalaSet, collectionAsScalaIterable, seqAsJavaList, setAsJavaSet }

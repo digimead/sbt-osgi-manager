@@ -1,0 +1,5 @@
+The 0.3 release includes the following:
+
+* Implementation is based on Maven 3.3.9 and Tycho 0.25.
+* Provides additional classload isolation with PluginClassLoader
+* Additional stabilization with resolution tests.

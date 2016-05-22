@@ -1,7 +1,7 @@
 /**
  * sbt-osgi-manager - OSGi development bridge based on Bnd and Tycho.
  *
- * Copyright (c) 2013-2014 Alexey Aksenov ezh@ezh.msk.ru
+ * Copyright (c) 2013-2016 Alexey Aksenov ezh@ezh.msk.ru
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,14 +24,14 @@ import aQute.bnd.build.model.clauses.{ ExportedPackage, ImportPattern, Versioned
 import aQute.bnd.build.model.conversions.{ ClauseListConverter, Converter, HeaderClauseListConverter, VersionedClauseConverter }
 import aQute.bnd.header.Attrs
 import aQute.bnd.service.{ Plugin ⇒ BndPlugin }
-import sbt.osgi.manager.{ Model, Plugin }
-import sbt.osgi.manager.support.OSGiManagerException
-import sbt.osgi.manager.Keys._
+import sbt._
+import sbt.Keys._
+import sbt.osgi.manager.Keys.{ OSGiConf, osgiBndBuildPath, osgiBndBundleActivationPolicy, osgiBndBundleActivator, osgiBndBundleCategory, osgiBndBundleContactAddress, osgiBndBundleCopyright, osgiBndBundleDescription, osgiBndBundleDocURL, osgiBndBundleFragmentHost, osgiBndBundleIcon, osgiBndBundleLicense, osgiBndBundleName, osgiBndBundleSymbolicName, osgiBndBundleSymbolicNameSingleton, osgiBndBundleUpdateLocation, osgiBndBundleVendor, osgiBndBundleVersion, osgiBndClassPath, osgiBndDirectory, osgiBndExportPackage, osgiBndImportPackage, osgiBndNoUses, osgiBndPlugin, osgiBndPluginPath, osgiBndPrivatePackage, osgiBndRequireBundle, osgiBndRequireCapability, osgiBndRunBundles, osgiBndRunEE, osgiBndRunFW, osgiBndRunFramework, osgiBndRunProperties, osgiBndRunVM, osgiBndServiceComponent, osgiBndSources, osgiBndSub, osgiBndTestCases, osgiDirectory, osgiFetchInfo }
+import sbt.osgi.manager.Plugin
+import sbt.osgi.manager.support.{ Model, OSGiManagerException }
 import sbt.osgi.manager.support.Support.{ logPrefix, option2rich }
 import scala.collection.JavaConversions.seqAsJavaList
 import scala.ref.WeakReference
-import sbt.Keys._
-import sbt._
 
 class Bnd(home: File) {
   def createModel()(implicit arg: Plugin.TaskArgument): BndEditModel = {

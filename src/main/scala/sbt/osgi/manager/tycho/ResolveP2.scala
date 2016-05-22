@@ -35,8 +35,9 @@ import org.eclipse.tycho.osgi.adapters.MavenLoggerAdapter
 import org.eclipse.tycho.p2.resolver.facade.P2ResolutionResult
 import org.eclipse.tycho.p2.target.facade.TargetPlatformConfigurationStub
 import sbt.{ File, IO, IvySbt, ModuleID, moduleIDConfigurable }
-import sbt.osgi.manager.{ Environment, Model, Plugin }
+import sbt.osgi.manager.{ Environment, Plugin }
 import sbt.osgi.manager.Dependency.getOrigin
+import sbt.osgi.manager.support.Model
 import sbt.osgi.manager.support.Support.logPrefix
 import sbt.toGroupID
 import scala.annotation.tailrec

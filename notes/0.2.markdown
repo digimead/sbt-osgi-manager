@@ -1,0 +1,3 @@
+The 0.2 release includes the following:
+
+* Stable implementation based on Maven 2 and Tycho 0.18.

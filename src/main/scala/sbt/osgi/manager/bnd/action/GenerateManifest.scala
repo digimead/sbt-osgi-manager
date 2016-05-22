@@ -1,7 +1,7 @@
 /**
  * sbt-osgi-manager - OSGi development bridge based on Bnd and Tycho.
  *
- * Copyright (c) 2013-2014 Alexey Aksenov ezh@ezh.msk.ru
+ * Copyright (c) 2013-2016 Alexey Aksenov ezh@ezh.msk.ru
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,11 +22,11 @@ import aQute.bnd.osgi.{ Analyzer, Constants ⇒ BndConstant }
 import java.io.File
 import java.util.Properties
 import java.util.jar.{ Attributes, Manifest }
-import sbt.osgi.manager.{ Model, Plugin }
+import sbt._
+import sbt.osgi.manager.Plugin
+import sbt.osgi.manager.support.Model
 import sbt.osgi.manager.support.Support.logPrefix
 import scala.collection.JavaConversions.{ asScalaSet, mapAsScalaMap, seqAsJavaList }
-
-import sbt._
 
 object GenerateManifest {
   def generate(product: File, dependencyClasspath: Seq[File])(implicit arg: Plugin.TaskArgument): Manifest = {

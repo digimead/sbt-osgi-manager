@@ -1,7 +1,7 @@
 /**
  * sbt-osgi-manager - OSGi development bridge based on Bnd and Tycho.
  *
- * Copyright (c) 2013-2014 Alexey Aksenov ezh@ezh.msk.ru
+ * Copyright (c) 2013-2016 Alexey Aksenov ezh@ezh.msk.ru
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,11 +20,11 @@ package sbt.osgi.manager.bnd.action
 
 import aQute.bnd.osgi.{ Analyzer, Jar }
 import java.io.File
-import sbt.osgi.manager.{ Model, Plugin }
+import sbt._
+import sbt.osgi.manager.Plugin
+import sbt.osgi.manager.support.Model
 import sbt.osgi.manager.support.Support.{ logPrefix, option2rich, toOSGiVersion }
 import scala.collection.JavaConversions.{ asScalaBuffer, asScalaSet }
-
-import sbt._
 
 /** Fetch project dependencies as bundles */
 object Fetch {

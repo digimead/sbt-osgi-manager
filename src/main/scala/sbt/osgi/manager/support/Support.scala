@@ -24,7 +24,6 @@ import org.eclipse.equinox.internal.p2.metadata.VersionParser
 import org.eclipse.equinox.p2.metadata.Version
 import sbt.{ Keys => skey, ModuleID, Resolver, Scope, URLRepository }
 import sbt.osgi.manager.{ Dependency, Plugin }
-import sbt.osgi.manager.support.OSGiManagerException
 import scala.collection.JavaConversions.asScalaSet
 import scala.language.implicitConversions
 
