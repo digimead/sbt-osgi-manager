@@ -12,6 +12,8 @@ version := "1.0.0.0-SNAPSHOT"
 
 scalacOptions ++= Seq("-unchecked", "-deprecation", "-Xcheckinit")
 
+OSGiKey.osgiBndBundleLicense in OSGiConf := "abc"
+
 logLevel := Level.Info
 
 libraryDependencies ++= Seq(
@@ -26,10 +28,30 @@ mainClass in (Compile, packageBin) := Some("a.b.c")
 
 //logLevel := Level.Debug
 
-InputKey[Unit]("check") := {
+InputKey[Unit]("checkRoot") := {
+  val args = Def.spaceDelimited().parsed
+  val size = (libraryDependencies).value.size
+  System.out.println("OSGi library dependencies size = " + size)
+  if (size != Integer.parseInt(args.head)) error("unexpected size: " + size + ", expect " + args.head)
+  ()
+}
+
+InputKey[Unit]("checkOSGi") := {
   val args = Def.spaceDelimited().parsed
   val size = (libraryDependencies in OSGiConf).value.size
   System.out.println("OSGi library dependencies size = " + size)
-  if (size != Integer.parseInt(args.head)) error("unexpected size: " + size)
+  if (size != Integer.parseInt(args.head)) error("unexpected size: " + size + ", expect " + args.head)
+  ()
+}
+
+InputKey[Unit]("checkABC") := {
+  val value = (OSGiKey.osgiBndBundleLicense in OSGiConf).value
+  if (value != "abc") error("unexpected value: " + value)
+  ()
+}
+
+InputKey[Unit]("checkDEF") := {
+  val value = (OSGiKey.osgiBndBundleLicense in OSGiConf).value
+  if (value != "def") error("unexpected value: " + value)
   ()
 }

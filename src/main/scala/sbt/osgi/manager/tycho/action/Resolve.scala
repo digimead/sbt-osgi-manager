@@ -21,8 +21,8 @@ package sbt.osgi.manager.tycho.action
 import sbt._
 import sbt.Keys._
 import sbt.osgi.manager.{ Plugin }
-import sbt.osgi.manager.support.OSGiManagerException
 import sbt.osgi.manager.Keys.{ OSGiConf, osgiBndPrepareHome, osgiMavenPrepareHome }
+import sbt.osgi.manager.support.OSGiManagerException
 import sbt.osgi.manager.support.Support.logPrefix
 import sbt.osgi.manager.bnd
 import scala.collection.immutable
@@ -84,15 +84,13 @@ class Resolve {
     arg.log.debug(logPrefix("*") + "Add  settings: " + dependencySettings)
     if (dependencySettings.nonEmpty) {
       arg.log.info(logPrefix(arg.name) + "Update library dependencies")
-      val newStructure = {
-        import arg.extracted._
-        val append = Load.transformSettings(Load.projectScope(currentRef), currentRef.build, rootProject, dependencySettings.toSeq)
-        Load.reapply(session.original ++ append, structure)
-      }
-      Project.setProject(arg.extracted.session, newStructure, actualState)
+      import extracted._
+      val append = Load.transformSettings(Load.projectScope(currentRef),
+        currentRef.build, rootProject, dependencySettings.toSeq)
+      val newStructure = Load.reapply(session.mergeSettings ++ append, structure)
+      Project.setProject(session, newStructure, state)
     } else
       actualState
-
   }
 
   /** Collects resolved artifacts per project */

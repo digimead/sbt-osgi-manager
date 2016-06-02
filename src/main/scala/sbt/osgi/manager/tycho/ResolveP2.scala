@@ -35,7 +35,7 @@ import org.eclipse.tycho.osgi.adapters.MavenLoggerAdapter
 import org.eclipse.tycho.p2.resolver.facade.P2ResolutionResult
 import org.eclipse.tycho.p2.target.facade.TargetPlatformConfigurationStub
 import sbt.{ File, IO, IvySbt, ModuleID, moduleIDConfigurable }
-import sbt.osgi.manager.{ Environment, Plugin }
+import sbt.osgi.manager.{ Environment, Keys, Plugin }
 import sbt.osgi.manager.Dependency.getOrigin
 import sbt.osgi.manager.support.Model
 import sbt.osgi.manager.support.Support.logPrefix
@@ -271,12 +271,7 @@ class ResolveP2 {
     } else {
       resolutionEntry.getLocation.getAbsoluteFile.toURI.toASCIIString()
     }
-    val moduleId = Model.getResolvedModuleScope.map(_.name) match {
-      case Some(scope) ⇒
-        iu.getId() % resolutionEntry.getId() % iu.getVersion().getOriginal() % scope from location
-      case None ⇒
-        iu.getId() % resolutionEntry.getId() % iu.getVersion().getOriginal() from location
-    }
+    val moduleId = iu.getId() % resolutionEntry.getId() % iu.getVersion().getOriginal() % Keys.OSGiConf from location
     if (withSourceCode) {
       getModuleSourceCode(resolutionEntry, iu, resolveAsRemoteArtifacts, repositories) match {
         case Some(uri) ⇒

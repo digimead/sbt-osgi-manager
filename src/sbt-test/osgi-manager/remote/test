@@ -1,27 +1,40 @@
 > osgiShow
 -$ exists target/deps/
 -$ exists target/osgi/
+> checkRoot 3
+> checkOSGi 4
 > osgiResolveRemote
 > dependencyFetch
 $ exists target/osgi/
 $ exists target/deps/org.eclipse.ui_3.103.0.v20120705-114351.jar
 > compile
 > clean
-> check 61
+> checkRoot 60
+> checkOSGi 61
 > osgiResolve
-> check 61
-> set sbt.osgi.manager.OSGiKey.osgiBndBundleCopyright in sbt.osgi.manager.OSGiConf := new String()
+> checkRoot 60
+> checkOSGi 61
+> checkABC
+> set sbt.osgi.manager.OSGiKey.osgiBndBundleLicense in sbt.osgi.manager.OSGiConf := new String("def")
+> checkDEF
 > osgiResolve
-> check 61
+> checkDEF
+> checkRoot 60
+> checkOSGi 61
 > osgiResolveRemote
-> check 61
+> checkRoot 60
+> checkOSGi 61
 > osgiResolve
-> check 61
+> checkRoot 60
+> checkOSGi 61
 > osgiResolveRemote
-> check 61
+> checkRoot 60
+> checkOSGi 61
 > set sbt.osgi.manager.Keys.osgiTychoTarget in sbt.osgi.manager.OSGiConf := List()
 > osgiResolveRemote
-> check 67
+> checkRoot 66
+> checkOSGi 67
 > set sbt.osgi.manager.Keys.osgiTychoTarget in sbt.osgi.manager.OSGiConf := List((sbt.osgi.manager.Environment.OS.WIN32, sbt.osgi.manager.Environment.WS.WIN32, sbt.osgi.manager.Environment.ARCH.X86), (sbt.osgi.manager.Environment.OS.WIN32, sbt.osgi.manager.Environment.WS.WIN32, sbt.osgi.manager.Environment.ARCH.X86_64))
 > osgiResolveRemote
-> check 62
+> checkRoot 61
+> checkOSGi 62

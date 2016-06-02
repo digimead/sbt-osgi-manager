@@ -48,10 +48,9 @@ object Plugin {
     // base settings
     testSettings ++
       inConfig(Keys.OSGiConf)(Seq(
-        managedClasspath := Classpaths.managedJars(osgiModuleScope.value, classpathTypes.value, update.value),
+        managedClasspath <<= (classpathTypes in OSGiConf, update in OSGiConf) map { (a, b) ⇒ Classpaths.managedJars(OSGiConf, a, b) },
         osgiDirectory <<= (target) { _ / "osgi" },
-        osgiFetchPath := None,
-        osgiModuleScope := OSGiConf)) ++
+        osgiFetchPath := None)) ++
       // plugin settings
       bnd.Bnd.settings ++
       tycho.Maven.settings ++
@@ -64,8 +63,8 @@ object Plugin {
       Seq(
         commands += Command.command("osgiResolve", osgiResolveCommandHelp)(osgiResolveCommand(false, _)),
         commands += Command.command("osgiResolveRemote", osgiResolveRemoteCommandHelp)(osgiResolveCommand(true, _)),
-        managedClasspath in Compile <++= managedClasspath in OSGiConf,
-        managedClasspath in Runtime <++= managedClasspath in OSGiConf,
+        managedClasspath in sbt.Compile <++= managedClasspath in OSGiConf,
+        managedClasspath in sbt.Runtime <++= managedClasspath in OSGiConf,
         managedClasspath in sbt.Test <++= managedClasspath in OSGiConf,
         osgiCompile <<= osgiCompileTask,
         osgiFetch <<= osgiFetchTask,
