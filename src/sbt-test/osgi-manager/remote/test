@@ -8,6 +8,17 @@ $ exists target/deps/org.eclipse.ui_3.103.0.v20120705-114351.jar
 > compile
 > clean
 > check 61
+> osgiResolve
+> check 61
+> set sbt.osgi.manager.OSGiKey.osgiBndBundleCopyright in sbt.osgi.manager.OSGiConf := new String()
+> osgiResolve
+> check 61
+> osgiResolveRemote
+> check 61
+> osgiResolve
+> check 61
+> osgiResolveRemote
+> check 61
 > set sbt.osgi.manager.Keys.osgiTychoTarget in sbt.osgi.manager.OSGiConf := List()
 > osgiResolveRemote
 > check 67

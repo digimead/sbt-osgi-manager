@@ -80,7 +80,7 @@ class Resolve {
       Seq(libraryDependencies in projectRef ++= dependencyOBR(projectRef))
     else
       Seq()
-    val dependencySettings = dependencySettingsP2.flatten //++ dependencySettingsOBR.flatten
+    val dependencySettings = dependencySettingsP2.flatten ++ dependencySettingsOBR.flatten
     arg.log.debug(logPrefix("*") + "Add  settings: " + dependencySettings)
     if (dependencySettings.nonEmpty) {
       arg.log.info(logPrefix(arg.name) + "Update library dependencies")

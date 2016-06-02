@@ -77,7 +77,7 @@ import scala.collection.immutable
 //    Ezh
 
 /** Resolve interface for SBT via Bnd API */
-object Resolve extends support.Resolve {
+object Resolve {
   /** Predefined name for OSGi R5 repository with resolved dependencies */
   val internalRepositoryName = "Internal repository with resolved dependencies"
   /** Predefined location for OSGi R5 repository with resolved dependencies */
@@ -94,7 +94,6 @@ object Resolve extends support.Resolve {
       val bridge = Bnd.get()
       val modules = resolveOBR(dependencies, resolvers, bridge, resolvedDependencies)
       val resolved = skey.libraryDependencies in arg.thisScope get arg.extracted.structure.data getOrElse Seq()
-      updateCache(CacheOBRKey(arg.thisProjectRef.project), eeConfiguration, target, dependencies, resolvers)
       modules.filterNot { m ⇒
         val alreadyInLibraryDependencies = resolved.exists(_ == m)
         if (alreadyInLibraryDependencies)
@@ -104,7 +103,6 @@ object Resolve extends support.Resolve {
       modules
     } else {
       arg.log.info(logPrefix(arg.name) + "No OBR dependencies found")
-      updateCache(CacheOBRKey(arg.thisProjectRef.project), eeConfiguration, target, dependencies, resolvers)
       Seq()
     }
   }
@@ -224,24 +222,10 @@ object Resolve extends support.Resolve {
       throw new IllegalStateException("Tycho execution environment configuration is not defined")
     }
     val target = Keys.osgiTychoTarget in arg.thisOSGiScope get arg.extracted.structure.data getOrElse Environment.current
-    val cached = for (id ← build.defined.keys) yield {
+    immutable.HashMap((for (id ← build.defined.keys) yield {
       implicit val projectRef = ProjectRef(uri, id)
-      val localArg = arg.copy(thisProjectRef = projectRef)
-      isCached(CacheOBRKey(id), eeConfiguration, target, getDependencies(Dependency.OBR, localArg.thisOSGiScope)(localArg),
-        getResolvers(Dependency.OBR, localArg.thisOSGiScope)(localArg))(localArg)
-    }
-    if (cached.forall(_ == true)) {
-      arg.log.info(logPrefix(arg.name) + "Pass OBR resolution: already resolved")
-      immutable.HashMap((for (id ← build.defined.keys) yield {
-        val projectRef = ProjectRef(uri, id)
-        (projectRef, Seq())
-      }).toSeq: _*)
-    } else {
-      immutable.HashMap((for (id ← build.defined.keys) yield {
-        implicit val projectRef = ProjectRef(uri, id)
-        (projectRef, resolveOBR(resolvedDependencies.get(projectRef) getOrElse Seq(), eeConfiguration, target)(arg.copy(thisProjectRef = projectRef)))
-      }).toSeq: _*)
-    }
+      (projectRef, resolveOBR(resolvedDependencies.get(projectRef) getOrElse Seq(), eeConfiguration, target)(arg.copy(thisProjectRef = projectRef)))
+    }).toSeq: _*)
   }
   /** Get exists or create new R5 index if user provides file:/directory URI */
   protected def aquireRepositoryIndex(id: String, location: URI, workspace: Workspace)(implicit arg: Plugin.TaskArgument): Option[AbstractIndexedRepo] = {

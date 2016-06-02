@@ -40,7 +40,6 @@ object Keys {
   lazy val osgiBndPrepareHome = TaskKey[java.io.File]("osgiPrepareBndHome", "Prepare Bnd home directory")
   lazy val osgiMavenPrepareHome = TaskKey[java.io.File]("osgiPrepareMavenHome", "Prepare Maven home directory")
   lazy val osgiPluginInfo = TaskKey[Unit]("osgiPluginInfo", "Show plugin information.")
-  lazy val osgiResetCache = TaskKey[Unit]("osgiResetCache", "Reset plugin cache(s)")
 
   /////////////////////////////////////
   // Bnd

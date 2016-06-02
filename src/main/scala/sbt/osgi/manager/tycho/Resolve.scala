@@ -20,10 +20,10 @@ package sbt.osgi.manager.tycho
 
 import org.apache.maven.artifact.Artifact
 import org.apache.maven.artifact.resolver.ArtifactResolutionRequest
-import org.apache.maven.model.{ Dependency => MavenDependency }
+import org.apache.maven.model.{ Dependency ⇒ MavenDependency }
 import org.apache.maven.repository.RepositorySystem
 import org.eclipse.tycho.core.ee.shared.ExecutionEnvironmentConfiguration
-import sbt.{ IvySbt, Keys => skey, ModuleID, ProjectRef }
+import sbt.{ IvySbt, Keys ⇒ skey, ModuleID, ProjectRef }
 import sbt.osgi.manager.{ Dependency, Environment, Keys, Plugin, support }
 import sbt.osgi.manager.Dependency.{ moduleId2Dependency, tuplesWithString2repositories }
 import sbt.osgi.manager.support.CacheP2Key
@@ -47,7 +47,7 @@ import scala.language.reflectiveCalls
 //   Your patch will be accepted. You are welcome.
 
 /** Contain resolve action for Maven and P2 repository */
-object Resolve extends support.Resolve {
+object Resolve {
   /** Resolve the dependency against the standard Maven repository */
   def resolveBasic(maven: Maven)(implicit arg: Plugin.TaskArgument) {
     val groupId = "org.apache.maven"
@@ -126,7 +126,6 @@ object Resolve extends support.Resolve {
       val bridge = Maven()
       val modules = ResolveP2(dependencies, resolvers, eeConfiguration, target, bridge, ivySbt, resolveAsRemoteArtifacts, true)
       val resolved = skey.libraryDependencies in arg.thisScope get arg.extracted.structure.data getOrElse Seq()
-      updateCache(CacheP2Key(arg.thisProjectRef.project), eeConfiguration, target, dependencies, resolvers)
       modules.filterNot { m ⇒
         val alreadyInLibraryDependencies = resolved.exists(_ == m)
         if (alreadyInLibraryDependencies)
@@ -135,7 +134,6 @@ object Resolve extends support.Resolve {
       }
     } else {
       arg.log.info(logPrefix(arg.name) + "No P2 dependencies found")
-      updateCache(CacheP2Key(arg.thisProjectRef.project), eeConfiguration, target, dependencies, resolvers)
       Seq()
     }
   }
@@ -148,23 +146,9 @@ object Resolve extends support.Resolve {
       throw new IllegalStateException("Tycho execution environment configuration is not defined")
     }
     val target = Keys.osgiTychoTarget in arg.thisOSGiScope get arg.extracted.structure.data getOrElse Environment.current
-    val cached = for (id ← build.defined.keys) yield {
+    immutable.HashMap((for (id ← build.defined.keys) yield {
       implicit val projectRef = ProjectRef(uri, id)
-      val localArg = arg.copy(thisProjectRef = projectRef)
-      isCached(CacheP2Key(id), eeConfiguration, target, getDependencies(Dependency.P2, localArg.thisOSGiScope)(localArg),
-        getResolvers(Dependency.P2, localArg.thisOSGiScope)(localArg))(localArg)
-    }
-    if (cached.forall(_ == true) && !resolveAsRemoteArtifacts) {
-      arg.log.info(logPrefix(arg.name) + "Pass P2 resolution: already resolved")
-      immutable.HashMap((for (id ← build.defined.keys) yield {
-        val projectRef = ProjectRef(uri, id)
-        (projectRef, Seq())
-      }).toSeq: _*)
-    } else {
-      immutable.HashMap((for (id ← build.defined.keys) yield {
-        implicit val projectRef = ProjectRef(uri, id)
-        (projectRef, resolveP2(ivySbt, resolveAsRemoteArtifacts, eeConfiguration, target)(arg.copy(thisProjectRef = projectRef)))
-      }).toSeq: _*)
-    }
+      (projectRef, resolveP2(ivySbt, resolveAsRemoteArtifacts, eeConfiguration, target)(arg.copy(thisProjectRef = projectRef)))
+    }).toSeq: _*)
   }
 }

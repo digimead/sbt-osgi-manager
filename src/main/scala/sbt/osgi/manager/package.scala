@@ -21,7 +21,6 @@ package sbt.osgi
 import java.net.{ URI, URL }
 import org.apache.maven.model.Dependency
 import org.eclipse.equinox.p2.metadata.Version
-import org.eclipse.tycho.core.ee.shared.ExecutionEnvironmentConfigurationStub
 import sbt.Keys._
 import sbt._
 import sbt.osgi.manager.{ Dependency, Keys, OSGi, Plugin }

@@ -59,8 +59,7 @@ object Plugin {
       inConfig(Keys.OSGiConf)(Seq(
         osgiBndPrepareHome <<= Plugin.prepareBndHomeTask,
         osgiMavenPrepareHome <<= Plugin.prepareMavenHomeTask,
-        osgiPluginInfo <<= osgiPluginInfoTask,
-        osgiResetCache := osgiResetCacheTask)) ++
+        osgiPluginInfo <<= osgiPluginInfoTask)) ++
       // and global settings
       Seq(
         commands += Command.command("osgiResolve", osgiResolveCommandHelp)(osgiResolveCommand(false, _)),
@@ -147,15 +146,9 @@ object Plugin {
   /** Command that populates libraryDependencies with required bundles */
   def osgiResolveCommand(resolveAsRemoteArtifacts: Boolean, state: State): State =
     SLF4JBridge.withLogFactory(LoggerSLF4J.Factory) {
-      org.digimead.sbt.util.Util.inner.applyWithClassLoader[State](PluginClassLoader,
+      org.digimead.sbt.util.Util.applyWithClassLoader[State](PluginClassLoader,
         classOf[tycho.action.Resolve], resolveAsRemoteArtifacts: java.lang.Boolean, state)
     }
-  /** Reset all plugin caches */
-  def osgiResetCacheTask = (state, streams, thisProjectRef) map { (state, streams, thisProjectRef) ⇒
-    implicit val arg = TaskArgument(state, thisProjectRef, Some(streams))
-    // It is only one now
-    tycho.Resolve.resetCache()
-  }
   /** Generate help for osgiResolveCommand */
   def osgiResolveCommandHelp = {
     val osgiResolveCommand = "osgiResolve"

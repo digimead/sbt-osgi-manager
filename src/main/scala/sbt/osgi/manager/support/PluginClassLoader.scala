@@ -218,6 +218,7 @@ object PluginClassLoader {
     "org.digimead.sbt.util.StaticLoggerBinder",
     "org.slf4j.ILoggerFactory",
     "org.slf4j.spi.LoggerFactoryBinder",
+    "org.eclipse.tycho.core.ee.shared.ExecutionEnvironmentConfiguration",
     "sbt.",
     "scala.")
 }
