@@ -33,7 +33,7 @@ class Resolve {
     val extracted = Project.extract(state)
     var actualState = state
     implicit val projectRef = extracted.currentRef
-    implicit val arg = Plugin.TaskArgument(actualState, Project.current(actualState), None)
+    implicit val arg = Plugin.TaskArgument(actualState, projectRef, None)
     val ivySbtForCommand = {
       // This selects the 'osgi-maven-prepare' task for the current project.
       // The value produced by 'osgi-maven-prepare' is of type File
@@ -84,11 +84,13 @@ class Resolve {
     arg.log.debug(logPrefix("*") + "Add  settings: " + dependencySettings)
     if (dependencySettings.nonEmpty) {
       arg.log.info(logPrefix(arg.name) + "Update library dependencies")
+      val extracted = Project.extract(actualState)
+      implicit val projectRef = extracted.currentRef
       import extracted._
       val append = Load.transformSettings(Load.projectScope(currentRef),
         currentRef.build, rootProject, dependencySettings.toSeq)
       val newStructure = Load.reapply(session.mergeSettings ++ append, structure)
-      Project.setProject(session, newStructure, state)
+      Project.setProject(session, newStructure, actualState)
     } else
       actualState
   }

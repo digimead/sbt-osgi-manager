@@ -1,7 +1,7 @@
 /**
  * sbt-osgi-manager - OSGi development bridge based on Bnd and Tycho.
  *
- * Copyright (c) 2013-2014 Alexey Aksenov ezh@ezh.msk.ru
+ * Copyright (c) 2013-2016 Alexey Aksenov ezh@ezh.msk.ru
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,9 @@
 package sbt.osgi.manager
 
 import aQute.bnd.osgi.Analyzer
+import java.net.URI
 import java.util.Properties
+import java.util.jar.Manifest
 import org.eclipse.tycho.core.ee.shared.ExecutionEnvironmentConfiguration
 import sbt.{ Configuration, ModuleID, SettingKey, TaskKey, config }
 
@@ -27,18 +29,20 @@ object Keys {
   def OSGiConf = config("osgi").hide
   def OSGiTestConf = config("osgiTest").hide
 
-  lazy val osgiDirectory = SettingKey[java.io.File]("osgiDirectory", "Root directory with temporary OSGi data")
-  lazy val osgiFetchPath = SettingKey[Option[java.io.File]]("osgiFetchPath", "Location for 'fetch' task bundles")
+  lazy val osgiDirectory = SettingKey[java.io.File]("osgiDirectory", "Root directory with temporary OSGi data.")
   lazy val osgiFetchInfo = SettingKey[(Option[ModuleID], String, Analyzer, Plugin.TaskArgument) ⇒ Unit]("osgiFetchInfo", "Fn(x) that passes infromation about the bundle to the analyzer.")
+  lazy val osgiFetchPath = SettingKey[Option[java.io.File]]("osgiFetchPath", "Location for 'fetch' task bundles.")
+  lazy val osgiManifestPath = SettingKey[URI]("osgiManifestPath", "Manifest location for osgiWriteManifest task.")
 
   // Tasks
 
-  lazy val osgiCompile = TaskKey[Unit]("osgiCompile", "Compile source code and generate bundle manifest.") // global
+  lazy val osgiBndPrepareHome = TaskKey[java.io.File]("osgiPrepareBndHome", "Prepare Bnd home directory.")
   lazy val osgiFetch = TaskKey[Unit]("osgiFetch", "Fetch all depencencies as bundles to the specific directory.") // global
-  lazy val osgiShow = TaskKey[Unit]("osgiShow", "Show the bundle properties") // global
-  lazy val osgiBndPrepareHome = TaskKey[java.io.File]("osgiPrepareBndHome", "Prepare Bnd home directory")
-  lazy val osgiMavenPrepareHome = TaskKey[java.io.File]("osgiPrepareMavenHome", "Prepare Maven home directory")
+  lazy val osgiManifest = TaskKey[Manifest]("osgiManifest", "OSGi manifest of the current project.") // global
+  lazy val osgiMavenPrepareHome = TaskKey[java.io.File]("osgiPrepareMavenHome", "Prepare Maven home directory.")
   lazy val osgiPluginInfo = TaskKey[Unit]("osgiPluginInfo", "Show plugin information.")
+  lazy val osgiShow = TaskKey[Unit]("osgiShow", "Show the bundle properties.") // global
+  lazy val osgiWriteManifest = TaskKey[Unit]("osgiWriteManifest", "Write manifest to osgiManifest location.") // global
 
   /////////////////////////////////////
   // Bnd
@@ -138,9 +142,9 @@ object Keys {
   lazy val osgiMavenIsUpdateSnapshots = SettingKey[Boolean]("osgiMavenIsUpdateSnapshots", "MAVEN")
   lazy val osgiMavenPlexusXML = SettingKey[java.net.URL]("osgiMavenPlexusXML", "MAVEN")
   lazy val osgiMavenSystemProperties = SettingKey[Properties]("osgiMavenUserProperties", "Maven system properties")
-  lazy val osgiMavenUserSettingsXML = SettingKey[Option[java.io.File]]("osgiMavenUserXML", "MAVEN")
   lazy val osgiMavenUserHome = SettingKey[java.io.File]("osgiMavenUserDirectory", "Directory that contains '.m2'")
   lazy val osgiMavenUserProperties = SettingKey[Properties]("osgiMavenUserProperties", "Maven user properties")
+  lazy val osgiMavenUserSettingsXML = SettingKey[Option[java.io.File]]("osgiMavenUserXML", "MAVEN")
   lazy val osgiTychoExecutionEnvironmentConfiguration = SettingKey[ExecutionEnvironmentConfiguration]("osgiTychoExecutionEnvironmentConfiguration", "Tycho execution environment configuration. There are few predefined at sbt.osgi.manager.Environment.Execution")
   lazy val osgiTychoTarget = SettingKey[Seq[(Environment.OS, Environment.WS, Environment.ARCH)]]("osgiTychoTarget", "Tycho resolution target")
 }

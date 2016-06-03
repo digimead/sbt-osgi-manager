@@ -1,0 +1,14 @@
+> delete
+-$ exists target/osgi/
+-$ exists target/scala-2.10/classes/META-INF/MANIFEST.MF
+> checkNot
+> osgiResolve
+> osgiWriteManifest
+$ exists target/osgi/
+$ exists target/scala-2.10/classes/META-INF/MANIFEST.MF
+> checkNot
+> set sbt.osgi.manager.OSGiKey.osgiManifestPath in sbt.osgi.manager.OSGiConf := new URI("file:///tmp/MANIFEST.MF")
+> osgiWriteManifest
+$ exists target/osgi/
+$ exists target/scala-2.10/classes/META-INF/MANIFEST.MF
+> check
