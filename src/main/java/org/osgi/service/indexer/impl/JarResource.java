@@ -34,13 +34,13 @@ import java.util.jar.Manifest;
 
 import org.osgi.service.indexer.Resource;
 
-class JarResource implements Resource {
+public class JarResource implements Resource {
 
 	private final File file;
 	private final JarFile jarFile;
 	private final String location;
 
-	private final Dictionary<String, Object>properties = new Hashtable<String, Object>();
+	private final Dictionary<String, Object> properties = new Hashtable<String, Object>();
 
 	private final Map<String, List<JarEntry>> prefixMap = new HashMap<String, List<JarEntry>>();
 	private final Map<String, JarEntry> paths = new HashMap<String, JarEntry>();
@@ -125,8 +125,8 @@ class JarResource implements Resource {
 					}
 				}
 			}
+			return manifest;
 		}
-		return manifest;
 	}
 
 	public List<String> listChildren(String prefix) throws IOException {

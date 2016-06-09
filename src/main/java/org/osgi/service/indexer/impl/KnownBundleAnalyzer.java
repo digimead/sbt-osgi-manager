@@ -49,7 +49,10 @@ public class KnownBundleAnalyzer implements ResourceAnalyzer {
 			} catch (IOException e) {
 				// ignore
 			} finally {
-				try { stream.close(); } catch (IOException e) {}
+				try {
+					stream.close();
+				} catch (IOException e) {
+				}
 			}
 		}
 	}
@@ -71,19 +74,20 @@ public class KnownBundleAnalyzer implements ResourceAnalyzer {
 			return;
 		}
 
-		for (Enumeration<?> names = defaultProperties.propertyNames(); names.hasMoreElements(); ) {
+		for (Enumeration<?> names = defaultProperties.propertyNames(); names.hasMoreElements();) {
 			String propName = (String) names.nextElement();
 			processPropertyName(resource, caps, reqs, resourceName, propName, defaultProperties);
 		}
 
 		if (extraProperties != null)
-			for (Enumeration<?> names = extraProperties.propertyNames(); names.hasMoreElements(); ) {
+			for (Enumeration<?> names = extraProperties.propertyNames(); names.hasMoreElements();) {
 				String propName = (String) names.nextElement();
 				processPropertyName(resource, caps, reqs, resourceName, propName, extraProperties, defaultProperties);
 			}
 	}
 
-	private static void processPropertyName(Resource resource, List<Capability> caps, List<Requirement> reqs, SymbolicName resourceName, String name, Properties... propertiesList) throws IOException {
+	private static void processPropertyName(Resource resource, List<Capability> caps, List<Requirement> reqs, SymbolicName resourceName, String name, Properties... propertiesList)
+			throws IOException {
 		String[] bundleRef = name.split(";");
 		String bsn = bundleRef[0];
 
@@ -100,11 +104,14 @@ public class KnownBundleAnalyzer implements ResourceAnalyzer {
 	}
 
 	private static enum IndicatorType {
-		Capability("cap="),
-		Requirement("req=");
+		Capability("cap="), Requirement("req=");
 
 		String prefix;
-		IndicatorType(String prefix) { this.prefix = prefix; }
+
+		IndicatorType(String prefix) {
+			this.prefix = prefix;
+		}
+
 		public String getPrefix() {
 			return prefix;
 		}
@@ -113,19 +120,20 @@ public class KnownBundleAnalyzer implements ResourceAnalyzer {
 	private static void processClause(String bundleRef, String clauseStr, List<Capability> caps, List<Requirement> reqs) {
 		Map<String, Map<String, String>> header = OSGiHeader.parseHeader(clauseStr);
 
-		for (Entry<String, Map<String,String>> entry : header.entrySet()) {
+		for (Entry<String, Map<String, String>> entry : header.entrySet()) {
 			String indicator = OSGiHeader.removeDuplicateMarker(entry.getKey());
 			IndicatorType type;
 
 			String namespace;
-			if(indicator.startsWith(IndicatorType.Capability.getPrefix())) {
+			if (indicator.startsWith(IndicatorType.Capability.getPrefix())) {
 				type = IndicatorType.Capability;
 				namespace = indicator.substring(IndicatorType.Capability.getPrefix().length());
 			} else if (indicator.startsWith(IndicatorType.Requirement.getPrefix())) {
 				type = IndicatorType.Requirement;
 				namespace = indicator.substring(IndicatorType.Requirement.getPrefix().length());
 			} else {
-				throw new IllegalArgumentException(MessageFormat.format("Invalid indicator format in known-bundle parsing for bundle  \"{0}\", expected cap=namespace or req=namespace, found \"{1}\".", bundleRef, indicator));
+				throw new IllegalArgumentException(MessageFormat.format(
+						"Invalid indicator format in known-bundle parsing for bundle  \"{0}\", expected cap=namespace or req=namespace, found \"{1}\".", bundleRef, indicator));
 			}
 
 			Builder builder = new Builder().setNamespace(namespace);

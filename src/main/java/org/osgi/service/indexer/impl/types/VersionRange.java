@@ -1,22 +1,6 @@
-/**
- * Copy of the code from github.com/bndtools/bnd, reason: not available at Maven central or other repository
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 /*
  * Copyright (c) OSGi Alliance (2002, 2006, 2007). All Rights Reserved.
- *
+ * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -46,8 +30,17 @@ public class VersionRange implements Comparable<VersionRange> {
 	char end = ']';
 
 	static String V = "[0-9]+(\\.[0-9]+(\\.[0-9]+(\\.[a-zA-Z0-9_-]+)?)?)?";
-	static Pattern RANGE = Pattern.compile("(\\(|\\[)\\s*(" + V + ")\\s*,\\s*("
-			+ V + ")\\s*(\\)|\\])");
+	static Pattern RANGE = Pattern.compile("(\\(|\\[)\\s*(" + V + ")\\s*,\\s*(" + V + ")\\s*(\\)|\\])");
+
+	public VersionRange(boolean lowInclusive, Version low, Version high, boolean highInclusive) {
+		if (low.compareTo(high) > 0)
+			throw new IllegalArgumentException("Low Range is higher than High Range: " + low + "-" + high);
+
+		this.low = low;
+		this.high = high;
+		this.start = lowInclusive ? '[' : '(';
+		this.end = highInclusive ? ']' : ')';
+	}
 
 	public VersionRange(String string) {
 		string = string.trim();
@@ -58,12 +51,13 @@ public class VersionRange implements Comparable<VersionRange> {
 			high = new Version(m.group(6));
 			end = m.group(10).charAt(0);
 			if (low.compareTo(high) > 0)
-				throw new IllegalArgumentException(
-						"Low Range is higher than High Range: " + low + "-"
-								+ high);
+				throw new IllegalArgumentException("Low Range is higher than High Range: " + low + "-" + high);
 
-		} else
+		} else {
+			start = '[';
 			high = low = new Version(string);
+			end = ']';
+		}
 	}
 
 	public boolean isRange() {

@@ -41,7 +41,7 @@ public class BlueprintAnalyzer implements ResourceAnalyzer {
 		boolean blueprintEnabled = false;
 
 		String header = resource.getManifest().getMainAttributes().getValue(BUNDLE_BLUEPRINT_HEADER);
-		if(header != null) {
+		if (header != null) {
 			blueprintEnabled = true;
 		} else {
 			List<String> children = resource.listChildren("OSGI-INF/blueprint/");
@@ -62,8 +62,7 @@ public class BlueprintAnalyzer implements ResourceAnalyzer {
 	private Requirement createRequirement() {
 		Builder builder = new Builder().setNamespace(Namespaces.NS_EXTENDER);
 		String filter = String.format("(&(%s=%s)(version>=1.0.0)(!(version>=2.0.0)))", Namespaces.NS_EXTENDER, Namespaces.EXTENDER_BLUEPRINT);
-		builder.addDirective(Namespaces.DIRECTIVE_FILTER, filter)
-			.addDirective(Namespaces.DIRECTIVE_EFFECTIVE, Namespaces.EFFECTIVE_ACTIVE);
+		builder.addDirective(Namespaces.DIRECTIVE_FILTER, filter).addDirective(Namespaces.DIRECTIVE_EFFECTIVE, Namespaces.EFFECTIVE_ACTIVE);
 		return builder.buildRequirement();
 	}
 

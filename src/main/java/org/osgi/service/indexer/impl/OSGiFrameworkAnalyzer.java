@@ -28,7 +28,8 @@ import org.osgi.service.indexer.ResourceAnalyzer;
 import org.osgi.service.log.LogService;
 
 /**
- * Detects JARs that are OSGi Frameworks, using the presence of META-INF/services/org.osgi.framework.launch.FrameworkFactory
+ * Detects JARs that are OSGi Frameworks, using the presence of
+ * META-INF/services/org.osgi.framework.launch.FrameworkFactory
  */
 public class OSGiFrameworkAnalyzer implements ResourceAnalyzer {
 
@@ -60,7 +61,8 @@ public class OSGiFrameworkAnalyzer implements ResourceAnalyzer {
 					uses.append(pkgName);
 					firstPkg = false;
 
-					// If it's org.osgi.framework, get the package version and map to OSGi spec version
+					// If it's org.osgi.framework, get the package version and
+					// map to OSGi spec version
 					if (FRAMEWORK_PACKAGE.equals(pkgName)) {
 						Version frameworkPkgVersion = (Version) cap.getAttributes().get(Namespaces.ATTR_VERSION);
 						specVersion = mapFrameworkPackageVersion(frameworkPkgVersion);

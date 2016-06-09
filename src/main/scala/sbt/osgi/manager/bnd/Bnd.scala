@@ -24,6 +24,7 @@ import aQute.bnd.build.model.clauses.{ ExportedPackage, ImportPattern, Versioned
 import aQute.bnd.build.model.conversions.{ ClauseListConverter, Converter, HeaderClauseListConverter, VersionedClauseConverter }
 import aQute.bnd.header.Attrs
 import aQute.bnd.service.{ Plugin ⇒ BndPlugin }
+import org.digimead.sbt.util.JavaVersion
 import sbt._
 import sbt.Keys._
 import sbt.osgi.manager.Keys.{ OSGiConf, osgiBndBuildPath, osgiBndBundleActivationPolicy, osgiBndBundleActivator, osgiBndBundleCategory, osgiBndBundleContactAddress, osgiBndBundleCopyright, osgiBndBundleDescription, osgiBndBundleDocURL, osgiBndBundleFragmentHost, osgiBndBundleIcon, osgiBndBundleLicense, osgiBndBundleName, osgiBndBundleSymbolicName, osgiBndBundleSymbolicNameSingleton, osgiBndBundleUpdateLocation, osgiBndBundleVendor, osgiBndBundleVersion, osgiBndClassPath, osgiBndDirectory, osgiBndExportPackage, osgiBndImportPackage, osgiBndNoUses, osgiBndPlugin, osgiBndPluginPath, osgiBndPrivatePackage, osgiBndRequireBundle, osgiBndRequireCapability, osgiBndRunBundles, osgiBndRunEE, osgiBndRunFW, osgiBndRunFramework, osgiBndRunProperties, osgiBndRunVM, osgiBndServiceComponent, osgiBndSources, osgiBndSub, osgiBndTestCases, osgiDirectory, osgiFetchInfo }
@@ -129,9 +130,23 @@ object Bnd {
     osgiBndPluginPath := List[String](),
     osgiBndPrivatePackage := List[String](),
     osgiBndRequireBundle := List[String](),
-    osgiBndRequireCapability := "",
+    osgiBndRequireCapability := {
+      JavaVersion.current() match {
+        case JavaVersion(7) ⇒ """osgi.ee;filter:="(&(osgi.ee=JavaSE)(version=1.7))"""
+        case JavaVersion(8) ⇒ """osgi.ee;filter:="(&(osgi.ee=JavaSE)(version=1.8))"""
+        case JavaVersion(9) ⇒ """osgi.ee;filter:="(&(osgi.ee=JavaSE)(version=1.9))"""
+        case _ ⇒ """osgi.ee;filter:="(&(osgi.ee=JavaSE)(version=1.6))"""
+      }
+    },
     osgiBndRunBundles := List[String](),
-    osgiBndRunEE := "JavaSE-1.6",
+    osgiBndRunEE := {
+      JavaVersion.current() match {
+        case JavaVersion(7) ⇒ "JavaSE-1.7"
+        case JavaVersion(8) ⇒ "JavaSE-1.8"
+        case JavaVersion(9) ⇒ "JavaSE-1.9"
+        case _ ⇒ "JavaSE-1.6"
+      }
+    },
     osgiBndRunFramework := "",
     osgiBndRunFW := "org.eclipse.osgi", // "org.apache.felix.framework"
     osgiBndRunProperties := "",

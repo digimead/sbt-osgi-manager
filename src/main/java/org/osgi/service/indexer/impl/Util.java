@@ -81,8 +81,6 @@ public class Util {
 		return MimeType.Bundle;
 	}
 
-
-
 	public static void addVersionFilter(StringBuilder filter, VersionRange version, VersionKey key) {
 		if (version.isRange()) {
 			if (version.includeLow()) {

@@ -80,7 +80,7 @@ public class OSGiHeader {
 							advalue = "";
 						}
 
-						while(clause.containsKey(adname.trim()))
+						while (clause.containsKey(adname.trim()))
 							adname = adname.trim() + DUPLICATE_MARKER;
 
 						clause.put(adname.trim(), advalue.trim());

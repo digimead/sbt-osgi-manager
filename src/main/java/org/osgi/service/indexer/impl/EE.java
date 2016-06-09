@@ -23,7 +23,8 @@ public class EE {
 	private String name;
 	private String version;
 
-	private EE() {}
+	private EE() {
+	}
 
 	public static final EE parseBREE(String bree) {
 		EE ee = new EE();

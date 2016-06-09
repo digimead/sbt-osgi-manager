@@ -107,20 +107,25 @@ object GenerateManifest {
     }
   }
   /** Calculate manifest's content of the artifact (osgiCompile task). */
-  def generateManifestTask(dependencyClasspath: Seq[Attributed[File]], options: Seq[PackageOption], products: Seq[File])(implicit arg: Plugin.TaskArgument): Manifest = {
+  def generateManifestTask(name: String, version: String, homepage: Option[URL], organization: String, organizationName: String,
+    mainClass: Option[String], dependencyClasspath: Seq[Attributed[File]], products: Seq[File])(implicit arg: Plugin.TaskArgument): Manifest = {
     arg.log.info(logPrefix(arg.name) + "Calculate bundle manifest.")
     val classpath = dependencyClasspath.map(_.data)
-    val unprocessedOptions = Seq[PackageOption]()
     val manifest = new Manifest
     val main = manifest.getMainAttributes
+    val options = Seq.empty[Option[PackageOption]] :+
+      Some(Package.addSpecManifestAttributes(name, version, organizationName)) :+
+      Some(Package.addImplManifestAttributes(name, version, homepage, organization, organizationName)) :+
+      mainClass.map(Package.MainClass.apply)
     products.foreach { product ⇒
       arg.log.debug(logPrefix(arg.name) + "Calculate manifest for " + product)
       Package.mergeManifests(manifest, generate(product, classpath))
     }
-    for (option ← options) option match {
+    for (option ← options.flatten) option match {
       case Package.JarManifest(mergeManifest) ⇒ Package.mergeManifests(manifest, mergeManifest)
       case Package.ManifestAttributes(attributes @ _*) ⇒ main ++= attributes
-      case _ ⇒
+      case Package.MainClass(mainClassName) ⇒ main.put(Attributes.Name.MAIN_CLASS, mainClassName)
+      case _ ⇒ arg.log.warn("Ignored unknown package option " + option)
     }
     // filter headers that generate by BND and removed by user
     val summary = main.entrySet().map(entry ⇒ (entry.getKey().toString(), entry.getValue()))
@@ -141,23 +146,21 @@ object GenerateManifest {
     manifest
   }
   /** Calculate manifest's content of the artifact (packageBin task). */
-  def generatePackageOptionsTask(dependencyClasspath: Seq[Attributed[File]], options: Seq[PackageOption], products: Seq[File])(implicit arg: Plugin.TaskArgument): Seq[PackageOption] = {
-    arg.log.info(logPrefix(arg.name) + "Calculate bundle package options.")
-    val classpath = dependencyClasspath.map(_.data)
-    val unprocessedOptions = Seq[PackageOption]()
-    val manifest = new Manifest
-    val main = manifest.getMainAttributes
-    products.foreach { product ⇒
-      arg.log.debug(logPrefix(arg.name) + "Calculate manifest for " + product)
-      Package.mergeManifests(manifest, generate(product, classpath))
-    }
-    for (option ← options) option match {
-      case Package.JarManifest(mergeManifest) ⇒ Package.mergeManifests(manifest, mergeManifest)
-      case Package.ManifestAttributes(attributes @ _*) ⇒ main ++= attributes
-      case Package.MainClass(mainClassName) ⇒ main.put(Attributes.Name.MAIN_CLASS, mainClassName)
-      case _ ⇒ arg.log.warn("Ignored unknown package option " + option)
-    }
-    val attributes = main.entrySet().map(entry ⇒ (entry.getKey().toString, entry.getValue().toString)).filter {
+  def generatePackageOptionsTask(manifest: Manifest)(implicit arg: Plugin.TaskArgument): Seq[PackageOption] = {
+    val main = manifest.getMainAttributes()
+    val secondaryAttributes = manifest.getEntries.map {
+      case (name, attributes) ⇒
+        attributes.entrySet().map(entry ⇒ (entry.getKey().toString, entry.getValue().toString)).filter {
+          case ("Export-Package", _) ⇒
+            Model.getPropertyExportPackages.map(_.nonEmpty) getOrElse true
+          case ("Import-Package", _) ⇒
+            Model.getPropertyImportPackages.map(_.nonEmpty) getOrElse true
+          case ("Private-Package", _) ⇒
+            Model.getPropertyPrivatePackages.map(_.nonEmpty) getOrElse true
+          case _ ⇒ true
+        }
+    }.map(attr ⇒ Package.ManifestAttributes(attr.toSeq: _*))
+    val mainAttributes = Seq(main.entrySet().map(entry ⇒ (entry.getKey().toString, entry.getValue().toString)).filter {
       case ("Export-Package", _) ⇒
         Model.getPropertyExportPackages.map(_.nonEmpty) getOrElse true
       case ("Import-Package", _) ⇒
@@ -165,8 +168,8 @@ object GenerateManifest {
       case ("Private-Package", _) ⇒
         Model.getPropertyPrivatePackages.map(_.nonEmpty) getOrElse true
       case _ ⇒ true
-    }
+    }).map(attr ⇒ Package.ManifestAttributes(attr.toSeq: _*))
     // Manifest of the artifact is unsorted anyway due the Java design
-    Package.ManifestAttributes(attributes.toSeq: _*) +: unprocessedOptions
+    Seq.empty[PackageOption] ++ mainAttributes ++ secondaryAttributes
   }
 }

@@ -1,22 +1,6 @@
-/**
- * Copy of the code from github.com/bndtools/bnd, reason: not available at Maven central or other repository
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 /*
  * Copyright (c) OSGi Alliance (2002, 2006, 2007). All Rights Reserved.
- *
+ * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -231,17 +215,15 @@ public class Tag {
 		pw.print('<');
 		pw.print(name);
 
+		String quote = "\"";
 		for (Map.Entry<String, String> e : attributes.entrySet()) {
 			String key = e.getKey();
 			String value = escape(e.getValue());
 			pw.print(' ');
 			pw.print(key);
 			pw.print("=");
-			String quote = "'";
-			if (value.indexOf(quote) >= 0)
-				quote = "\"";
 			pw.print(quote);
-			pw.print(value);
+			pw.print(value.replaceAll("\"", "&quot;"));
 			pw.print(quote);
 		}
 
@@ -335,11 +317,8 @@ public class Tag {
 	}
 
 	/**
-	 * Make spaces.
-	void spaces(PrintWriter pw, int n) {
-		while (n-- > 0)
-			pw.print(' ');
-	}
+	 * Make spaces. void spaces(PrintWriter pw, int n) { while (n-- > 0)
+	 * pw.print(' '); }
 	 */
 
 	/**
@@ -390,8 +369,7 @@ public class Tag {
 		for (Object o : content) {
 			if (o instanceof Tag) {
 				Tag child = (Tag) o;
-				if (child.getName().equals(elementName)
-						|| elementName.equals("*"))
+				if (child.getName().equals(elementName) || elementName.equals("*"))
 					child.select(remainder, results, mapping);
 			}
 		}
@@ -420,14 +398,11 @@ public class Tag {
 			return false;
 
 		if (mapping == null) {
-			return tn == sn || (sn != null && sn.equals(tn));
+			return (tn == null && sn == null) || (sn != null && sn.equals(tn));
 		} else {
-			String suri = sn == null ? mapping.getAttribute("xmlns") : mapping
-					.getAttribute("xmlns:" + sn);
-			String turi = tn == null ? child.findRecursiveAttribute("xmlns")
-					: child.findRecursiveAttribute("xmlns:" + tn);
-			return turi == suri
-					|| (turi != null && suri != null && turi.equals(suri));
+			String suri = sn == null ? mapping.getAttribute("xmlns") : mapping.getAttribute("xmlns:" + sn);
+			String turi = tn == null ? child.findRecursiveAttribute("xmlns") : child.findRecursiveAttribute("xmlns:" + tn);
+			return turi == suri || (turi != null && suri != null && turi.equals(suri));
 		}
 	}
 
@@ -498,8 +473,7 @@ public class Tag {
 		name = string;
 	}
 
-	public static void convert(Collection<Map<String, String>> c, String type,
-			Tag parent) {
+	public static void convert(Collection<Map<String, String>> c, String type, Tag parent) {
 		for (Map<String, String> map : c) {
 			parent.addContent(new Tag(type, map));
 		}

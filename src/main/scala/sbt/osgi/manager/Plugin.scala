@@ -122,11 +122,14 @@ object Plugin {
     }
   /** Generate bundle manifest. */
   def osgiGenerateManifestTask =
-    (dependencyClasspath in Compile, packageOptions in (Compile, packageBin), products in Compile, state, streams, thisProjectRef) map {
-      (dependencyClasspath, packageOptions, products, state, streams, thisProjectRef) ⇒
-        implicit val arg = TaskArgument(state, thisProjectRef, Some(streams))
-        bnd.action.GenerateManifest.generateManifestTask(dependencyClasspath, packageOptions, products)
-    }
+    (name in Compile, version in Compile, homepage in Compile, organization in Compile, organizationName in Compile,
+      mainClass in Compile, dependencyClasspath in Compile, products in Compile, state, streams, thisProjectRef) map {
+        (name, version, homepage, organization, organizationName, mainClass,
+        dependencyClasspath, products, state, streams, thisProjectRef) ⇒
+          implicit val arg = TaskArgument(state, thisProjectRef, Some(streams))
+          bnd.action.GenerateManifest.generateManifestTask(name, version, homepage, organization,
+            organizationName, mainClass, dependencyClasspath, products)
+      }
   /** Show plugin information */
   def osgiPluginInfoTask =
     (state, streams, thisProjectRef) map { (state, streams, thisProjectRef) ⇒
@@ -191,10 +194,10 @@ object Plugin {
         }
     }
   def packageOptionsTask =
-    (dependencyClasspath in Compile, state, streams, thisProjectRef, packageOptions in (Compile, packageBin), products in Compile) map {
-      (dependencyClasspath, state, streams, thisProjectRef, packageOptions, products) ⇒
+    (osgiManifest in OSGiConf, state, streams, thisProjectRef) map {
+      (manifest, state, streams, thisProjectRef) ⇒
         implicit val arg = TaskArgument(state, thisProjectRef, Some(streams))
-        bnd.action.GenerateManifest.generatePackageOptionsTask(dependencyClasspath, packageOptions, products)
+        bnd.action.GenerateManifest.generatePackageOptionsTask(manifest)
     }
   /** Prepare Bnd home directory. Returns the home location. */
   def prepareBndHomeTask =
@@ -208,6 +211,7 @@ object Plugin {
       implicit val arg = TaskArgument(state, thisProjectRef, Some(streams))
       tycho.Maven.prepareHome()
     }
+
   /** Collects resolved artifacts per project */
   protected def collectResolvedDependencies(resolvedDependencies: immutable.HashMap[ProjectRef, Seq[ModuleID]])(implicit arg: Plugin.TaskArgument): immutable.HashMap[ProjectRef, Seq[File]] = {
     val uri = arg.extracted.currentRef.build
