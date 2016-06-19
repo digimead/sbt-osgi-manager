@@ -51,13 +51,25 @@ class ResolveP2 {
 
   /** Add repositories to target platform parameters. */
   def addRepositoriesToTargetPlatformConfiguration(tpParameters: TargetPlatformConfigurationStub, p2Pepositories: Seq[(String, URI)], maven: Maven)(implicit arg: Plugin.TaskArgument): Seq[IArtifactRepository] = {
-    val loadedPepositories = {
+    arg.log.info(logPrefix(arg.name) + "Initialize repositories. It may HANGS or FREEZES if one of repositories is not responding.")
+    val provisioningAgentInterface = maven.equinox.getClass.getClassLoader.loadClass("org.eclipse.equinox.p2.core.IProvisioningAgent")
+    val remoteAgent = maven.equinox.getService(provisioningAgentInterface).asInstanceOf[{ def getService(serviceName: String): AnyRef }]
+    val remoteArtifactRepositoryManager = remoteAgent.getService(IArtifactRepositoryManager.SERVICE_NAME).asInstanceOf[IArtifactRepositoryManager]
+    val repositories = {
       for (repo ← p2Pepositories) yield {
         val id = repo._1
         val location = repo._2
         try {
+          arg.log.info(logPrefix(arg.name) + s"Append ${repo._2} to resolution configuration.")
           tpParameters.addP2Repository(new MavenRepositoryLocation(id, location))
-          Some(location)
+          Option(remoteArtifactRepositoryManager.loadRepository(location, null)) match {
+            case repository @ Some(_) ⇒
+              arg.log.info(logPrefix(arg.name) + s"${repo._2} added.")
+              repository
+            case None ⇒
+              arg.log.info(logPrefix(arg.name) + s"${repo._2} skipped. Unable to load.")
+              None
+          }
         } catch {
           case e: URISyntaxException ⇒
             arg.log.warn(logPrefix(arg.name) + "Unable to resolve repository URI : " + location)
@@ -71,18 +83,10 @@ class ResolveP2 {
         }
       }
     }.flatten
-    if (loadedPepositories.isEmpty) {
-      arg.log.info(logPrefix(arg.name) + "There are no any usable repositories")
-      return Seq.empty
-    }
     // Get remote repositories
-    val provisioningAgentInterface = maven.equinox.getClass.getClassLoader.loadClass("org.eclipse.equinox.p2.core.IProvisioningAgent")
-    val remoteAgent = maven.equinox.getService(provisioningAgentInterface).asInstanceOf[{ def getService(serviceName: String): AnyRef }]
-    val remoteArtifactRepositoryManager = remoteAgent.getService(IArtifactRepositoryManager.SERVICE_NAME).asInstanceOf[IArtifactRepositoryManager]
-    val repositories = loadedPepositories.map(uri ⇒ Option(remoteArtifactRepositoryManager.loadRepository(uri, null))).flatten // set monitors to null
     if (repositories.isEmpty)
       arg.log.info(logPrefix(arg.name) + "There are no any usable repositories")
-    repositories.toSeq
+    repositories
   }
   /** Resolve the dependency against Eclipse P2 repository */
   // For more information about metadata and artifact repository manager, look at
@@ -96,6 +100,7 @@ class ResolveP2 {
     val resolver = maven.p2ResolverFactory.createResolver(new MavenLoggerAdapter(maven.plexus.getLogger, true))
     dependencies.foreach(d ⇒ resolver.addDependency(d.getType(), d.getArtifactId(), d.getVersion()))
 
+    arg.log.info(logPrefix(arg.name) + "Resolve P2 resources.")
     val resolutionResults: Seq[P2ResolutionResult] = ivySbt.withIvy(arg.log) { ivy ⇒
       // Set reactor project location to null
       (if (target.isEmpty) Environment.all else target).flatMap {
@@ -107,7 +112,7 @@ class ResolveP2 {
             resolver.resolveDependencies(targetPlatform, null).toSeq
           } catch {
             case e: RuntimeException ⇒
-              arg.log.debug(e.getMessage)
+              Option(e.getMessage).foreach(message ⇒ arg.log.debug(logPrefix(arg.name) + message))
               Seq(ResolveP2.EmptyP2ResolutionResult: P2ResolutionResult)
           }
       }
