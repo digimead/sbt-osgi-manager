@@ -6,6 +6,8 @@ resolvers ++= Seq(
 
 addSbtPlugin("org.digimead" % "sbt-dependency-manager" % "0.8.0.2-SNAPSHOT")
 
+addSbtPlugin("org.digimead" % "sbt-aop" % "0.2.3.0")
+
 libraryDependencies <+= (sbtBinaryVersion in update, scalaBinaryVersion in update, baseDirectory) { (sbtV, scalaV, base) =>
   Defaults.sbtPluginExtra("org.digimead" % "sbt-osgi-manager" %
     scala.io.Source.fromFile(base / Seq("..", "version").mkString(java.io.File.separator)).mkString.trim, sbtV, scalaV) }

@@ -20,6 +20,7 @@ package sbt.osgi.manager.support
 
 import java.net.{ URL, URLClassLoader }
 import org.digimead.sbt.util.SLF4JBridge
+import sbt.osgi.manager.Plugin
 import scala.language.implicitConversions
 
 class PluginClassLoader(internal: Array[URL], external: Array[URL], parent: ClassLoader, reloadPrefix: Seq[String])
@@ -29,8 +30,11 @@ class PluginClassLoader(internal: Array[URL], external: Array[URL], parent: Clas
   override def getResource(name: String): URL =
     Option(findResource(name)).getOrElse(parent.getResource(name))
   @throws(classOf[ClassNotFoundException])
+  override def loadClass(name: String): Class[_] =
+    loadClass(name, true)
+  @throws(classOf[ClassNotFoundException])
   override def loadClass(name: String, resolve: Boolean): Class[_] = {
-    name match {
+    val result = name match {
       case this.SLF4JBinderTargetName ⇒
         // transform with ASM
         val bytecode = loadSLF4JBinder(name)
@@ -61,11 +65,14 @@ class PluginClassLoader(internal: Array[URL], external: Array[URL], parent: Clas
               externalURLClassLoader.loadClass(name)
               parent.loadClass(name)
             case e: Throwable ⇒
-              // println("PluginClassLoader exception: " + e)
+              if (Plugin.debug.nonEmpty)
+                println("PluginClassLoader exception: " + e)
               parent.loadClass(name)
           }
         }
     }
+    if (resolve) resolveClass(result)
+    result
   }
   def loadClass(clazz: Class[_]): Class[_] = {
     val is = clazz.getResourceAsStream('/' + clazz.getName().replace('.', '/') + ".class")
