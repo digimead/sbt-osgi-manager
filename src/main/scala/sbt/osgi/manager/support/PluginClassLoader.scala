@@ -87,7 +87,8 @@ object PluginClassLoader {
   lazy val inner = {
     getClass.getClassLoader() match {
       case loader: URLClassLoader ⇒
-        val internalURLs = loader.getURLs().filter { url ⇒ PluginClassLoader.internalLibraries.find { url.toString().contains }.nonEmpty }
+        val pluginJar = getClass.getProtectionDomain.getCodeSource.getLocation
+        val internalURLs = pluginJar +: loader.getURLs().filter { url ⇒ PluginClassLoader.internalLibraries.find { url.toString().contains }.nonEmpty }
         val externalURLs = loader.getURLs().filter { url ⇒ PluginClassLoader.externalLibraries.find { url.toString().contains }.nonEmpty }
         new PluginClassLoader(internalURLs, externalURLs, loader, Seq("sbt.osgi.manager.tycho", "sbt.osgi.manager.bnd"))
       case classLoader ⇒
