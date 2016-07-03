@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>SBT OSGi Manager — Usage</title>
+    <link href="http://netdna.bootstrapcdn.com/font-awesome/3.1.1/css/font-awesome.min.css" rel="stylesheet"/>
+    <link rel="stylesheet" href="css/jquery-ui.min.css" type="text/css"/>
+    <link rel="stylesheet" href="css/sheet.css" type="text/css"/>
+    <link rel="stylesheet" href="css/screen.css" type="text/css" media="screen, projection"/>
+    <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/jquery-ui.min.js"></script>
+    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.5.2/underscore-min.js"></script>
+    <script type="text/javascript" src="js/jquery.collapse.js"></script>
+    <script type="text/javascript" src="js/jquery.jsonp-2.4.0.min.js"></script>
+    <script type="text/javascript" src="js/tsort.min.js"></script>
+    <script type="text/javascript">
+      var artifacts = "sbt-osgi-manager".split(/\s*,\s*/).sort();
+      var artifact = new Object();
+      artifact.user = 'digimead';
+      artifact.project = 'sbt-osgi-manager';
+    </script>
+    <script type="text/javascript" src="http://commondatastorage.googleapis.com/digimead/digimead.js"></script>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1" name="viewport"/>
+    <meta http-equiv="Content-Type" content="text/html"/>
+<script type="text/javascript" src="js/prettify/prettify.js"></script>
+<script type="text/javascript" src="js/prettify/lang-scala.js"></script>
+<link rel="stylesheet" href="css/prettify.css" type="text/css"/>
+<script type='text/javascript'>
+  //<![CDATA[
+    window.onload=function() { prettyPrint(); };
+  //]]>
+</script>
+  </head>
+  <body class="color_scheme-redmond">
+    <header>
+      <h3>
+        Digimead Artifacts
+      </h3>
+      <a id="contact">
+        <span data-hover="Feel free to contact.">
+          You are welcome ;)))
+        </span>
+      </a>
+    </header>
+    <div style="display: none;">
+      <!-- / deps definition -->
+      <div id="depsForArtifact">
+        <div id="depsName"></div>
+        <div id="depsCentral">
+          <span>
+            Maven Central:
+          </span>
+          <span id="depsContentCentralAvailable" style="display: none;">
+            available
+          </span>
+          <span id="depsContentCentralNotAvailable" style="display: none;">
+            not available
+          </span>
+        </div>
+        <div id="depsIvy" style="visibility: hidden;">
+          <span>
+            From Digimead Ivy:
+          </span>
+          <span id="jar">
+            <a>
+              jar
+            </a>
+          </span>
+          <span id="source" style="display: none;">
+            |
+            <a>
+              source
+            </a>
+          </span>
+          <span id="doc" style="display: none;">
+            |
+            <a>
+              doc
+            </a>
+          </span>
+        </div>
+        <div id="depsMaven" style="visibility: hidden;">
+          <span>
+            From Digimead Maven:
+          </span>
+          <span id="jar">
+            <a>
+              jar
+            </a>
+          </span>
+          <span id="source" style="display: none;">
+            |
+            <a>
+              source
+            </a>
+          </span>
+          <span id="doc" style="display: none;">
+            |
+            <a>
+              doc
+            </a>
+          </span>
+        </div>
+        <div id="depsAPI">
+          <a href="#" title="Open artifact API in a new window.">
+            API
+          </a>
+        </div>
+      </div>
+      <div id="depsLibrary">
+        <ul>
+          <li>
+            <a href="#depsSBT">
+              SBT
+            </a>
+          </li>
+          <li>
+            <a href="#depsMaven">
+              Maven
+            </a>
+          </li>
+          <li>
+            <a href="#depsIvy">
+              Ivy
+            </a>
+          </li>
+          <li>
+            <a href="#depsGrape">
+              Grape
+            </a>
+          </li>
+          <li>
+            <a href="#depsGradle">
+              Gradle
+            </a>
+          </li>
+          <li>
+            <a href="#depsBuildr">
+              Buildr
+            </a>
+          </li>
+        </ul>
+        <div id="depsSBT">
+          <pre>libraryDependencies += "###ORG###" % "###ARTIFACT###" % "###VERSION###"</pre>
+        </div>
+        <div id="depsMaven">
+          <pre>&lt;dependency&gt;&#x000A;  &lt;groupId&gt;###ORG###&lt;/groupId&gt;&#x000A;  &lt;artifactId&gt;###ARTIFACT###&lt;/artifactId&gt;&#x000A;  &lt;version&gt;###VERSION###&lt;/version&gt;&#x000A;&lt;/dependency&gt;</pre>
+        </div>
+        <div id="depsIvy">
+          <pre>&lt;dependency org=&quot;###ORG###&quot; name=&quot;###ARTIFACT###&quot; rev=&quot;###VERSION###&quot; /&gt;</pre>
+        </div>
+        <div id="depsGrape">
+          <pre>@Grapes(&#x000A;    @Grab(group='###ORG###', module='###ARTIFACT###', version='###VERSION###')&#x000A;)</pre>
+        </div>
+        <div id="depsGradle">
+          <pre>'###ORG###:###ARTIFACT###:###VERSION###'</pre>
+        </div>
+        <div id="depsBuildr">
+          <pre>'###ORG###:###ARTIFACT###:jar:###VERSION###'</pre>
+        </div>
+      </div>
+      <div id="depsPlugin">
+        <br/>
+        <div>
+          You may add Maven repository:
+        </div>
+        <pre>resolvers += "digimead-maven" at "http://storage.googleapis.com/maven.repository.digimorg/"</pre>
+        <div>
+          Or you may add Ivy repository:
+        </div>
+        <pre>resolvers += Resolver.url("digimead-ivy", url("http://storage.googleapis.com/ivy.repository.digimead.org/"))(Resolver.defaultIvyPatterns)</pre>
+        <div>
+          And then
+        </div>
+        <pre>addSbtPlugin("###ORG###" % "###ARTIFACT###" % "###VERSION###")</pre>
+        <div>
+          Or you may create a
+        </div>
+        <pre>project/project/Build.scala</pre>
+        <div>
+          file that looks like the following:
+        </div>
+        <pre class="prettyprint lang-scala">import sbt._&#x000A;object PluginDef extends Build {&#x000A;  override def projects = Seq(root)&#x000A;  lazy val root = Project("plugins", file(".")) dependsOn(plugin)&#x000A;  lazy val plugin = uri("git://github.com/###ORG###/###ARTIFACT###.git#TagOrCommit")&#x000A;}</pre>
+        <div>
+          You may find more information about Build.scala in SBT documentation
+        </div>
+      </div>
+      <!-- / dialog_contact definition -->
+      <div id="dialog_contacts">
+        <div>
+          <h3>
+            <span>
+              Mr.
+            </span>
+            Alexey Aksenov
+            <span>
+              aka
+            </span>
+            ЁЖ
+          </h3>
+          <img id="photo" src="http://commondatastorage.googleapis.com/ezhik/simple.png"/>
+          <img id="avatar" src="http://commondatastorage.googleapis.com/ezhik/avatar.png"/>
+          <table>
+            <tr id="priMail">
+              <td>
+                Primary email
+              </td>
+              <td id="data"></td>
+            </tr>
+            <tr id="secMail">
+              <td>
+                Secondary email
+              </td>
+              <td id="data"></td>
+            </tr>
+            <tr id="skype">
+              <td>
+                Skype
+              </td>
+              <td></td>
+            </tr>
+            <tr id="icq">
+              <td>
+                ICQ
+              </td>
+              <td id="data"></td>
+            </tr>
+            <tr id="ru_ph">
+              <td>
+                Russian phone
+              </td>
+              <td id="data"></td>
+            </tr>
+            <tr id="uk_ph">
+              <td>
+                United Kindom phone
+              </td>
+              <td id="data"></td>
+            </tr>
+            <tr id="ww">
+              <td>
+                WorldWide SIP
+              </td>
+              <td id="data"></td>
+            </tr>
+          </table>
+        </div>
+      </div>
+      <!-- / dialog_error definition -->
+      <div id="dialog_error">
+        <p id="error">
+          <span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;"></span>
+        </p>
+      </div>
+      <!-- / dialog_version definition -->
+      <div id="dialog_version" class="dialog_window" title="Artifact information">
+        <div id="API" style="visibility: hidden;">
+          <button>
+            Open API documentation in new tab/window
+          </button>
+        </div>
+        <div id="deps"></div>
+        <div id="depsRepoHead">
+          Repositories:
+        </div>
+        <div id="depsRepoEntry">
+          Digimead Ivy located at
+          <i>
+            http://storage.googleapis.com/ivy.repository.digimead.org/
+          </i>
+        </div>
+        <div id="depsRepoEntry">
+          Digimead Maven located at
+          <i>
+            http://storage.googleapis.com/maven.repository.digimead.org/
+          </i>
+        </div>
+      </div>
+    </div>
+    <div class="container">
+<a class="page prev nav" title="Adding to your project" href="Adding+to+your+project.html">
+  <span class="space">
+    &nbsp;
+  </span>
+  <span class="flip">
+    ❧
+  </span>
+</a>
+<a class="page next nav" title="Contents in Depth" href="Contents+in+Depth.html">
+  <span class="space">&nbsp;</span>
+  <span>></span>
+</a>
+      <div id="main">
+        <div class="top">
+  <div class="title">
+    <span>SBT OSGi Manager
+    - Usage
+</span>
+    <div class="logo">
+      <img src="http://commondatastorage.googleapis.com/digimead/sbt-osgi-manager.png" style="width: 100px;"/>
+    </div>
+  </div>
+  <div class="nav">
+    <div class="left">
+      <a href="Adding+to+your+project.html">Adding to your project</a>
+      <span class="arrow">&#8678;</span>
+      <span>Previous Page</span>
+    </div>
+    <div class="center">
+      
+    </div>
+    <div class="right">
+      <span>Next Page</span>
+      <span class="arrow">&#8680;</span>
+      <a href="Contents+in+Depth.html">Contents in Depth</a>
+    </div>
+  </div>
+</div>
+<div class="content"><div class="generated">
+<h2 id="Usage">Usage<a href="#Usage" class="header-link"><span class="header-link-content">&nbsp;</span></a></h2><p>If you want to enable extra run-time debugging use <code>OSGiManagerWithDebug(Equinox TCP port)</code> instead of <code>OSGiManager</code>. Also put <a href="src/sbt-test/osgi-manager/simple/.options.no">.options</a> file to your project directory.
+</p><p><em>You may find the plugin usage examples at <a href="https://github.com/ezh/">https://github.com/ezh/</a>. Look at <code>build.sbt</code> of Digi- libraries.</em>
+</p><p>Please note, that OSGi infrastructure has no dependency <code>organization</code> field as Ivy or Maven has. The bundle symbolic name and the bundle version identify a unique artifact.
+</p><h3 id="Generate+bundle+manifest">Generate bundle manifest<a href="#Generate+bundle+manifest" class="header-link"><span class="header-link-content">&nbsp;</span></a></h3><p>To generate bundle manifest:
+</p><ol><li>Add necessary information your project. Look at <a href="#modify-bundle-properties">Modify bundle properties</a>
+</li><li>Check bundle settings. Look at <a href="#list-actual-properties-per-project">List actual properties per project</a>
+</li><li>Create your artifact as usual. The plugin will intercept <code>packageOptions in (Compile, packageBin)</code> and will inject OSGi headers to the generated manifest.
+</li></ol><h4 id="Modify+bundle+properties">Modify bundle properties<a href="#Modify+bundle+properties" class="header-link"><span class="header-link-content">&nbsp;</span></a></h4><p>You may alter bundle properties with complex block
+</p><pre class="prettyprint linenums"><code class="prettyprint lang-scala">inConfig(OSGiConf)({
+  import OSGiKey._
+  Seq[Project.Setting[_]](
+    osgiBndBundleActivator := &quot;org.example.Activator&quot;,
+    osgiBndBundleSymbolicName := &quot;org.example&quot;,
+    osgiBndBundleCopyright := &quot;Copyright © 19xx-23xx N. All rights reserved.&quot;,
+    osgiBndExportPackage := List(&quot;org.example.*&quot;),
+    osgiBndImportPackage := List(&quot;!org.aspectj.*&quot;, &quot;*&quot;),
+    osgiBndBundleLicense := Seq(&quot;http://www.gnu.org/licenses/agpl.html;description=GNU Affero General Public License&quot;,
+      &quot;http://example.org/CommercialLicense.txt;description=Commercial License&quot;).mkString(&quot;,&quot;),
+    resolvers += typeP2(&quot;Eclipse P2 update site&quot; at &quot;http://eclipse.nn.nn&quot;),
+    resolvers += typeOBR(&quot;Local OBR repository&quot; at sys.env(&quot;OBR_REPOSITORY&quot;))
+  )
+})
+</code></pre><p>You may alter bundle properties as single line from SBT settings.
+</p><pre class="prettyprint linenums"><code class="prettyprint lang-scala">OSGiKey.osgiBndBundleActivator in OSGiConf := &quot;org.example.Activator&quot;
+</code></pre><h4 id="List+actual+properties+per+project">List actual properties per project<a href="#List+actual+properties+per+project" class="header-link"><span class="header-link-content">&nbsp;</span></a></h4><p>You may inspect OSGi properties with SBT <code>show</code> command or to use <code>osgi-show</code> report.
+</p><h3 id="Resolve+OSGi+dependencies">Resolve OSGi dependencies<a href="#Resolve+OSGi+dependencies" class="header-link"><span class="header-link-content">&nbsp;</span></a></h3><p>TODO doc
+</p><h4 id="Resolve+OSGi+dependencies+against+P2+update+site">Resolve OSGi dependencies against P2 update site<a href="#Resolve+OSGi+dependencies+against+P2+update+site" class="header-link"><span class="header-link-content">&nbsp;</span></a></h4><p>TODO doc
+</p><pre><code>inConfig(OSGiConf)({
+import OSGiKey._
+  Seq[Project.Setting[_]](
+    resolvers += typeP2(&quot;Eclipse P2 update site&quot; at &quot;http://eclipse.ialto.com/eclipse/updates/4.2/R-4.2.1-201209141800/&quot;),
+    libraryDependencies += typeP2((OSGi.ECLIPSE_PLUGIN % &quot;org.eclipse.ui&quot; % OSGi.ANY_VERSION).withSources),
+    libraryDependencies += typeP2((OSGi.ECLIPSE_PLUGIN % &quot;org.eclipse.core.runtime&quot; % OSGi.ANY_VERSION).withSources))
+})
+</code></pre><blockquote><p><code>osgi-resolve</code>
+</p></blockquote><h4 id="Resolver+OSGi+dependencies+against+OBR+R5+repository">Resolver OSGi dependencies against OBR R5 repository<a href="#Resolver+OSGi+dependencies+against+OBR+R5+repository" class="header-link"><span class="header-link-content">&nbsp;</span></a></h4><p>TODO doc
+</p><pre><code>inConfig(OSGiConf)({
+  import OSGiKey._
+  Seq[Project.Setting[_]](
+    resolvers += typeOBR(&quot;Local OBR repository&quot; at &quot;file:/path/to/obr&quot;),
+    libraryDependencies += typeOBR((OSGi.ANY_ORGANIZATION % &quot;org.digimead.digi.lib&quot; % OSGi.ANY_VERSION).withSources))
+})
+</code></pre><blockquote><p><code>osgi-resolve</code>
+</p></blockquote>
+  </div><div class="toc">
+    <div class="tocwrapper show">
+  <h4 class="toctitle">Contents</h4>
+  <div class="tocbody">
+    <div><a href="index.html">SBT OSGi Manager</a></div>
+    <ol class="toc"> <li><div><a href="Adding+to+your+project.html">Adding to your project</a></div></li><li><div class="current">Usage</div><ul class="current outline"> <li>
+                  <a href="Usage.html#Generate+bundle+manifest">Generate bundle manifest </a>
+                  <ul class="current outline"> <li> <a href="Usage.html#Modify+bundle+properties">Modify bundle properties </a> </li><li> <a href="Usage.html#List+actual+properties+per+project">List actual properties per project </a> </li> </ul>
+                </li><li>
+                  <a href="Usage.html#Resolve+OSGi+dependencies">Resolve OSGi dependencies </a>
+                  <ul class="current outline"> <li> <a href="Usage.html#Resolve+OSGi+dependencies+against+P2+update+site">Resolve OSGi dependencies against P2 update site </a> </li><li> <a href="Usage.html#Resolver+OSGi+dependencies+against+OBR+R5+repository">Resolver OSGi dependencies against OBR R5 repository </a> </li> </ul>
+                </li> </ul></li><li class="generated"><div><a href="Contents+in+Depth.html">Contents in Depth</a></div></li><li class="generated"><div><a href="Combined+Pages.html">Combined Pages</a></div></li> </ol>
+  </div>
+</div>
+
+  </div>
+</div>
+<div id="comments">
+<div id="disqus_thread"></div>
+<script type='text/javascript'>
+  //<![CDATA[
+      var disqus_shortname = 'sbt-osgi-manager';
+      var disqus_config = function () { this.language = "en"; };
+      (function() {
+          var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+          dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+          (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+          var s = document.createElement('script'); s.async = true; s.type = 'text/javascript';
+          s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+          (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+      })();
+  //]]>
+</script>
+</div>
+
+      </div>
+      <div id="menu">
+        <h3>
+          Available parts
+        </h3>
+      </div>
+      <div id="interact">
+        <div id="currentState">
+          <h3>
+            Current state
+          </h3>
+          <a href="https://travis-ci.org/digimead/sbt-osgi-manager">
+            <img src="https://travis-ci.org/digimead/sbt-osgi-manager.png"/>
+          </a>
+        </div>
+        <div id="collaborate">
+          <h3>
+            I Like It
+          </h3>
+          <table>
+            <tr>
+              <td>
+                <div id="google">
+<div class="g-plusone" data-size="tall"></div>
+<script type='text/javascript'>
+  //<![CDATA[
+    window.___gcfg = {lang: "en"};
+    (function() {
+      var po = document.createElement('script'); po.type = 'text/javascript'; po.async = true;
+      po.src = 'https://apis.google.com/js/plusone.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+    })();
+  //]]>
+</script>
+                </div>
+              </td>
+              <td>
+                <div id="facebook">
+<div id="fb-root"></div>
+<script type='text/javascript'>
+  //<![CDATA[
+    (function(d, s, id) {
+      var js, fjs = d.getElementsByTagName(s)[0];
+      if (d.getElementById(id)) return;
+      js = d.createElement(s); js.id = id;
+      js.src = "//connect.facebook.net/en/all.js#xfbml=1";
+      fjs.parentNode.insertBefore(js, fjs);
+    }(document, 'script', 'facebook-jssdk'));
+  //]]>
+</script>
+<div class="fb-like" data-href="https://developers.facebook.com/docs/plugins/" data-layout="box_count" data-action="recommend" data-show-faces="true" data-share="true"></div>
+                </div>
+              </td>
+            </tr>
+          </table>
+        </div>
+        <div id="versions">
+          <h3>
+            Versions
+          </h3>
+        </div>
+        <div id="correctness">
+          <h3>
+            Correctness
+          </h3>
+          <script type="text/javascript" src="js/orphus.js"></script>
+          <a href="http://orphus.ru" id="orphus" target="_blank" title="Orphus system">
+            <img alt="Orphus system" src="img/orphus.gif" border="0" width="121" height="21"/>
+          </a>
+          <div id="message">
+            Select spelling error with your mouse and press Ctrl+Enter
+          </div>
+          <div id="description">
+            This information is provided in the hope that it will be useful and help people with their first steps, even if it is written in broken English... Would you have preferred well written Russian? :-) Please, correct it, if you find something inappropriate.
+          </div>
+        </div>
+      </div>
+    </div>
+    <a class="fork nav" href="http://github.com/digimead/sbt-osgi-manager">
+      <img src="img/fork.png" alt="Fork me on GitHub"/>
+    </a>
+    <footer>
+      <a title="The plugin which helps to organize a uniform but agile and easy documentation process." href="http://digimead.github.io/sbt-site-manager/">
+        Generated with SBT-Site-Manager
+      </a>
+      <span title="All content on this site is Copyright to Alexey Aksenov aka Ezh unless otherwise specified.">
+        © Alexey Aksenov
+      </span>
+    </footer>
+  </body>
+</html>
