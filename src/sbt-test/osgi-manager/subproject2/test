@@ -1,8 +1,0 @@
--$ exists target/osgi/
--$ exists psugin/target/osgi/
-> project plugin
-> check 4
-> osgiResolve
-> check 61
--$ exists target/osgi/
-$ exists plugin/target/osgi/
