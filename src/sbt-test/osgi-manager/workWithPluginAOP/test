@@ -1,0 +1,5 @@
+-$ exists target/deps/
+-$ exists target/osgi/
+> checkRoot 3
+> osgiResolveRemote
+> checkRoot 60
