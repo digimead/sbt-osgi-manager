@@ -21,6 +21,7 @@ package sbt.osgi.manager.support
 import java.net.{ URL, URLClassLoader }
 import org.digimead.sbt.util.SLF4JBridge
 import sbt.osgi.manager.Plugin
+import sbt.osgi.manager.support.Support.logPrefix
 import scala.language.implicitConversions
 
 class PluginClassLoader(internal: Array[URL], external: Array[URL], parent: ClassLoader, reloadPrefix: Seq[String])
@@ -88,9 +89,9 @@ object PluginClassLoader {
     getClass.getClassLoader() match {
       case loader: URLClassLoader ⇒
         val pluginJar = getClass.getProtectionDomain.getCodeSource.getLocation
-        val internalURLs = pluginJar +: loader.getURLs().filter { url ⇒ PluginClassLoader.internalLibraries.find { url.toString().contains }.nonEmpty }
-        val externalURLs = loader.getURLs().filter { url ⇒ PluginClassLoader.externalLibraries.find { url.toString().contains }.nonEmpty }
-        new PluginClassLoader(internalURLs, externalURLs, loader, Seq("sbt.osgi.manager.tycho", "sbt.osgi.manager.bnd"))
+        implicit val arg = Plugin.getLastKnownState() getOrElse { throw new IllegalStateException("There is no last known state") }
+        val (internalURLs, externalURLs, skipped) = processClassLoaderURLs(loader.getURLs())
+        new PluginClassLoader(pluginJar +: internalURLs, externalURLs, loader, Seq("sbt.osgi.manager.tycho", "sbt.osgi.manager.bnd"))
       case classLoader ⇒
         throw new IllegalStateException("Unable to create PluginClassLoader with unexpected parent class loader " + classLoader.getClass)
     }
@@ -116,7 +117,6 @@ object PluginClassLoader {
     "org.codehaus.plexus/plexus-interpolation",
     "org.codehaus.plexus/plexus-io",
     "org.codehaus.plexus/plexus-utils",
-    "org.digimead/sbt-osgi-manager",
     "org.eclipse.aether/aether-api",
     "org.eclipse.aether/aether-connector-basic",
     "org.eclipse.aether/aether-impl",
@@ -146,7 +146,7 @@ object PluginClassLoader {
     "org.sonatype.aether/aether-spi",
     "org.sonatype.aether/aether-util",
     "org.sonatype.plexus/plexus-cipher",
-    "org.sonatype.plexus/plexus-sec-dispatcher")
+    "org.sonatype.plexus/plexus-sec-dispatcher").map(str ⇒ str.r)
   /** List of URL parts of libraries that PluginClassLoader must delegate to parent. */
   val externalLibraries = Seq(
     "aopalliance/aopalliance",
@@ -218,7 +218,7 @@ object PluginClassLoader {
     "org.scala-tools.sbinary/sbinary",
     "org.scalamacros/quasiquotes",
     "org.spire-math/jawn-parser",
-    "org.spire-math/json4s-support")
+    "org.spire-math/json4s-support").map(str ⇒ str.r)
   /** List of class names than passes to parent class loader. */
   val passToParent = Seq(
     "java.",
@@ -229,4 +229,25 @@ object PluginClassLoader {
     "org.eclipse.tycho.core.ee.shared.ExecutionEnvironmentConfiguration",
     "sbt.",
     "scala.")
+
+  /** Separate/filter plugin classloader URLs. */
+  def processClassLoaderURLs(urls: Array[URL])(implicit arg: Plugin.TaskArgument): (Array[URL], Array[URL], Array[URL]) = {
+    var internal = Array.empty[URL]
+    var external = Array.empty[URL]
+    var skipped = Array.empty[URL]
+    urls.foreach { url ⇒
+      url match {
+        case url if internalLibraries.exists(pattern ⇒ pattern.findFirstIn(url.toString()).nonEmpty) ⇒
+          arg.log.debug(logPrefix(arg.name) + "PluginClassLoader, push to internal " + url)
+          internal = internal :+ url
+        case url if externalLibraries.exists(pattern ⇒ pattern.findFirstIn(url.toString()).nonEmpty) ⇒
+          arg.log.debug(logPrefix(arg.name) + "PluginClassLoader, push to external " + url)
+          external = external :+ url
+        case url ⇒
+          arg.log.debug(logPrefix(arg.name) + "PluginClassLoader, skip " + url)
+          skipped = skipped :+ url
+      }
+    }
+    (internal, external, skipped)
+  }
 }
