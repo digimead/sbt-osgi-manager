@@ -129,11 +129,11 @@ class PluginClassLoaderTest extends FreeSpec with Matchers {
     d.size should be(49)
     aSorted should be(dSorted)
 
-    b.size should be(19)
-    e.size should be(69)
+    b.size should be > (10)
+    e.size should be > (10)
 
-    c.size should be(13)
-    f.size should be(9)
+    c.size should be > (1)
+    f.size should be > (1)
 
     val pluginJar = getClass.getProtectionDomain.getCodeSource.getLocation
     val pluginClassLoader = new PluginClassLoader(pluginJar +: a, b, loader, Seq(classOf[PluginClassLoaderTest.A].getName))
