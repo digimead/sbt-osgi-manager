@@ -136,14 +136,14 @@ class PluginClassLoaderTest extends FreeSpec with Matchers {
     f.size should be > (1)
 
     val pluginJar = getClass.getProtectionDomain.getCodeSource.getLocation
-    val pluginClassLoader = new PluginClassLoader(pluginJar +: a, b, loader, Seq(classOf[PluginClassLoaderTest.A].getName))
+    val pluginClassLoader = new PluginClassLoader(pluginJar +: d, e, loader, Seq(classOf[PluginClassLoaderTest.A].getName))
     pluginClassLoader.getURLs.size should be(a.size + 1)
     val (a1, b1, c1, d1) =
       SLF4JBridge.withLogFactory(LoggerSLF4J.Factory) {
         Util.applyWithClassLoader[(ClassLoader, ClassLoader, AnyRef, AnyRef)](pluginClassLoader, classOf[PluginClassLoaderTest.A])
       }
     assert(a1.isInstanceOf[PluginClassLoader])
-    //assert(b1.isInstanceOf[PluginClassLoader])
+    assert(b1.isInstanceOf[PluginClassLoader])
     c1 should not be (null)
     d1 should not be (null)
     d1 should be(LoggerSLF4J.Factory)

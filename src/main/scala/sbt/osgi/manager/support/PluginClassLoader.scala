@@ -24,7 +24,7 @@ import sbt.osgi.manager.Plugin
 import sbt.osgi.manager.support.Support.logPrefix
 import scala.language.implicitConversions
 
-class PluginClassLoader(internal: Array[URL], external: Array[URL], parent: ClassLoader, reloadPrefix: Seq[String])
+class PluginClassLoader(val internal: Array[URL], val external: Array[URL], val parent: ClassLoader, val reloadPrefix: Seq[String])
     extends URLClassLoader(internal, parent) with SLF4JBridge.Loader {
   protected val externalURLClassLoader = new URLClassLoader(external)
 
@@ -146,7 +146,7 @@ object PluginClassLoader {
     "org.sonatype.aether/aether-spi",
     "org.sonatype.aether/aether-util",
     "org.sonatype.plexus/plexus-cipher",
-    "org.sonatype.plexus/plexus-sec-dispatcher").map(str ⇒ str.r)
+    "org.sonatype.plexus/plexus-sec-dispatcher").map(str ⇒ s"\\b${str}\\b".r)
   /** List of URL parts of libraries that PluginClassLoader must delegate to parent. */
   val externalLibraries = Seq(
     "aopalliance/aopalliance",
@@ -218,7 +218,7 @@ object PluginClassLoader {
     "org.scala-tools.sbinary/sbinary",
     "org.scalamacros/quasiquotes",
     "org.spire-math/jawn-parser",
-    "org.spire-math/json4s-support").map(str ⇒ str.r)
+    "org.spire-math/json4s-support").map(str ⇒ s"\\b${str}\\b".r)
   /** List of class names than passes to parent class loader. */
   val passToParent = Seq(
     "java.",
